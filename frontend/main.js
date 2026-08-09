@@ -119,8 +119,12 @@ function createWindow(mode = 'center') {
         visualEffectState: 'active'
     });
 
-    // לטעון HUD
-    mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+    // לטעון HUD - נסה מתקדם קודם, אז רגיל
+    const advancedPath = path.join(__dirname, 'src', 'advanced_hud.html');
+    const regularPath = path.join(__dirname, 'src', 'index.html');
+    const hudPath = fs.existsSync(advancedPath) ? advancedPath : regularPath;
+    console.log(`[Main] Loading HUD from ${hudPath}`);
+    mainWindow.loadFile(hudPath);
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();

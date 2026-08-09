@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADIEL JUNIOR - MARK 85 HUD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./super_hud.css">
+</head>
+<body>
+    <div id="super-hud" class="super-hud-root">
+        <!-- Background Layers -->
+        <div class="bg-layers">
+            <canvas id="gridCanvas" class="bg-canvas"></canvas>
+            <canvas id="particlesCanvas" class="bg-canvas"></canvas>
+            <canvas id="scanlineCanvas" class="bg-canvas"></canvas>
+            <div class="bg-vignette"></div>
+            <div class="bg-noise"></div>
+        </div>
+
+        <!-- Top Bar - System Status -->
+        <header class="hud-topbar">
+            <div class="topbar-section left">
+                <div class="logo-block">
+                    <div class="logo-icon">AJ</div>
+                    <div class="logo-text">
+                        <span class="logo-title">ADIEL JUNIOR</span>
+                        <span class="logo-subtitle">MARK 85 // סוכן-על</span>
+                    </div>
+                </div>
+                <div class="status-block">
+                    <div class="status-dot" id="mainStatusDot"></div>
+                    <span id="mainStatusText">SYSTEMS NOMINAL</span>
+                    <span class="status-sub">זיכרון: <b id="memoryCount">0</b> | מילים: <b id="vocabCount">0</b></span>
+                </div>
+            </div>
+            
+            <div class="topbar-section center">
+                <div class="time-block">
+                    <div class="time-main" id="timeMain">00:00:00</div>
+                    <div class="time-sub" id="timeSub">תל אביב // ONLINE</div>
+                </div>
+                <div class="system-metrics" id="systemMetrics">
+                    <div class="metric"><label>CPU</label><div class="bar"><div class="fill" id="cpuFill" style="width: 42%"></div></div><span id="cpuVal">42%</span></div>
+                    <div class="metric"><label>MEM</label><div class="bar"><div class="fill" id="memFill" style="width: 68%"></div></div><span id="memVal">68%</span></div>
+                    <div class="metric"><label>AI</label><div class="bar"><div class="fill active" id="aiFill" style="width: 95%"></div></div><span id="aiVal">95%</span></div>
+                </div>
+            </div>
+
+            <div class="topbar-section right">
+                <div class="mic-status" id="micStatus">
+                    <span class="mic-icon">🎙️</span>
+                    <span id="micName">Default Mic</span>
+                    <span class="mic-level"><div class="level-bar" id="micLevel"></div></span>
+                </div>
+                <div class="voice-status">
+                    <span class="voice-badge">✨ קול מקורי</span>
+                    <span id="voiceName">Adiel Original</span>
+                </div>
+                <div class="window-controls">
+                    <button class="win-btn" id="btnSide">◧</button>
+                    <button class="win-btn" id="btnCenter">◫</button>
+                    <button class="win-btn" id="btnOrb">●</button>
+                    <button class="win-btn close" id="btnClose">✕</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="hud-workspace">
+            <!-- LEFT PANEL -->
+            <aside class="hud-panel left-panel">
+                <!-- Reactor Mini + Memory -->
+                <div class="panel memory-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">🧠</span>
+                        <span class="panel-title">זיכרון חי</span>
+                        <div class="panel-actions"><span class="live-dot"></span> LIVE</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="memory-core">
+                            <canvas id="memoryCanvas" width="200" height="200"></canvas>
+                            <div class="memory-stats">
+                                <div class="stat"><span id="profileName">בוס</span><label>שם</label></div>
+                                <div class="stat"><span id="projectsCount">0</span><label>פרויקטים</label></div>
+                                <div class="stat"><span id="interactionsCount">0</span><label>שיחות</label></div>
+                            </div>
+                        </div>
+                        <div class="memory-context" id="memoryContext">דיברנו 0 פעמים, לומדת אותך...</div>
+                    </div>
+                </div>
+
+                <!-- Conversation -->
+                <div class="panel conversation-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">💬</span>
+                        <span class="panel-title">שיחה אמיתית</span>
+                        <span class="panel-badge" id="convBadge">0</span>
+                    </div>
+                    <div class="panel-content conversation-content" id="conversationInner">
+                        <div class="msg assistant welcome">
+                            <div class="msg-avatar">AJ</div>
+                            <div class="msg-content">
+                                <div class="msg-text">שלום בוס! אני אדיאל MARK 85 עם HUD משוכלל. קול מקורי, מיקרופון לבחירה, זיכרון חי, וסוכן-על לכל משימה. תגיד "אדיאל ג'וניור" או תכתוב.</div>
+                                <div class="msg-time">עכשיו</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- CENTER STAGE -->
+            <main class="hud-center-stage">
+                <!-- Central Reactor -->
+                <div class="reactor-stage" id="reactorStage">
+                    <div class="reactor-holo">
+                        <canvas id="reactorCanvas" width="400" height="400"></canvas>
+                        <div class="reactor-rings">
+                            <div class="ring ring-1"></div>
+                            <div class="ring ring-2"></div>
+                            <div class="ring ring-3"></div>
+                            <div class="ring ring-4"></div>
+                            <div class="ring ring-5"></div>
+                        </div>
+                        <div class="reactor-core"></div>
+                        <div class="reactor-glow"></div>
+                    </div>
+                    
+                    <!-- Orbital Data -->
+                    <div class="orbital-data">
+                        <div class="orbital-item" style="--angle: 0deg"><span>VOICE</span><b id="orbitalVoice">ORIGINAL</b></div>
+                        <div class="orbital-item" style="--angle: 72deg"><span>LISTEN</span><b id="orbitalListen">IDLE</b></div>
+                        <div class="orbital-item" style="--angle: 144deg"><span>MEM</span><b id="orbitalMem">0</b></div>
+                        <div class="orbital-item" style="--angle: 216deg"><span>TASKS</span><b id="orbitalTasks">0</b></div>
+                        <div class="orbital-item" style="--angle: 288deg"><span>AI</span><b id="orbitalAI">TRUE</b></div>
+                    </div>
+                </div>
+
+                <!-- Status & Visualizer -->
+                <div class="center-status">
+                    <div class="status-main" id="statusLabel">מאזינה למילת הפעלה...</div>
+                    <div class="wake-hint">אמור <span class="wake-word">״אדיאל ג׳וניור״</span> או <span class="key-hint">Ctrl+Shift+A</span></div>
+                    <div class="visualizer-advanced" id="visualizer">
+                        <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+                        <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+                        <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+                    </div>
+                    <div class="listening-pulse" id="listeningPulse"></div>
+                </div>
+
+                <!-- Holographic Display - Screen / Tasks / Proposals -->
+                <div class="holo-display">
+                    <div class="holo-tabs">
+                        <button class="holo-tab active" data-tab="screen">🖥️ מסך חי</button>
+                        <button class="holo-tab" data-tab="tasks">🚀 משימות</button>
+                        <button class="holo-tab" data-tab="proposals">🧠 למידה</button>
+                        <button class="holo-tab" data-tab="system">⚙️ מערכת</button>
+                    </div>
+                    
+                    <div class="holo-content">
+                        <!-- Screen -->
+                        <div class="holo-pane active" id="pane-screen">
+                            <div class="screen-preview-holo hidden" id="screenPreview">
+                                <div class="holo-frame">
+                                    <img id="previewImage" class="preview-img-holo" />
+                                    <div class="holo-scan"></div>
+                                    <div class="holo-corners"><span></span><span></span><span></span><span></span></div>
+                                </div>
+                                <div class="preview-context-holo" id="previewContext"></div>
+                            </div>
+                            <div class="placeholder-holo" id="screenPlaceholder">
+                                <div class="placeholder-icon">🖥️</div>
+                                <div class="placeholder-text">לא סורק מסך. תגיד "מה את רואה במסך?"</div>
+                            </div>
+                        </div>
+
+                        <!-- Tasks -->
+                        <div class="holo-pane" id="pane-tasks">
+                            <div class="tasks-grid" id="tasksGrid">
+                                <button class="task-card" data-task="תקנה לי אוזניות הכי זול"><span>🛒</span><b>קנייה חכמה</b><small>מוצא זול ביותר</small></button>
+                                <button class="task-card" data-task="תזמין טיסה מתל אביב ללונדון"><span>✈️</span><b>חופשה</b><small>משווה טיסות+מלון</small></button>
+                                <button class="task-card" data-task="תחקור על בינה מלאכותית"><span>🔬</span><b>מחקר</b><small>סורק עשרות אתרים</small></button>
+                                <button class="task-card" data-task="תבדוק מיילים דחופים"><span>📧</span><b>מיילים</b><small>ספאם + דחיפות</small></button>
+                                <button class="task-card" data-task="תמצא זמן לפגישה עם דני"><span>📅</span><b>יומן</b><small>זמן מושלם</small></button>
+                                <button class="task-card" data-task="תארגן קבצים בהורדות"><span>📁</span><b>קבצים</b><small>Drive/Dropbox</small></button>
+                                <button class="task-card" data-task="תכין דוח מנהלים"><span>📊</span><b>דוח</b><small>Excel+CRM</small></button>
+                                <button class="task-card" data-task="תריץ שגרת בוקר"><span>⏰</span><b>שגרה</b><small>בוקר/ערב/פוקוס</small></button>
+                            </div>
+                            <div class="tasks-history-holo" id="tasksHistory"></div>
+                        </div>
+
+                        <!-- Proposals -->
+                        <div class="holo-pane" id="pane-proposals">
+                            <div class="proposals-holo" id="proposalsArea">
+                                <div class="proposals-header-holo">
+                                    <span>🧠 הצעות למידה ועדכון עצמי</span>
+                                    <span class="badge" id="proposalsBadge">0</span>
+                                </div>
+                                <div class="proposals-list-holo" id="proposalsList">
+                                    <div class="placeholder-holo small">אין הצעות עכשיו - אדיאל תלמד ותבקש אישור כשתצטרך</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System -->
+                        <div class="holo-pane" id="pane-system">
+                            <div class="system-grid">
+                                <div class="sys-card">
+                                    <h4>🎙️ מיקרופונים</h4>
+                                    <div id="micList" class="sys-list">טוען...</div>
+                                    <div class="sys-actions"><button class="action-btn" id="btnRefreshMics">🔄 רענן</button><button class="action-btn" id="btnResetMic">↩️ ברירת מחדל</button></div>
+                                </div>
+                                <div class="sys-card">
+                                    <h4>🔊 קול מקורי</h4>
+                                    <div class="voice-options-holo">
+                                        <div class="voice-opt selected" data-voice="original"><b>✨ אדיאל מקורי</b><small>8 דגימות רק שלך</small><button class="test-voice-btn" data-voice="original">▶️</button></div>
+                                        <div class="voice-opt" data-voice="avigail"><b>Avigail</b><small>Microsoft</small><button class="test-voice-btn" data-voice="avigail">▶️</button></div>
+                                        <div class="voice-opt" data-voice="hila"><b>Hila</b><button class="test-voice-btn" data-voice="hila">▶️</button></div>
+                                        <div class="voice-opt" data-voice="asaf"><b>Asaf</b><button class="test-voice-btn" data-voice="asaf">▶️</button></div>
+                                    </div>
+                                </div>
+                                <div class="sys-card">
+                                    <h4>📊 בריאות</h4>
+                                    <div id="healthInfo" class="health-info">טוען...</div>
+                                </div>
+                                <div class="sys-card">
+                                    <h4>🧠 פרופיל</h4>
+                                    <div id="profileInfo" class="profile-info">טוען...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- RIGHT PANEL -->
+            <aside class="hud-panel right-panel">
+                <div class="panel quick-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">⚡</span>
+                        <span class="panel-title">פקודות מהירות</span>
+                    </div>
+                    <div class="panel-content quick-grid">
+                        <button class="quick-btn" id="btnWake">🎤 אדיאל ג'וניור</button>
+                        <button class="quick-btn" id="btnScreen">🖥️ סרוק מסך</button>
+                        <button class="quick-btn" id="btnTrain">🧠 אמן AI</button>
+                        <button class="quick-btn" id="btnFix">🛠️ תקן</button>
+                    </div>
+                </div>
+
+                <div class="panel tasks-mini-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">🚀</span>
+                        <span class="panel-title">משימות פעילות</span>
+                        <span class="panel-badge" id="tasksBadge">0</span>
+                    </div>
+                    <div class="panel-content" id="tasksMiniList">
+                        <div class="placeholder-holo small">אין משימות - תגיד "תקנה לי..." או "תזמין טיסה..."</div>
+                    </div>
+                </div>
+
+                <div class="panel system-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">📡</span>
+                        <span class="panel-title">מערכת</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="sys-metric"><label>Backend</label><span id="backendStatus" class="status-ok">● מחובר</span></div>
+                        <div class="sys-metric"><label>True AI</label><span id="trueAIStatus">🧠 Vocab 256</span></div>
+                        <div class="sys-metric"><label>Mic</label><span id="micStatusMini">Default</span></div>
+                        <div class="sys-metric"><label>Voice</label><span>✨ מקורי</span></div>
+                        <div class="sys-metric"><label>Tasks</label><span id="tasksCountMini">0 משימות</span></div>
+                    </div>
+                </div>
+
+                <div class="panel logs-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">📜</span>
+                        <span class="panel-title">לוג חי</span>
+                    </div>
+                    <div class="panel-content logs-content" id="logsContent">
+                        <div class="log-line">[System] Adiel Junior MARK 85 initialized</div>
+                        <div class="log-line">[AI] True AI model loaded - Vocab 256</div>
+                        <div class="log-line">[Voice] Original voice - 8 samples</div>
+                        <div class="log-line">[Mic] Default device</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Bottom Console -->
+        <footer class="hud-bottom-console">
+            <div class="console-left">
+                <div class="console-prompt">ADIEL://</div>
+                <div class="console-visualizer" id="bottomVisualizer">
+                    <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+                    <div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div>
+                </div>
+            </div>
+            
+            <div class="console-center">
+                <div class="input-holo">
+                    <input type="text" id="textInput" placeholder="דבר עם אדיאל... היא זוכרת הכל, עם קול מקורי ומוח אמיתי" autocomplete="off" />
+                    <button id="btnSend" class="send-holo">➤</button>
+                </div>
+                <div class="input-hints">
+                    <span>💡 נסה: "תקנה לי...", "תזמין טיסה...", "תחקור על...", "מה את זוכרת עלי?"</span>
+                </div>
+            </div>
+
+            <div class="console-right">
+                <div class="conn-indicator">
+                    <div class="conn-dot" id="connDot"></div>
+                    <span id="connText">מחוברת</span>
+                </div>
+                <button class="action-btn" id="btnClear">🗑️ נקה</button>
+            </div>
+        </footer>
+
+        <!-- Orb Mode (hidden by default) -->
+        <div class="orb-mode hidden" id="orbContent">
+            <div class="orb-core-large">
+                <canvas id="orbCanvas" width="200" height="200"></canvas>
+                <div class="orb-pulse-large"></div>
+                <div class="orb-label">ADIEL</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./advanced_animations.js"></script>
+    <script src="./super_hud.js"></script>
+    <script src="./advanced_hud.js"></script>
+</body>
+</html>
