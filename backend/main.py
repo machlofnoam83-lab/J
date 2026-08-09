@@ -75,6 +75,15 @@ except Exception as e:
     print(f"[Main] STT import failed: {e}")
     HebrewSTT = None
 
+# Fast STT - חדש! לדיבור מהיר
+try:
+    from audio.fast_stt import HebrewFastSTT, get_fast_stt
+    print("[Main] ⚡ Fast STT loaded - מבין דיבור מהיר!")
+    HAS_FAST_STT = True
+except Exception as e:
+    print(f"[Main] Fast STT not available: {e}")
+    HAS_FAST_STT = False
+
 try:
     from audio.tts import get_tts_engine, HebrewTTS
 except Exception as e:
@@ -87,6 +96,16 @@ try:
 except Exception as e:
     print(f"[Main] Vision import failed: {e}")
     get_vision_engine = lambda: None
+
+# Advanced Reader - חדש! קריאת טקסט חכמה
+try:
+    from vision.advanced_reader import get_advanced_reader
+    print("[Main] 📖 Advanced Reader loaded - קורא טקסט חכם RTL")
+    HAS_ADV_READER = True
+except Exception as e:
+    print(f"[Main] Advanced Reader not available: {e}")
+    HAS_ADV_READER = False
+    get_advanced_reader = lambda: None
 
 try:
     from tools.system_tools import get_system_tools
@@ -107,6 +126,16 @@ try:
 except Exception as e:
     print(f"[Main] Task Orchestrator not available: {e}")
     get_task_orchestrator = lambda: None
+
+# AI Voice Generator - חדש! מייצר קול לכל שאלה
+try:
+    from audio.ai_voice import get_ai_voice
+    print("[Main] 🔊 AI Voice Generator loaded - קול AI לכל שאלה!")
+    HAS_AI_VOICE = True
+except Exception as e:
+    print(f"[Main] AI Voice not available: {e}")
+    HAS_AI_VOICE = False
+    get_ai_voice = lambda: None
 
 # Init FastAPI
 app = FastAPI(title="Adiel Junior Backend", version="1.0.0")
@@ -203,16 +232,32 @@ async def startup_event():
         print(f"[Startup] TTS failed: {e}")
 
     try:
-        stt_engine = HebrewSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
-        print("[Startup] STT OK")
+        # נסה Fast STT קודם - לדיבור מהיר
+        if HAS_FAST_STT:
+            try:
+                from audio.fast_stt import HebrewFastSTT
+                stt_engine = HebrewFastSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
+                print(f"[Startup] Fast STT OK (fast speech) - {stt_engine.model_size}")
+            except Exception as e:
+                print(f"[Startup] Fast STT failed, falling back to regular: {e}")
+                stt_engine = HebrewSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
+                print("[Startup] STT OK (regular)")
+        else:
+            stt_engine = HebrewSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
+            print("[Startup] STT OK")
     except Exception as e:
         print(f"[Startup] STT failed: {e}")
+        import traceback; traceback.print_exc()
 
     try:
         vision_engine = get_vision_engine()
-        print("[Startup] Vision OK")
+        print("[Startup] Vision (screen capture) OK")
+        if HAS_ADV_READER:
+            adv_reader = get_advanced_reader()
+            print(f"[Startup] Advanced Reader OK - EasyOCR:{adv_reader.has_easyocr} Tesseract:{adv_reader.has_tesseract}")
     except Exception as e:
         print(f"[Startup] Vision failed: {e}")
+        import traceback; traceback.print_exc()
 
     try:
         system_tools = get_system_tools()
@@ -770,12 +815,106 @@ async def chat_endpoint(req: TextInputRequest):
 
 @app.get("/screen")
 async def screen_endpoint():
-    """צילום מסך + context"""
+    """צילום מסך + context עם קריאת טקסט חכמה"""
     if not vision_engine:
         raise HTTPException(500, "Vision not available")
+    
+    # נסה קריאה מתקדמת קודם
+    if HAS_ADV_READER:
+        try:
+            adv_reader = get_advanced_reader()
+            result = adv_reader.read_screen()
+            if result["success"]:
+                b64 = vision_engine.get_base64_for_api(max_size=800) if vision_engine else None
+                return {
+                    "context": result["full_text"],
+                    "advanced": result,
+                    "understanding": adv_reader.understand_text(result["full_text"]),
+                    "image_base64": b64[:100] + "..." if b64 and len(b64)>100 else b64,
+                    "method": "advanced_reader"
+                }
+        except Exception as e:
+            print(f"[Screen] Advanced reader failed, fallback: {e}")
+    
+    # Fallback ישן
     ctx = vision_engine.analyze_screen_context(include_ocr=True)
     b64 = vision_engine.get_base64_for_api(max_size=800)
-    return {"context": ctx, "image_base64": b64[:100] + "..." if b64 and len(b64)>100 else b64}
+    return {"context": ctx, "image_base64": b64[:100] + "..." if b64 and len(b64)>100 else b64, "method": "basic"}
+
+@app.post("/vision/read-text")
+async def read_text_endpoint(request: Dict):
+    """קריאת טקסט מתקדמת - מקבל תמונה base64 או URL"""
+    try:
+        if HAS_ADV_READER:
+            reader = get_advanced_reader()
+            image_b64 = request.get("image_base64", "")
+            question = request.get("question", "")
+            
+            if image_b64:
+                import base64
+                from PIL import Image
+                import io
+                
+                # Decode base64
+                if "," in image_b64:
+                    image_b64 = image_b64.split(",")[1]
+                img_data = base64.b64decode(image_b64)
+                img = Image.open(io.BytesIO(img_data))
+                
+                blocks = reader.read_image(image=img)
+                full_text = " ".join([b.text for b in blocks])
+                understanding = reader.understand_text(full_text, question=question)
+                
+                return {
+                    "success": True,
+                    "full_text": full_text,
+                    "blocks": len(blocks),
+                    "understanding": understanding,
+                    "message": f"קראתי {len(blocks)} בלוקים, {len(full_text)} תווים"
+                }
+        
+        return {"success": False, "error": "Advanced reader not available"}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/audio/transcribe-fast")
+async def transcribe_fast_endpoint(request: Dict):
+    """תמלול דיבור מהיר - עם preprocessing"""
+    try:
+        # קבל audio base64
+        audio_b64 = request.get("audio_base64", "")
+        if not audio_b64:
+            raise HTTPException(400, "audio_base64 required")
+        
+        import base64
+        import numpy as np
+        
+        if "," in audio_b64:
+            audio_b64 = audio_b64.split(",")[1]
+        audio_bytes = base64.b64decode(audio_b64)
+        audio = np.frombuffer(audio_bytes, dtype=np.float32)
+        
+        if HAS_FAST_STT:
+            from audio.fast_stt import get_fast_stt
+            stt = get_fast_stt()
+            text = stt.transcribe_fast(audio)
+            return {
+                "success": True,
+                "text": text,
+                "method": "fast_stt",
+                "message": f"תמללתי דיבור מהיר: '{text}'"
+            }
+        else:
+            # Fallback לרגיל
+            if stt_engine:
+                text = stt_engine.transcribe_audio(audio)
+                return {"success": True, "text": text, "method": "regular"}
+            else:
+                raise HTTPException(500, "STT not available")
+                
+    except Exception as e:
+        print(f"[Transcribe Fast] Error: {e}")
+        raise HTTPException(500, str(e))
 
 # Core logic
 async def handle_wake_word(detected_text: str):
@@ -810,16 +949,26 @@ async def handle_wake_word(detected_text: str):
         })
 
         try:
-            result = await tts_engine.synthesize(ack, play=True)
-            # result יכול להיות (path, base64) או path
-            audio_b64 = None
-            if isinstance(result, tuple):
-                _, audio_b64 = result
+            # נסה AI Voice קודם
+            ack_b64 = None
+            if HAS_AI_VOICE:
+                try:
+                    from audio.ai_voice import get_ai_voice
+                    ai_voice = get_ai_voice()
+                    _, ack_b64 = await ai_voice.generate_voice_for_any_question(ack, play=True)
+                except:
+                    pass
+            
+            if not ack_b64 and tts_engine:
+                result = await tts_engine.synthesize(ack, play=True)
+                if isinstance(result, tuple):
+                    _, ack_b64 = result
             
             await manager.broadcast({
                 "type": "assistant_speaking",
                 "text": ack,
-                "audio_base64": audio_b64
+                "audio_base64": ack_b64,
+                "has_voice": ack_b64 is not None
             })
         except Exception as e:
             print(f"[Main] TTS ack failed: {e}")
@@ -968,23 +1117,55 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
             "command": hud_cmd
         })
 
-    # TTS - תיקון באג
+    # TTS - AI Voice Generator - תמיד עם קול לכל שאלה!
     tts_audio_b64 = None
-    if tts_engine and response_text:
+    if response_text:
         try:
-            tts_result = await tts_engine.synthesize(response_text, play=True)
-            if isinstance(tts_result, tuple):
-                _, tts_audio_b64 = tts_result
-            elif isinstance(tts_result, str) and tts_result.startswith("data:audio"):
-                tts_audio_b64 = tts_result
+            # נסה AI Voice Generator קודם - קול AI אמיתי לכל שאלה
+            if HAS_AI_VOICE:
+                try:
+                    from audio.ai_voice import get_ai_voice
+                    ai_voice = get_ai_voice()
+                    ai_path, ai_b64 = await ai_voice.generate_voice_for_any_question(response_text, play=True)
+                    if ai_b64:
+                        tts_audio_b64 = ai_b64
+                        print(f"[Main] 🔊 AI Voice generated for ANY question: {response_text[:30]}...")
+                    elif ai_path:
+                        # אם יש קובץ אבל לא base64, צור base64
+                        import base64
+                        from pathlib import Path
+                        if Path(ai_path).exists():
+                            data = Path(ai_path).read_bytes()
+                            b64 = base64.b64encode(data).decode()
+                            tts_audio_b64 = f"data:audio/mpeg;base64,{b64}" if str(ai_path).endswith('.mp3') else f"data:audio/wav;base64,{b64}"
+                except Exception as e:
+                    print(f"[Main] AI Voice failed, fallback to TTS: {e}")
+            
+            # Fallback ל-TTS הרגיל אם AI Voice לא הצליח
+            if not tts_audio_b64 and tts_engine:
+                tts_result = await tts_engine.synthesize(response_text, play=True)
+                if isinstance(tts_result, tuple):
+                    _, tts_audio_b64 = tts_result
+                elif isinstance(tts_result, str) and tts_result.startswith("data:audio"):
+                    tts_audio_b64 = tts_result
             
             await manager.broadcast({
                 "type": "assistant_speaking",
                 "text": response_text,
-                "audio_base64": tts_audio_b64
+                "audio_base64": tts_audio_b64,
+                "has_voice": tts_audio_b64 is not None,
+                "voice_type": "ai_original" if tts_audio_b64 else "none"
             })
         except Exception as e:
-            print(f"[Main] TTS failed: {e}")
+            print(f"[Main] TTS/AI Voice failed: {e}")
+            import traceback; traceback.print_exc()
+            # גם אם נכשל, שלח טקסט בלי קול כדי שלא יקרוס
+            await manager.broadcast({
+                "type": "assistant_speaking",
+                "text": response_text,
+                "audio_base64": None,
+                "has_voice": False
+            })
 
     app_state.activate_conversation(duration=15)
 
