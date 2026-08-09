@@ -190,7 +190,7 @@ class HebrewTTS:
 
     async def synthesize(self, text: str, play=True) -> Optional[Tuple[str, Optional[str]]]:
         """
-        מסנתז טקסט - עם fallback chain אוטומטי
+        מסנתז טקסט - עם קול מקורי חדש + fallback chain אוטומטי
         מחזיר (path, base64) - base64 ל-frontend playback
         """
         if not text or not text.strip():
@@ -204,6 +204,20 @@ class HebrewTTS:
         output_path = os.path.join(self.temp_dir, f"adiel_{file_id}.mp3")
         
         print(f"[TTS] Synthesizing: '{clean_text[:50]}...'")
+
+        # נסיון 0: קול מקורי חדש שיצרנו במיוחד - אם יש התאמה למשפט נפוץ
+        try:
+            from .custom_voice import get_custom_voice_for_text
+            custom_path = get_custom_voice_for_text(clean_text)
+            if custom_path and custom_path.exists():
+                print(f"[TTS] ✓ Using ORIGINAL custom voice: {custom_path.name} for '{clean_text[:30]}'")
+                b64 = self._file_to_base64(str(custom_path))
+                if play and HAS_PYGAME:
+                    self._play_audio(str(custom_path))
+                # גם frontend ינגן את ה-base64
+                return str(custom_path), b64
+        except Exception as e:
+            print(f"[TTS] Custom voice check failed: {e}")
         
         # נסיון 1: edge-tts (הכי טוב לעברית)
         if HAS_EDGE:

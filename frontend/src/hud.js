@@ -663,14 +663,16 @@ class AdielHUD {
         const text = input.value.trim();
         if (!text) return;
 
+        // חכם: רק אם שואל על מסך, שלח עם מסך - לא על "היי"
+        const screenKeywords = ["מסך", "רואה", "שגיאה", "קוד", "מה פתוח", "תסרוק", "תבדוק", "מה יש"];
+        const needsScreen = screenKeywords.some(kw => text.includes(kw));
+        
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
                 type: 'text',
                 text: text,
-                with_screen: true
+                with_screen: needsScreen
             }));
-            // Optimistically add user message, will be duplicated maybe but ok
-            // Actually backend will echo, so don't double - wait
             this.addMessage('user', text);
             input.value = '';
         } else {
