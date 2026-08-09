@@ -28,6 +28,15 @@ except:
     HAS_SELF_UPDATE = False
     print("[Brain] Self-update manager not available")
 
+# מודל AI אמיתי מאפס - חדש!
+try:
+    from .true_ai_model import get_true_ai
+    HAS_TRUE_AI = True
+    print("[Brain] 🧠 True AI Model - Real model from scratch loaded")
+except Exception as e:
+    HAS_TRUE_AI = False
+    print(f"[Brain] True AI not available: {e}")
+
 # אופציונלי - LLM חיצוני כ-power up
 try:
     import ollama
@@ -70,6 +79,15 @@ class AdielBrain:
                     print(f"[Brain] 🤖 יש {pending} הצעות לשיפור שממתינות לאישורך בוס!")
             except Exception as e:
                 print(f"[Brain] Self-update init failed: {e}")
+
+        # מודל AI אמיתי
+        self.true_ai = None
+        if HAS_TRUE_AI:
+            try:
+                self.true_ai = get_true_ai()
+                print(f"[Brain] ✨ True AI active - Vocab {self.true_ai.tokenizer.vocab_size}, Markov {len(self.true_ai.markov.chain)}")
+            except Exception as e:
+                print(f"[Brain] True AI init failed: {e}")
         
         # קונפיגורציה
         self.use_cloud_llm = os.getenv("ALLOW_CLOUD_LLM", "false").lower() == "true"
@@ -405,7 +423,26 @@ class AdielBrain:
             return None
 
     def _generate_local_response(self, user_text: str, intent: str, screen_context: Optional[str], relevant_memories: list, user_profile: Dict = None) -> str:
-        """המוח הפרטי האמיתי - NLG מקומי עם זיכרון חכם ממומש מאפס"""
+        """המוח הפרטי האמיתי - עכשיו עם True AI Model מאפס, לא תבניות!"""
+
+        # NEW: נסה True AI קודם - מודל אמיתי מאפס
+        if self.true_ai:
+            try:
+                # הכן context
+                context = {}
+                if user_profile:
+                    context = user_profile
+                if self.learning_engine:
+                    context.update(self.learning_engine.get_user_profile_summary())
+                
+                true_response = self.true_ai.generate_response(user_text, context=context)
+                if true_response and len(true_response) > 5:
+                    # למד מהאינטראקציה
+                    self.true_ai.learn_from_interaction(user_text, true_response)
+                    print(f"[Brain] ✨ True AI generated: {true_response[:60]}...")
+                    return true_response
+            except Exception as e:
+                print(f"[Brain] True AI failed: {e}")
 
         # אם יש הקשר מסך
         if screen_context and intent == "screen_analysis":
