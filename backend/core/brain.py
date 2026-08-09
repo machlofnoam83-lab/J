@@ -1,43 +1,64 @@
 """
-Adiel Junior - Brain Engine v2.0 - עם למידה מתמשכת וזיכרון חכם
-המוח המרכזי - ממומש מאפס, פרטי לגמרי
-מנהל שיחה, זיכרון, כוונות, וכלים + מערכת למידה שמתעדכנת ומבקשת אישור
+Adiel Junior - Brain Engine v3.0 - עם LLM 6GB + דיבור מהיר + קריאת טקסט
+- זיכרון חכם
+- למידה עם אישור
+- True AI מאפס
+- LLM 6GB RAM (Phi-3, Llama 3.1 Q4) - מתאים ל-6GB
+- מבין דיבור מהיר
+- קורא טקסט
+- מייצר קול לכל תשובה
 """
 import os
 import random
 import datetime
 import asyncio
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 
 from .personality import ADIEL_SYSTEM_PROMPT, get_random_response
 from .memory import AdielMemory
 from .intents import HebrewIntentClassifier
 
-# מנועי למידה ועדכון עצמי - חדש!
+# למידה
 try:
     from .learning_engine import get_learning_engine
     HAS_LEARNING = True
 except:
     HAS_LEARNING = False
-    print("[Brain] Learning engine not available")
 
 try:
     from .self_update import get_self_update_manager
     HAS_SELF_UPDATE = True
 except:
     HAS_SELF_UPDATE = False
-    print("[Brain] Self-update manager not available")
 
-# מודל AI אמיתי מאפס - חדש!
+# True AI מאפס
 try:
     from .true_ai_model import get_true_ai
     HAS_TRUE_AI = True
-    print("[Brain] 🧠 True AI Model - Real model from scratch loaded")
-except Exception as e:
+except:
     HAS_TRUE_AI = False
-    print(f"[Brain] True AI not available: {e}")
 
-# אופציונלי - LLM חיצוני כ-power up
+# LLM 6GB - חדש!
+try:
+    from .llm_6gb import get_llm_6gb
+    HAS_LLM_6GB = True
+except:
+    HAS_LLM_6GB = False
+
+# דיבור מהיר
+try:
+    from ..audio.fast_stt import FastSpeechProcessor
+    HAS_FAST_STT = True
+except:
+    HAS_FAST_STT = False
+
+# קריאת טקסט
+try:
+    from ..vision.advanced_reader import get_advanced_reader
+    HAS_ADV_READER = True
+except:
+    HAS_ADV_READER = False
+
 try:
     import ollama
     HAS_OLLAMA = True
@@ -52,85 +73,105 @@ except:
 
 
 class AdielBrain:
-    """
-    מוח פרטי לאדיאל - עובד גם בלי אינטרנט
-    עכשיו עם זיכרון חכם שגדל בכל שיחה + למידה שדורשת אישור
-    """
     def __init__(self):
         self.memory = AdielMemory()
         self.intent_classifier = HebrewIntentClassifier()
         
-        # מנועי למידה חדשים
         self.learning_engine = None
         self.self_update_manager = None
+        self.true_ai = None
+        self.llm_6gb = None
+        self.fast_processor = None
+        self.advanced_reader = None
         
         if HAS_LEARNING:
             try:
                 self.learning_engine = get_learning_engine()
-                print(f"[Brain] 🧠 מנוע למידה: זוכר {self.learning_engine.get_user_profile_summary().get('interaction_count', 0)} שיחות, {self.learning_engine.get_user_profile_summary().get('vocab_learned', 0)} מילים")
+                print(f"[Brain] 🧠 למידה: {self.learning_engine.get_user_profile_summary().get('interaction_count',0)} שיחות")
             except Exception as e:
-                print(f"[Brain] Learning engine init failed: {e}")
+                print(f"[Brain] Learning failed: {e}")
         
         if HAS_SELF_UPDATE:
             try:
                 self.self_update_manager = get_self_update_manager()
-                pending = len(self.self_update_manager.get_pending_updates())
-                if pending > 0:
-                    print(f"[Brain] 🤖 יש {pending} הצעות לשיפור שממתינות לאישורך בוס!")
-            except Exception as e:
-                print(f"[Brain] Self-update init failed: {e}")
+            except:
+                pass
 
-        # מודל AI אמיתי
-        self.true_ai = None
         if HAS_TRUE_AI:
             try:
                 self.true_ai = get_true_ai()
-                print(f"[Brain] ✨ True AI active - Vocab {self.true_ai.tokenizer.vocab_size}, Markov {len(self.true_ai.markov.chain)}")
+                print(f"[Brain] ✨ True AI: Vocab {self.true_ai.tokenizer.vocab_size}")
             except Exception as e:
-                print(f"[Brain] True AI init failed: {e}")
+                print(f"[Brain] True AI failed: {e}")
+
+        if HAS_LLM_6GB:
+            try:
+                self.llm_6gb = get_llm_6gb(model_preference="auto")
+                info = self.llm_6gb.get_info()
+                print(f"[Brain] 🚀 LLM 6GB: {info['model_name']} backend={info['backend']} RAM={info['available_ram_gb']}GB")
+            except Exception as e:
+                print(f"[Brain] LLM 6GB failed: {e}")
+
+        if HAS_FAST_STT:
+            try:
+                self.fast_processor = FastSpeechProcessor()
+                print(f"[Brain] ⚡ Fast Speech Processor - מבין דיבור מהיר!")
+            except:
+                pass
+
+        if HAS_ADV_READER:
+            try:
+                self.advanced_reader = get_advanced_reader()
+                print(f"[Brain] 📖 Advanced Reader - קורא טקסט חכם")
+            except:
+                pass
         
-        # קונפיגורציה
         self.use_cloud_llm = os.getenv("ALLOW_CLOUD_LLM", "false").lower() == "true"
         self.ollama_model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
-        
-        # מצב נוכחי
         self.conversation_turns = 0
-        self.last_proposals = []  # הצעות מהשיחה האחרונה
         
-        print("[Brain] אדיאל ג'וניור התעוררה - המוח הפרטי v2.0 עם זיכרון מתעדכן")
+        print("[Brain] אדיאל v3.0 - LLM 6GB + דיבור מהיר + קריאת טקסט + קול לכל תשובה")
 
     async def process(self, user_text: str, screen_context: Optional[str] = None) -> Dict[str, Any]:
-        """
-        עיבוד ראשי - מקבל טקסט + הקשר מסך ומחזיר תשובה + פעולות + הצעות למידה
-        """
         self.conversation_turns += 1
-        print(f"[Brain] מעבד: '{user_text}' | intent checking...")
 
-        # 1. סיווג כוונה
+        # --- שיפור לדיבור מהיר: ניקוי ותיקון ---
+        original_text = user_text
+        if self.fast_processor:
+            user_text = self.fast_processor.postprocess_text(user_text)
+            if user_text != original_text:
+                print(f"[Brain] Fast speech fix: '{original_text}' -> '{user_text}'")
+
+        print(f"[Brain] מעבד: '{user_text}'")
+        
         intent_result = self.intent_classifier.classify(user_text)
         intent = intent_result["intent"]
         confidence = intent_result["confidence"]
         entities = intent_result["entities"]
+        print(f"[Brain] Intent: {intent} ({confidence:.2f})")
 
-        print(f"[Brain] Intent: {intent} ({confidence:.2f}) | Entities: {entities}")
-
-        # 2. חיפוש בזיכרון רלוונטי (ישן)
         relevant_memories = self.memory.search_relevant_memories(user_text, top_k=2)
-
-        # 2.5 - NEW: הקשר חכם מהלמידה המתמשכת
+        
         smart_context = ""
         user_profile_summary = {}
         if self.learning_engine:
             smart_context = self.learning_engine.get_smart_context()
             user_profile_summary = self.learning_engine.get_user_profile_summary()
-            print(f"[Brain] Smart context: {smart_context[:100]}...")
 
-        # 3. שמירת עובדות אם צריך (ישן) - עכשיו רק אם אין מנוע למידה חדש
-        if (intent == "memory_save" or "תזכור" in user_text or "תזכרי" in user_text) and not self.learning_engine:
-            self.memory.extract_and_save_facts(user_text)
+        # אם זה בקשת קריאת טקסט
+        if any(kw in user_text.lower() for kw in ["תקרא", "קורא", "טקסט", "מה כתוב", "read text"]):
+            if self.advanced_reader and screen_context:
+                # screen_context כבר מכיל טקסט, אבל נוסיף הבנה
+                understanding = self.advanced_reader.understand_text(screen_context, question=user_text)
+                if understanding["success"]:
+                    # הוסף לסיכום המסך
+                    screen_context += f"\n\n[קריאת טקסט חכמה]: {understanding['summary']}"
+                    if understanding["keywords"]:
+                        screen_context += f"\nמילות מפתח: {', '.join(understanding['keywords'][:5])}"
+                    if understanding["answer"]:
+                        screen_context += f"\nתשובה לשאלה: {understanding['answer']}"
 
-        # 4. טיפול בכוונות ספציפיות (ללא צורך ב-LLM)
         action_result = await self._handle_intent(intent, entities, user_text, screen_context)
         
         if action_result.get("handled_locally"):
@@ -138,50 +179,32 @@ class AdielBrain:
             hud_command = action_result.get("hud_command")
             system_action = action_result.get("system_action")
         else:
-            # 5. יצירת תשובה - נסה LLM, אחרת תבנית מקומית עם הזיכרון החכם
             response_text = await self._generate_response(
                 user_text, intent, entities, screen_context, relevant_memories, smart_context, user_profile_summary
             )
             hud_command = action_result.get("hud_command")
             system_action = action_result.get("system_action")
 
-        # 6. שמירה בזיכרון קצר טווח בלבד (לא עובדות קבועות - זה עובר דרך הצעות למידה עם אישור)
         self.memory.add_conversation(user_text, response_text)
-        # אם אין מנוע למידה חדש, שמור עובדות ישירות (fallback)
         if not self.learning_engine:
             self.memory.extract_and_save_facts(user_text)
 
-        # 7. NEW: עיבוד למידה - יוצר הצעות לשיפור שדורשות אישור
         proposals = []
         if self.learning_engine:
             try:
                 new_proposals = self.learning_engine.process_interaction(user_text, response_text, intent_result)
                 proposals.extend(new_proposals)
-                self.last_proposals = new_proposals
-                
-                # אם יש הצעות, הוסף לרספונס הודעה שאדיאל רוצה ללמוד
-                if new_proposals:
-                    # אל תוסיף כל פעם, רק אם יש מילים חדשות או עובדות חשובות
-                    important = [p for p in new_proposals if p["type"] in ["vocabulary", "profile_new", "fact"]]
-                    if important and len(user_text.split()) > 2:
-                        # הוסף hint לתשובה
-                        if any(p["type"] == "profile_new" for p in important):
-                            # אם למדנו שם חדש, תגיב עם זה
-                            pass  # תשובה כבר טופלה
             except Exception as e:
-                print(f"[Brain] Learning process failed: {e}")
-                import traceback; traceback.print_exc()
+                print(f"[Brain] Learning failed: {e}")
 
-        # 8. NEW: בדוק אם המוח עצמו רוצה להשתפר (self-update) - רק אם יש מספיק שיחות
         self_updates = []
-        if self.self_update_manager and self.conversation_turns % 5 == 0:  # כל 5 שיחות בדוק
+        if self.self_update_manager and self.conversation_turns % 5 == 0:
             try:
-                # אוטו-זיהוי שיפורים
                 history = [{"content": m["content"], "role": m["role"]} for m in self.memory.short_term[-10:]]
                 auto_proposals = self.self_update_manager.auto_detect_improvements(history)
                 self_updates.extend(auto_proposals)
-            except Exception as e:
-                print(f"[Brain] Self-update detection failed: {e}")
+            except:
+                pass
 
         return {
             "text": response_text,
@@ -191,152 +214,113 @@ class AdielBrain:
             "system_action": system_action,
             "screen_context_used": screen_context is not None,
             "memory_count": len(self.memory.long_term.get("conversations", [])),
-            # חדש - הצעות למידה שדורשות אישור
             "proposals": proposals,
             "self_updates": self_updates,
             "smart_context": smart_context,
             "user_profile": user_profile_summary,
-            "learning_active": self.learning_engine is not None
+            "learning_active": self.learning_engine is not None,
+            "voice_enabled": True,  # תמיד עם קול!
+            "fast_speech_fixed": original_text != user_text
         }
 
     async def _handle_intent(self, intent: str, entities: Dict, user_text: str, screen_context: Optional[str]) -> Dict:
-        """טיפול בכוונות שמתבצעות לוקלית לגמרי - ללא LLM"""
-        
-        # --- HUD CONTROL ---
         if intent == "hud_dock_side":
-            return {
-                "handled_locally": True,
-                "response": get_random_response("hud_dock"),
-                "hud_command": {"action": "dock", "position": "right"}
-            }
+            return {"handled_locally": True, "response": get_random_response("hud_dock"), "hud_command": {"action": "dock", "position": "right"}}
         elif intent == "hud_center":
-            return {
-                "handled_locally": True,
-                "response": get_random_response("hud_center"),
-                "hud_command": {"action": "center"}
-            }
+            return {"handled_locally": True, "response": get_random_response("hud_center"), "hud_command": {"action": "center"}}
         elif intent == "hud_hide":
-            return {
-                "handled_locally": True,
-                "response": get_random_response("hud_hide"),
-                "hud_command": {"action": "hide"}
-            }
+            return {"handled_locally": True, "response": get_random_response("hud_hide"), "hud_command": {"action": "hide"}}
         elif intent == "hud_show":
-            return {
-                "handled_locally": True,
-                "response": "אני כאן, בוס! מה צריך?",
-                "hud_command": {"action": "show"}
-            }
+            return {"handled_locally": True, "response": "אני כאן, בוס! מה צריך?", "hud_command": {"action": "show"}}
 
-        # --- TIME ---
         elif intent == "time_date":
             now = datetime.datetime.now()
             hebrew_days = ["שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון"]
             day = hebrew_days[now.weekday()]
-            response = f"עכשיו {now.strftime('%H:%M')}, יום {day}, {now.strftime('%d/%m/%Y')}, בוס."
-            return {"handled_locally": True, "response": response}
+            return {"handled_locally": True, "response": f"עכשיו {now.strftime('%H:%M')}, יום {day}, {now.strftime('%d/%m/%Y')}, בוס."}
 
-        # --- MEMORY / PROFILE QUERIES - NEW ---
-        elif "מה אתה זוכר" in user_text or "מה את זוכרת" in user_text or "מה אתה יודע עלי" in user_text:
+        elif "מה אתה זוכר" in user_text or "מה את זוכרת" in user_text:
             if self.learning_engine:
                 summary = self.learning_engine.get_user_profile_summary()
                 smart = self.learning_engine.get_smart_context()
                 resp = f"בוס, אני זוכרת: {smart} "
                 if summary.get("name"):
                     resp += f"קוראים לך {summary['name']}. "
-                if summary.get("projects"):
-                    resp += f"אתה עובד על {', '.join(summary['projects'])}. "
-                resp += f"למדתי {summary.get('vocab_learned', 0)} מילים ממך ו-{summary.get('interaction_count', 0)} שיחות. רוצה שאספר עוד?"
+                resp += f"למדתי {summary.get('vocab_learned',0)} מילים ו-{summary.get('interaction_count',0)} שיחות."
                 return {"handled_locally": True, "response": resp}
             else:
                 return {"handled_locally": True, "response": self.memory.get_context_string()[:300] or "עדיין לומדת להכיר אותך, בוס."}
 
-        # --- SCREEN ANALYSIS (local part) ---
         elif intent == "screen_analysis":
             if not screen_context:
-                return {
-                    "handled_locally": False,
-                    "response": None,
-                    "hud_command": None
-                }
+                return {"handled_locally": False, "response": None}
 
-        # --- SYSTEM ACTIONS ---
         elif intent == "system_open":
             app = entities.get("app") or entities.get("app_query", "unknown")
-            return {
-                "handled_locally": True,
-                "response": f"על זה, פותחת {entities.get('app_he', app)}.",
-                "system_action": {"type": "open_app", "app": app, "query": entities.get("app_query")}
-            }
+            return {"handled_locally": True, "response": f"על זה, פותחת {entities.get('app_he', app)}.", "system_action": {"type": "open_app", "app": app}}
         elif intent == "system_volume":
-            if "גביר" in user_text or "להגביר" in user_text or "יותר חזק" in user_text:
-                vol_action = "up"
-                resp = "מגבירה, בוס."
-            elif "נמיך" in user_text or "להנמיך" in user_text or "חלש" in user_text:
-                vol_action = "down"
-                resp = "מנמיכה."
-            elif "השתק" in user_text or "mute" in user_text or "שקט" in user_text:
-                vol_action = "mute"
-                resp = "סגור, משתיקה."
+            if "גביר" in user_text:
+                return {"handled_locally": True, "response": "מגבירה, בוס.", "system_action": {"type": "volume", "action": "up"}}
+            elif "נמיך" in user_text:
+                return {"handled_locally": True, "response": "מנמיכה.", "system_action": {"type": "volume", "action": "down"}}
+            elif "השתק" in user_text:
+                return {"handled_locally": True, "response": "משתיקה.", "system_action": {"type": "volume", "action": "mute"}}
             else:
-                vol_action = "toggle"
-                resp = "מטפלת בווליום."
-            return {
-                "handled_locally": True,
-                "response": resp,
-                "system_action": {"type": "volume", "action": vol_action}
-            }
+                return {"handled_locally": True, "response": "מטפלת בווליום.", "system_action": {"type": "volume", "action": "toggle"}}
         elif intent == "system_search":
             query = entities.get("query", user_text)
-            return {
-                "handled_locally": True,
-                "response": f"מחפשת בגוגל: {query}",
-                "system_action": {"type": "search", "query": query}
-            }
+            return {"handled_locally": True, "response": f"מחפשת בגוגל: {query}", "system_action": {"type": "search", "query": query}}
 
-        # --- MEMORY SAVE ---
         elif intent == "memory_save":
-            # עם למידה חדשה, זה ייצור הצעה מסודרת
             if self.learning_engine:
-                return {
-                    "handled_locally": False,  # תן ל-process ליצור הצעה מסודרת
-                    "response": None
-                }
-            return {
-                "handled_locally": True,
-                "response": "קלטתי, שמרתי את זה בזיכרון, בוס. לא אשכח."
-            }
+                return {"handled_locally": False, "response": None}
+            return {"handled_locally": True, "response": "קלטתי, שמרתי בזיכרון, בוס."}
 
-        # --- GOODBYE ---
         elif intent == "goodbye":
             if self.learning_engine:
                 count = self.learning_engine.get_user_profile_summary().get("interaction_count", 0)
-                return {
-                    "handled_locally": True,
-                    "response": f"יאללה ביי בוס, דיברנו {count} פעמים היום ואני זוכרת הכל. אני כאן אם צריך."
-                }
-            return {
-                "handled_locally": True,
-                "response": random.choice(["יאללה ביי בוס, אני כאן אם צריך.", "סגור בוס, היה כיף. תקרא לי כשצריך.", "ביי בוס, שמה את עצמי על שקט."])
-            }
+                return {"handled_locally": True, "response": f"יאללה ביי בוס, דיברנו {count} פעמים היום ואני זוכרת הכל. אני כאן אם צריך."}
+            return {"handled_locally": True, "response": random.choice(["יאללה ביי בוס, אני כאן אם צריך.", "סגור בוס, היה כיף."])} 
 
-        # לא טופל לוקלית - צריך LLM / NLG כללי
         return {"handled_locally": False}
 
     async def _generate_response(self, user_text: str, intent: str, entities: Dict, 
                                  screen_context: Optional[str], relevant_memories: list,
                                  smart_context: str = "", user_profile: Dict = None) -> str:
-        """יצירת תשובה - היררכיה: Ollama Local -> OpenAI -> Local Templates עם זיכרון חכם"""
-
-        # בנה context משופר
+        """היררכיה: LLM 6GB -> Ollama -> OpenAI -> True AI -> Templates"""
         memory_context = self.memory.get_context_string()
         if smart_context:
-            memory_context += f"\n[זיכרון חכם מתעדכן]: {smart_context}"
-        
+            memory_context += f"\n[זיכרון חכם]: {smart_context}"
         if user_profile and user_profile.get("name"):
-            memory_context += f"\nשם הבוס: {user_profile['name']}"
-        
-        # נסה Ollama מקומי קודם (פרטי לגמרי)
+            memory_context += f"\nשם: {user_profile['name']}"
+
+        # 1. LLM 6GB - חדש! 6GB RAM
+        if hasattr(self, 'llm_6gb') and self.llm_6gb:
+            try:
+                system_with_memory = ADIEL_SYSTEM_PROMPT
+                if memory_context:
+                    system_with_memory += f"\n\nזיכרון:\n{memory_context}"
+                if screen_context:
+                    system_with_memory += f"\n\nמסך: {screen_context[:1000]}"
+                
+                # הוסף הקשר לדיבור מהיר
+                system_with_memory += "\n\nהמשתמש לפעמים מדבר מהר, תבין גם אם מילים ממוזגות או סלנג מהיר."
+                
+                response = self.llm_6gb.generate(
+                    prompt=user_text,
+                    system_prompt=system_with_memory,
+                    max_tokens=350,
+                    temperature=0.85
+                )
+                if response and len(response.strip()) > 10:
+                    print(f"[Brain] 🚀 LLM 6GB: {response[:80]}...")
+                    if self.true_ai:
+                        self.true_ai.learn_from_interaction(user_text, response)
+                    return response.strip()
+            except Exception as e:
+                print(f"[Brain] LLM 6GB failed: {e}")
+
+        # 2. Ollama
         if HAS_OLLAMA and not self.use_cloud_llm:
             try:
                 ollama_response = await self._try_ollama(user_text, screen_context, memory_context, intent)
@@ -345,7 +329,7 @@ class AdielBrain:
             except Exception as e:
                 print(f"[Brain] Ollama failed: {e}")
 
-        # נסה OpenAI אם מורשה
+        # 3. OpenAI
         if self.use_cloud_llm and HAS_OPENAI and self.openai_api_key:
             try:
                 openai_resp = await self._try_openai(user_text, screen_context, memory_context)
@@ -354,28 +338,15 @@ class AdielBrain:
             except Exception as e:
                 print(f"[Brain] OpenAI failed: {e}")
 
-        # Fallback - תבניות מקומיות חכמות עם זיכרון
+        # 4. True AI + קריאת טקסט חכמה
         return self._generate_local_response(user_text, intent, screen_context, relevant_memories, user_profile)
 
     async def _try_ollama(self, user_text: str, screen_context: Optional[str], memory_ctx: str, intent: str) -> Optional[str]:
-        """נסה Ollama מקומי"""
         try:
-            prompt = f"""{ADIEL_SYSTEM_PROMPT}
-
-הקשר זיכרון (את זוכרת את הבוס):
-{memory_ctx}
-
-הקשר מסך נוכחי:
-{screen_context or 'אין מידע מסך'}
-
-הודעת המשתמש: {user_text}
-כוונה: {intent}
-
-עני בעברית, קצר, בסגנון אדיאל ג'וניור. השתמשי בזיכרון החכם! אם יש מסך, נתח אותו ספציפית.
-"""
-
+            prompt = f"{ADIEL_SYSTEM_PROMPT}\n\nזיכרון:\n{memory_ctx}\n\nמסך:\n{screen_context or 'אין'}\n\nמשתמש: {user_text}\nכוונה: {intent}\n\nעני בעברית קצר, אדיאל ג'וניור:"
             def call_ollama():
                 try:
+                    import ollama
                     response = ollama.chat(model=self.ollama_model, messages=[
                         {"role": "system", "content": ADIEL_SYSTEM_PROMPT},
                         {"role": "user", "content": prompt}
@@ -383,132 +354,80 @@ class AdielBrain:
                     return response['message']['content']
                 except:
                     return None
-
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, call_ollama)
-            return result
-        except Exception as e:
-            print(f"[Ollama] Error: {e}")
+            return await loop.run_in_executor(None, call_ollama)
+        except:
             return None
 
     async def _try_openai(self, user_text: str, screen_context: Optional[str], memory_ctx: str) -> Optional[str]:
         if not self.openai_api_key:
             return None
         try:
+            from openai import OpenAI
             client = OpenAI(api_key=self.openai_api_key)
-            
             messages = [
                 {"role": "system", "content": ADIEL_SYSTEM_PROMPT},
             ]
             if memory_ctx:
-                messages.append({"role": "system", "content": f"זיכרון חכם:\n{memory_ctx}"})
+                messages.append({"role": "system", "content": f"זיכרון:\n{memory_ctx}"})
             if screen_context:
-                messages.append({"role": "system", "content": f"מה רואים במסך כרגע: {screen_context}"})
+                messages.append({"role": "system", "content": f"מסך: {screen_context[:1000]}"})
             messages.append({"role": "user", "content": user_text})
 
             def call_openai():
-                resp = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=messages,
-                    max_tokens=400,
-                    temperature=0.85
-                )
+                resp = client.chat.completions.create(model="gpt-4o-mini", messages=messages, max_tokens=350, temperature=0.8)
                 return resp.choices[0].message.content
 
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, call_openai)
-            return result
-        except Exception as e:
-            print(f"[OpenAI] Error: {e}")
+            return await loop.run_in_executor(None, call_openai)
+        except:
             return None
 
     def _generate_local_response(self, user_text: str, intent: str, screen_context: Optional[str], relevant_memories: list, user_profile: Dict = None) -> str:
-        """המוח הפרטי האמיתי - עכשיו עם True AI Model מאפס, לא תבניות!"""
-
-        # NEW: נסה True AI קודם - מודל אמיתי מאפס
+        # True AI
         if self.true_ai:
             try:
-                # הכן context
                 context = {}
                 if user_profile:
                     context = user_profile
                 if self.learning_engine:
                     context.update(self.learning_engine.get_user_profile_summary())
-                
                 true_response = self.true_ai.generate_response(user_text, context=context)
                 if true_response and len(true_response) > 5:
-                    # למד מהאינטראקציה
                     self.true_ai.learn_from_interaction(user_text, true_response)
-                    print(f"[Brain] ✨ True AI generated: {true_response[:60]}...")
+                    print(f"[Brain] ✨ True AI: {true_response[:60]}...")
                     return true_response
             except Exception as e:
                 print(f"[Brain] True AI failed: {e}")
 
-        # אם יש הקשר מסך
+        # מסך עם קריאת טקסט חכמה
         if screen_context and intent == "screen_analysis":
-            templates = [
-                f"בוס, אני רואה על המסך: {screen_context[:300]}. ",
-                f"קלטתי את המסך - {screen_context[:300]}. ",
-                f"סרקתי: {screen_context[:200]}. ",
-            ]
-            base = random.choice(templates)
-            
-            lower_ctx = screen_context.lower()
-            analysis = ""
-            if "error" in lower_ctx or "שגיאה" in lower_ctx or "exception" in lower_ctx:
-                analysis += "נראה שיש כאן שגיאה. תן לי לנחש - כנראה שכחת משהו קטן בסינטקס או יש בעיית import. רוצה שאפרט?"
-            elif "code" in lower_ctx or "def " in lower_ctx or "import" in lower_ctx:
-                analysis += "זה נראה כמו קוד. אם תגיד לי מה הבעיה, אעזור לדבג."
-            elif "browser" in lower_ctx or "chrome" in lower_ctx or "כרום" in lower_ctx:
-                analysis += "זה דפדפן פתוח. מה אתה רוצה שאבדוק שם?"
+            base = random.choice([
+                f"בוס, אני רואה: {screen_context[:300]}. ",
+                f"קלטתי מסך: {screen_context[:300]}. ",
+            ])
+            lower = screen_context.lower()
+            if "error" in lower or "שגיאה" in lower:
+                return base + "נראה שיש שגיאה. רוצה שאסביר ואתקן?"
+            elif "code" in lower or "def " in lower:
+                return base + "זה קוד. תגיד מה הבעיה ונדבג יחד?"
             else:
-                analysis += "מה בדיוק אתה רוצה שאעשה עם זה?"
-
-            return base + analysis
-
-        # שיחה כללית עם זיכרון חכם
-        if user_profile and user_profile.get("name"):
-            name = user_profile["name"]
-            # השתמש בשם
-            greeting_with_name = [
-                f"בוס {name}, זה מזכיר לי משהו...",
-                f"{name}, קלטתי.",
-            ]
-            if random.random() < 0.3:
-                # לפעמים השתמש בשם
-                pass
+                return base + "מה לעשות עם זה?"
 
         if relevant_memories:
             mem_hint = relevant_memories[0].get("user", "")[:80]
-            return f"זה מזכיר לי שדיברנו על '{mem_hint}...' - {get_random_response('fallback_chat')}"
+            return f"זה מזכיר לי '{mem_hint}...' - {get_random_response('fallback_chat')}"
 
-        # ברירת מחדל - תשובות כלליות חכמות לפי מילות מפתח עם זיכרון
         lower = user_text.lower()
-
-        if any(w in lower for w in ["איך אתה", "איך את", "מה שלומך"]):
+        if any(w in lower for w in ["איך אתה", "מה שלומך"]):
             if user_profile and user_profile.get("interaction_count", 0) > 5:
-                return f"אחלה בוס! אחרי {user_profile['interaction_count']} שיחות איתך אני כבר מכירה אותך טוב. רצה על Full Power. מה איתך?"
-            return random.choice([
-                "אחלה, בוס! רצה על Full Power. מה איתך?",
-                "מצוין, מוכנה לפעולה. מה קורה אצלך?",
-                "על הגל, בוס. המערכות ירוקות."
-            ])
-        if any(w in lower for w in ["תודה", "אלופה", "מלכה"]):
-            return random.choice([
-                "בכיף בוס, תמיד כאן. וזוכרת הכל!",
-                "יאללה, זה התפקיד שלי. מה עוד?",
-                "על לא דבר. אני פה ומתעדכנת כל הזמן."
-            ])
-        if any(w in lower for w in ["עזרה", "לא מצליח", "לא עובד"]):
-            return "קלטתי שיש בעיה. תספר לי בדיוק מה לא עובד, ואם אפשר - תגיד 'מה את רואה במסך' ואסרוק לך. אני גם לומדת מכל פעם שאתה מתקן אותי."
+                return f"אחלה בוס! אחרי {user_profile['interaction_count']} שיחות אני כבר מכירה אותך טוב. מה איתך?"
+            return random.choice(["אחלה בוס! רצה על Full Power. מה איתך?", "מצוין, מוכנה לפעולה."])
 
-        # עם פרופיל
-        if user_profile and user_profile.get("projects"):
-            # אם המשתמש עובד על פרויקט, התייחס לזה
-            if random.random() < 0.2:
-                proj = user_profile["projects"][-1] if user_profile["projects"] else ""
-                if proj and proj.lower() in lower:
-                    return f"עדיין עובד על {proj}? איך מתקדם?"
+        if any(w in lower for w in ["תודה", "אלופה"]):
+            return random.choice(["בכיף בוס, תמיד כאן. וזוכרת הכל!", "יאללה, זה התפקיד שלי."])
 
-        # ברירת מחדל כללית
+        if any(w in lower for w in ["עזרה", "לא מצליח"]):
+            return "קלטתי שיש בעיה. תספר בדיוק מה לא עובד, תגיד 'מה את רואה במסך' ואסרוק."
+
         return get_random_response("fallback_chat")
