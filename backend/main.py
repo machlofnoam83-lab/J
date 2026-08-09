@@ -101,6 +101,13 @@ except Exception as e:
     print(f"[Main] Device manager not available: {e}")
     get_device_manager = lambda: None
 
+try:
+    from tools.task_orchestrator import get_task_orchestrator
+    print("[Main] 🚀 Task Orchestrator loaded - Super Agent Ready")
+except Exception as e:
+    print(f"[Main] Task Orchestrator not available: {e}")
+    get_task_orchestrator = lambda: None
+
 # Init FastAPI
 app = FastAPI(title="Adiel Junior Backend", version="1.0.0")
 
@@ -551,6 +558,177 @@ async def manager_broadcast_safe(msg: dict):
         await manager.broadcast(msg)
     except:
         pass
+
+# === SUPER AGENT - ניהול משימות וגלישה, פרודוקטיביות, שליטה במחשב ===
+
+class TaskRequest(BaseModel):
+    text: str
+    context: Optional[Dict] = None
+
+@app.post("/tasks/execute")
+async def execute_task(req: TaskRequest):
+    """ביצוע משימה חכמה - מנתב לסוכן הנכון"""
+    try:
+        from tools.task_orchestrator import get_task_orchestrator
+        orchestrator = get_task_orchestrator()
+        result = await orchestrator.execute_task(req.text, context=req.context or {})
+        
+        # Broadcast progress
+        await manager_broadcast_safe({
+            "type": "task_result",
+            "task_type": result.get("task_type"),
+            "success": result.get("success"),
+            "message": result.get("message")
+        })
+        
+        return result
+    except Exception as e:
+        print(f"[Tasks] Execute failed: {e}")
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+@app.get("/tasks/history")
+async def get_task_history():
+    try:
+        from tools.task_orchestrator import get_task_orchestrator
+        orchestrator = get_task_orchestrator()
+        return {"tasks": orchestrator.get_task_history()}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/shopping/search")
+async def shopping_search(query: str, max_price: float = None):
+    try:
+        from tools.shopping_agent import get_shopping_agent
+        agent = get_shopping_agent()
+        products = await agent.search_product(query)
+        cheapest = agent.find_cheapest(products)
+        return {
+            "query": query,
+            "products": [{"name": p.name, "price": p.price, "store": p.store, "rating": p.rating, "url": p.url} for p in products],
+            "cheapest": {"name": cheapest.name, "price": cheapest.price, "store": cheapest.store} if cheapest else None,
+            "count": len(products)
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/travel/search")
+async def travel_search(from_city: str, to_city: str, check_in: str, check_out: str, budget: float = None):
+    try:
+        from tools.travel_agent import get_travel_agent
+        agent = get_travel_agent()
+        result = await agent.find_best_deal(from_city, to_city, check_in, check_out, budget)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/research")
+async def research_topic(topic: str, depth: int = 5):
+    try:
+        from tools.research_agent import get_research_agent
+        agent = get_research_agent()
+        result = await agent.research_topic(topic, depth=depth)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/tasks/email/inbox")
+async def get_emails(limit: int = 20, urgent_only: bool = False):
+    try:
+        from tools.email_manager import get_email_manager
+        mgr = get_email_manager()
+        if urgent_only:
+            emails = await mgr.get_urgent_emails()
+        else:
+            emails = await mgr.fetch_emails(limit=limit)
+        return {
+            "emails": [{"id": e.id, "from": e.from_addr, "subject": e.subject, "urgency": e.urgency, "category": e.category, "is_spam": e.is_spam} for e in emails],
+            "count": len(emails)
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/tasks/calendar/slots")
+async def get_calendar_slots(duration: int = 60, days: int = 5):
+    try:
+        from tools.calendar_manager import get_calendar_manager
+        mgr = get_calendar_manager()
+        slots = await mgr.find_free_slots(duration_minutes=duration, days_ahead=days)
+        return {
+            "slots": [{"start": s.start.isoformat(), "end": s.end.isoformat(), "score": s.score, "reason": s.reason} for s in slots],
+            "count": len(slots)
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/tasks/files/scan")
+async def scan_files(directory: str = "~/Downloads", pattern: str = "*"):
+    try:
+        from tools.cloud_file_manager import get_file_manager
+        mgr = get_file_manager()
+        files = mgr.scan_files(directory, pattern)
+        return {"files": files[:50], "count": len(files), "directory": directory}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/files/organize")
+async def organize_files(source_dir: str = "~/Downloads"):
+    try:
+        from tools.cloud_file_manager import get_file_manager
+        mgr = get_file_manager()
+        result = mgr.organize_files(source_dir)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/tasks/routines")
+async def list_routines():
+    try:
+        from tools.routine_automation import get_routine_automation
+        routine_mgr = get_routine_automation()
+        return {"routines": routine_mgr.list_routines()}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/routines/{routine_id}/run")
+async def run_routine(routine_id: str):
+    try:
+        from tools.routine_automation import get_routine_automation
+        routine_mgr = get_routine_automation()
+        result = await routine_mgr.run_routine(routine_id)
+        await manager_broadcast_safe({
+            "type": "routine_result",
+            "routine_id": routine_id,
+            "success": result.get("success"),
+            "message": result.get("message")
+        })
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/computer/open")
+async def open_app_endpoint(app_name: str):
+    try:
+        from tools.computer_control import get_computer_control
+        ctrl = get_computer_control()
+        result = ctrl.open_app(app_name)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/tasks/computer/play")
+async def play_media(service: str, query: str = "", action: str = "play"):
+    try:
+        from tools.computer_control import get_computer_control
+        ctrl = get_computer_control()
+        if service.lower() == "spotify":
+            return ctrl.play_spotify(query=query, action=action)
+        elif service.lower() == "youtube":
+            return ctrl.play_youtube(query=query)
+        else:
+            return {"success": False, "error": f"Unknown service {service}"}
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 @app.post("/speak")
 async def speak_endpoint(req: SpeakRequest):

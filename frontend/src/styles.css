@@ -1015,5 +1015,135 @@ body {
     font-size: 12px;
 }
 
+/* Super HUD - Task Agent */
+.tasks-categories {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.category-btn {
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: var(--hud-text-dim);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.category-btn.active, .category-btn:hover {
+    background: rgba(0,210,255,0.15);
+    border-color: var(--hud-accent);
+    color: var(--hud-accent);
+}
+
+.task-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.quick-task-btn {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,210,255,0.15);
+    background: linear-gradient(135deg, rgba(0,210,255,0.08), rgba(0,255,170,0.05));
+    color: var(--hud-text);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: right;
+}
+
+.quick-task-btn:hover {
+    background: linear-gradient(135deg, rgba(0,210,255,0.15), rgba(0,255,170,0.1));
+    border-color: var(--hud-accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,210,255,0.15);
+}
+
+.tasks-history {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.task-history-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.task-history-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hud-text);
+    margin-bottom: 4px;
+}
+
+.task-history-result {
+    font-size: 10px;
+    color: var(--hud-text-dim);
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.task-history-time {
+    font-size: 9px;
+    color: var(--hud-text-dim);
+    opacity: 0.6;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Improved HUD - More Iron Man */
+.hud-container {
+    background: radial-gradient(ellipse at top, rgba(0,210,255,0.08) 0%, var(--hud-bg) 50%);
+}
+
+.hud-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--hud-accent), transparent);
+    animation: scanline 3s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scanline {
+    0% { transform: translateY(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* Voice original indicator */
+.voice-original-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #a855f7, #00d2ff);
+    color: white;
+    font-size: 8px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-right: 6px;
+    animation: originalPulse 2s ease-in-out infinite;
+}
+
+@keyframes originalPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(168,85,247,0.5); }
+    50% { box-shadow: 0 0 15px rgba(168,85,247,0.8); }
+}
+
 /* Utilities */
 .hidden { display: none !important; }
