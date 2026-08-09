@@ -37,9 +37,11 @@ frontend/.electron-builder.env
 Thumbs.db
 *.log
 
-# Audio temp
+# Audio temp (but keep custom original voices)
 *.mp3
 *.wav
+!frontend/src/assets/*.mp3
+!frontend/src/assets/*.wav
 temp/
 tmp/
 
