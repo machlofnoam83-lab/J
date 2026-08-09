@@ -18,18 +18,55 @@ CUSTOM_VOICES = {
     "hello": ASSETS_DIR / "voice_hello.mp3",
     "wake": ASSETS_DIR / "voice_wake.mp3",
     "on_it": ASSETS_DIR / "voice_on_it.mp3",
+    "how_are_you": ASSETS_DIR / "voice_how_are_you.mp3",
+    "understand": ASSETS_DIR / "voice_i_understand.mp3",
+    "what_screen": ASSETS_DIR / "voice_what_screen.mp3",
+    "bye": ASSETS_DIR / "voice_bye.mp3",
+    "fun": ASSETS_DIR / "voice_fun.mp3",
+    "thinking": ASSETS_DIR / "voice_thinking.mp3",
+    "proposal": ASSETS_DIR / "voice_proposal.mp3",
 }
 
-# מיפוי משפטים נפוצים לקולות מקוריים
+# מיפוי משפטים נפוצים לקולות מקוריים - מורחב
 PHRASE_TO_VOICE = {
+    # Wake
     "כן בוס?": "wake",
     "כן בוס? אני כאן.": "wake",
     "כן בוס? אני כאן, מקשיבה.": "wake",
     "אני כאן, בוס! מה צריך?": "wake",
+    "כן בוס? אני ערה": "wake",
+    
+    # On it
     "על זה": "on_it",
     "על זה, בוס.": "on_it",
+    "קלטתי, בוס.": "understand",
+    "קלטתי": "understand",
+    
+    # Hello
     "שלום בוס!": "hello",
     "שלום בוס": "hello",
+    "היי בוס": "hello",
+    
+    # How are you
+    "אחלה, בוס! רצה על Full Power. מה איתך?": "how_are_you",
+    "אחלה, בוס! רצה על פול פאוור": "how_are_you",
+    
+    # Screen
+    "בוא נראה מה יש לך על המסך": "what_screen",
+    
+    # Bye
+    "יאללה ביי בוס": "bye",
+    "ביי בוס": "bye",
+    
+    # Fun
+    "אתה אלוף": "fun",
+    "על לא דבר": "fun",
+    
+    # Thinking
+    "רגע, חושבת": "thinking",
+    
+    # Proposal
+    "יש לי הצעה": "proposal",
 }
 
 def get_custom_voice_for_text(text: str) -> Optional[Path]:

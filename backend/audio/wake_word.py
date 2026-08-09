@@ -40,12 +40,25 @@ except:
 class WakeWordDetector:
     """
     מזהה את "אדיאל ג'וניור" ברצף
+    עכשיו עם בחירת מיקרופון
     """
-    def __init__(self, on_wake: Callable[[str], None], sample_rate=16000):
+    def __init__(self, on_wake: Callable[[str], None], sample_rate=16000, device_id=None):
         self.on_wake = on_wake
         self.sample_rate = sample_rate
+        self.device_id = device_id  # חדש - בחירת מיקרופון
         self.running = False
         self.thread = None
+        
+        # נסה לטעון device manager אם יש
+        if device_id is None:
+            try:
+                from .device_manager import get_device_manager
+                dm = get_device_manager()
+                self.device_id = dm.get_selected_input()
+                if self.device_id is not None:
+                    print(f"[WakeWord] Using selected mic: {self.device_id}")
+            except:
+                pass
         
         # מילות מפתח לזיהוי - כולל שיבושים נפוצים
         self.wake_patterns = [
@@ -220,14 +233,19 @@ class WakeWordDetector:
             return
 
         try:
-            # התחל stream
-            self.stream = sd.InputStream(
-                samplerate=self.sample_rate,
-                channels=1,
-                dtype='float32',
-                callback=self._audio_callback,
-                blocksize=int(self.sample_rate * 0.03)  # 30ms blocks
-            )
+            # התחל stream - עם device_id אם נבחר
+            stream_kwargs = {
+                "samplerate": self.sample_rate,
+                "channels": 1,
+                "dtype": 'float32',
+                "callback": self._audio_callback,
+                "blocksize": int(self.sample_rate * 0.03)
+            }
+            if self.device_id is not None:
+                stream_kwargs["device"] = self.device_id
+                print(f"[WakeWord] Using device {self.device_id}")
+            
+            self.stream = sd.InputStream(**stream_kwargs)
             self.stream.start()
             print("[WakeWord] Audio stream started, listening for 'אדיאל ג'וניור'...")
 

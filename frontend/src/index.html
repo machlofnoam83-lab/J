@@ -15,7 +15,7 @@
             <div class="header-left">
                 <div class="core-status-dot" id="statusDot"></div>
                 <span class="header-title">ADIEL JUNIOR</span>
-                <span class="header-subtitle">אדיאל ג'וניור</span>
+                <span class="header-subtitle">אדיאל ג'וניור - קול מקורי</span>
             </div>
             <div class="header-controls">
                 <button class="icon-btn" id="btnSide" title="שים בצד">◧</button>
@@ -57,14 +57,14 @@
                     <div class="msg assistant welcome">
                         <div class="msg-avatar">AJ</div>
                         <div class="msg-content">
-                            <div class="msg-text">שלום בוס! אני אדיאל ג'וניור. אמור "אדיאל ג'וניור" ואני כאן. יכולה גם לראות את המסך שלך ולעזור בקוד.</div>
+                            <div class="msg-text">שלום בוס! אני אדיאל ג'וניור עם קול מקורי חדש רק שלך. עכשיו אני זוכרת, לומדת, ומנהלת שיחה אמיתית. תבחר מיקרופון למטה ואמור "אדיאל ג'וניור".</div>
                             <div class="msg-time">עכשיו</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Proposals - Learning & Self-Update (requires approval) -->
+            <!-- Proposals -->
             <div class="proposals-area hidden" id="proposalsArea">
                 <div class="proposals-header">
                     <span>🧠 אדיאל רוצה ללמוד / להשתפר</span>
@@ -83,33 +83,81 @@
                 <div class="preview-context" id="previewContext"></div>
             </div>
 
+            <!-- Mic Selector Panel -->
+            <div class="settings-panel hidden" id="micPanel">
+                <div class="settings-header">
+                    <span>🎙️ בחר מיקרופון - אדיאל תקשיב דרכו</span>
+                    <button class="icon-btn" id="btnCloseMic">✕</button>
+                </div>
+                <div class="settings-content" id="micList">
+                    <div class="loading">טוען מיקרופונים...</div>
+                </div>
+                <div class="settings-footer">
+                    <button class="action-btn" id="btnRefreshMics">🔄 רענן</button>
+                    <button class="action-btn" id="btnResetMic">↩️ ברירת מחדל</button>
+                </div>
+            </div>
+
+            <!-- Voice Selector Panel -->
+            <div class="settings-panel hidden" id="voicePanel">
+                <div class="settings-header">
+                    <span>🔊 קול מקורי של אדיאל - רק שלך</span>
+                    <button class="icon-btn" id="btnCloseVoice">✕</button>
+                </div>
+                <div class="settings-content" id="voiceList">
+                    <div class="voice-option selected" data-voice="original">
+                        <div class="voice-name">✨ קול מקורי - אדיאל (רק שלך!)</div>
+                        <div class="voice-desc">8 דגימות מקוריות שיצרתי - טבעי, צעיר, ישראלי</div>
+                        <button class="action-btn test-voice-btn" data-voice="original">▶️ בדוק קול מקורי</button>
+                    </div>
+                    <div class="voice-option" data-voice="avigail">
+                        <div class="voice-name">Avigail - עברית טבעית</div>
+                        <div class="voice-desc">Microsoft - נשי צעיר</div>
+                        <button class="action-btn test-voice-btn" data-voice="avigail">▶️ בדוק</button>
+                    </div>
+                    <div class="voice-option" data-voice="hila">
+                        <div class="voice-name">Hila - עברית בוגרת</div>
+                        <div class="voice-desc">נשי בוגרת</div>
+                        <button class="action-btn test-voice-btn" data-voice="hila">▶️ בדוק</button>
+                    </div>
+                    <div class="voice-option" data-voice="asaf">
+                        <div class="voice-name">Asaf - גברי</div>
+                        <div class="voice-desc">קול גברי</div>
+                        <button class="action-btn test-voice-btn" data-voice="asaf">▶️ בדוק</button>
+                    </div>
+                </div>
+                <div class="settings-footer">
+                    <div class="voice-info">הקול המקורי נשמר ב-frontend/src/assets/*.mp3 - רק שלך!</div>
+                </div>
+            </div>
+
             <!-- Input -->
             <div class="input-area">
                 <div class="input-wrapper">
-                    <input type="text" id="textInput" placeholder="או כתוב לי כאן בעברית..." autocomplete="off" />
-                    <button id="btnSend" class="send-btn">
-                        <span>➤</span>
-                    </button>
+                    <input type="text" id="textInput" placeholder="כתוב כאן בעברית... שיחה אמיתית!" autocomplete="off" />
+                    <button id="btnSend" class="send-btn"><span>➤</span></button>
                 </div>
                 <div class="input-actions">
                     <button class="action-btn" id="btnWake">🎤 אדיאל ג'וניור</button>
                     <button class="action-btn" id="btnScreen">🖥️ מה את רואה?</button>
+                    <button class="action-btn" id="btnMicSelect">🎙️ מיקרופון</button>
+                    <button class="action-btn" id="btnVoiceSelect">🔊 קול מקורי</button>
                     <button class="action-btn" id="btnClear">🗑️ נקה</button>
                 </div>
             </div>
         </div>
 
-        <!-- Orb Mode Content (minimal) -->
+        <!-- Orb -->
         <div class="orb-content" id="orbContent">
             <div class="orb-core"></div>
             <div class="orb-pulse"></div>
         </div>
 
-        <!-- Connection Status -->
+        <!-- Connection -->
         <div class="connection-bar">
             <div class="conn-dot" id="connDot"></div>
             <span id="connText">מתחברת ל-Backend...</span>
-            <span class="backend-port">:8765</span>
+            <span class="backend-port">:8765 | זוכרת הכל</span>
         </div>
     </div>
 

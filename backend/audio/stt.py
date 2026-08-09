@@ -36,11 +36,24 @@ except:
 class HebrewSTT:
     """
     מנוע STT עברי - הקלטה + תמלול - גרסה מתוקנת
+    עכשיו עם בחירת מיקרופון
     """
-    def __init__(self, model_size="small", language="he"):
+    def __init__(self, model_size="small", language="he", device_id=None):
         self.model_size = model_size
         self.language = language
         self.sample_rate = 16000
+        self.device_id = device_id
+        
+        # נסה לטעון device manager
+        if device_id is None:
+            try:
+                from .device_manager import get_device_manager
+                dm = get_device_manager()
+                self.device_id = dm.get_selected_input()
+                if self.device_id is not None:
+                    print(f"[STT] Using selected mic: {self.device_id}")
+            except:
+                pass
         
         # נתיב מודלים - משתמש ב-Path כדי לא להיתקל בבאג os
         self.data_dir = Path(__file__).parent.parent / "data" / "whisper_models"
@@ -121,7 +134,18 @@ class HebrewSTT:
             self.audio_data.append(indata.copy())
             
         try:
-            with sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='float32', blocksize=1024, callback=callback):
+            # השתמש במיקרופון הנבחר אם יש
+            stream_kwargs = {
+                "samplerate": self.sample_rate,
+                "channels": 1,
+                "dtype": 'float32',
+                "blocksize": 1024,
+                "callback": callback
+            }
+            if self.device_id is not None:
+                stream_kwargs["device"] = self.device_id
+            
+            with sd.InputStream(**stream_kwargs):
                 start = time.time()
                 has_speech = False
                 

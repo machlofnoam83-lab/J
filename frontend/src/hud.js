@@ -119,6 +119,30 @@ class AdielHUD {
         this.elements.btnWake?.addEventListener('click', () => this.triggerWake());
         this.elements.btnScreen?.addEventListener('click', () => this.askScreen());
         this.elements.btnClear?.addEventListener('click', () => this.clearConversation());
+        this.elements.btnMicSelect = document.getElementById('btnMicSelect');
+        this.elements.btnVoiceSelect = document.getElementById('btnVoiceSelect');
+        this.elements.micPanel = document.getElementById('micPanel');
+        this.elements.voicePanel = document.getElementById('voicePanel');
+        this.elements.micList = document.getElementById('micList');
+        this.elements.btnCloseMic = document.getElementById('btnCloseMic');
+        this.elements.btnCloseVoice = document.getElementById('btnCloseVoice');
+        this.elements.btnRefreshMics = document.getElementById('btnRefreshMics');
+        this.elements.btnResetMic = document.getElementById('btnResetMic');
+
+        this.elements.btnMicSelect?.addEventListener('click', () => this.toggleMicPanel());
+        this.elements.btnVoiceSelect?.addEventListener('click', () => this.toggleVoicePanel());
+        this.elements.btnCloseMic?.addEventListener('click', () => this.hideMicPanel());
+        this.elements.btnCloseVoice?.addEventListener('click', () => this.hideVoicePanel());
+        this.elements.btnRefreshMics?.addEventListener('click', () => this.loadMicrophones());
+        this.elements.btnResetMic?.addEventListener('click', () => this.resetMicrophone());
+
+        // Voice test buttons
+        document.querySelectorAll('.test-voice-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const voice = e.target.getAttribute('data-voice');
+                this.testVoice(voice);
+            });
+        });
 
         // Orb click
         this.elements.orbContent?.addEventListener('click', () => {
@@ -730,13 +754,145 @@ class AdielHUD {
                 <div class="msg assistant welcome">
                     <div class="msg-avatar">AJ</div>
                     <div class="msg-content">
-                        <div class="msg-text">שיחה נוקתה, בוס. מה הלאה?</div>
+                        <div class="msg-text">שיחה נוקתה, בוס. אבל אני זוכרת הכל! מה הלאה?</div>
                         <div class="msg-time">עכשיו</div>
                     </div>
                 </div>
             `;
         }
         this.elements.screenPreview?.classList.add('hidden');
+    }
+
+    // === Mic Selection ===
+    toggleMicPanel() {
+        if (this.elements.micPanel?.classList.contains('hidden')) {
+            this.elements.micPanel.classList.remove('hidden');
+            this.elements.voicePanel?.classList.add('hidden');
+            this.loadMicrophones();
+        } else {
+            this.hideMicPanel();
+        }
+    }
+
+    hideMicPanel() {
+        this.elements.micPanel?.classList.add('hidden');
+    }
+
+    toggleVoicePanel() {
+        if (this.elements.voicePanel?.classList.contains('hidden')) {
+            this.elements.voicePanel.classList.remove('hidden');
+            this.elements.micPanel?.classList.add('hidden');
+        } else {
+            this.hideVoicePanel();
+        }
+    }
+
+    hideVoicePanel() {
+        this.elements.voicePanel?.classList.add('hidden');
+    }
+
+    async loadMicrophones() {
+        if (!this.elements.micList) return;
+        this.elements.micList.innerHTML = '<div class="loading">🎙️ טוען מיקרופונים...</div>';
+        
+        try {
+            const backendUrl = this.wsUrl.replace('ws://', 'http://').replace('wss://', 'https://').replace('/ws', '');
+            const response = await fetch(`${backendUrl}/audio/devices`);
+            const data = await response.json();
+            
+            if (!data.inputs || data.inputs.length === 0) {
+                this.elements.micList.innerHTML = '<div class="loading">לא נמצאו מיקרופונים. חבר מיקרופון ותלחץ רענן<br>אפשר להשתמש במקלדת בינתיים!</div>';
+                return;
+            }
+            
+            this.elements.micList.innerHTML = '';
+            data.inputs.forEach(mic => {
+                const div = document.createElement('div');
+                div.className = `mic-option ${mic.selected ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="mic-name">${this.escapeHtml(mic.name)}</div>
+                    <div class="mic-details">ערוצים: ${mic.input_channels} | ${mic.samplerate}Hz
+                        ${mic.is_default_input ? '<span class="mic-tag default">ברירת מחדל</span>' : ''}
+                        ${mic.selected ? '<span class="mic-tag">נבחר ✓</span>' : ''}
+                    </div>
+                `;
+                div.addEventListener('click', () => this.selectMicrophone(mic.id));
+                this.elements.micList.appendChild(div);
+            });
+            
+            this.addMessage('assistant', `מצאתי ${data.inputs.length} מיקרופונים. בחר אחד שאדיאל תקשיב דרכו, בוס.`);
+        } catch (e) {
+            console.error('Load mics failed', e);
+            this.elements.micList.innerHTML = `<div class="loading">שגיאה בטעינת מיקרופונים: ${e.message}<br>בדוק שה-Backend רץ</div>`;
+        }
+    }
+
+    async selectMicrophone(deviceId) {
+        try {
+            const backendUrl = this.wsUrl.replace('ws://', 'http://').replace('wss://', 'https://').replace('/ws', '');
+            const response = await fetch(`${backendUrl}/audio/devices/input/${deviceId}`, {method: 'POST'});
+            const result = await response.json();
+            
+            if (result.success) {
+                this.addMessage('assistant', `✅ ${result.message} - עכשיו אני מקשיבה דרכו, בוס! תגיד "אדיאל ג'וניור"`);
+                this.loadMicrophones(); // רענן
+                setTimeout(() => this.hideMicPanel(), 1500);
+            } else {
+                this.addMessage('assistant', `❌ שגיאה בבחירת מיקרופון: ${result.error}`);
+            }
+        } catch (e) {
+            this.addMessage('assistant', `❌ שגיאה: ${e.message}`);
+        }
+    }
+
+    async resetMicrophone() {
+        try {
+            const backendUrl = this.wsUrl.replace('ws://', 'http://').replace('wss://', 'https://').replace('/ws', '');
+            const response = await fetch(`${backendUrl}/audio/devices/reset`, {method: 'POST'});
+            const result = await response.json();
+            this.addMessage('assistant', `↩️ ${result.message || 'חזר לברירת מחדל'}`);
+            this.loadMicrophones();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async testVoice(voiceType) {
+        // מנגן קול מקורי או שולח בקשת TTS ל-backend
+        if (voiceType === 'original') {
+            // נגן את הקולות המקוריים שיצרנו
+            const voices = [
+                './assets/voice_hello.mp3',
+                './assets/voice_wake.mp3',
+                './assets/voice_how_are_you.mp3',
+                './assets/voice_on_it.mp3'
+            ];
+            const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+            try {
+                const audio = new Audio(randomVoice);
+                audio.play();
+                this.addMessage('assistant', `✨ מנגן קול מקורי: ${randomVoice} - זה הקול שיצרתי רק בשבילך, בוס!`);
+                this.setSpeaking(true, `מנגן קול מקורי...`);
+                audio.onended = () => this.setSpeaking(false);
+            } catch (e) {
+                this.addMessage('assistant', `מנגן קול מקורי דרך Backend...`);
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({type: 'text', text: 'בדיקת קול מקורי', with_screen: false}));
+                }
+            }
+        } else {
+            // בדיקת קול Microsoft
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({type: 'speak', text: `בדיקת קול ${voiceType}, שלום בוס! אני אדיאל ג'וניור`}));
+                this.addMessage('assistant', `🔊 בודק קול ${voiceType}...`);
+            } else {
+                this.addMessage('assistant', 'לא מחוברת ל-Backend לבדיקת קול');
+            }
+        }
+        
+        // סמן כ-selected
+        document.querySelectorAll('.voice-option').forEach(opt => opt.classList.remove('selected'));
+        document.querySelector(`.voice-option[data-voice="${voiceType}"]`)?.classList.add('selected');
     }
 }
 
