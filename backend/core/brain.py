@@ -108,8 +108,8 @@ class AdielBrain:
             user_profile_summary = self.learning_engine.get_user_profile_summary()
             print(f"[Brain] Smart context: {smart_context[:100]}...")
 
-        # 3. שמירת עובדות אם צריך (ישן)
-        if intent == "memory_save" or "תזכור" in user_text or "תזכרי" in user_text:
+        # 3. שמירת עובדות אם צריך (ישן) - עכשיו רק אם אין מנוע למידה חדש
+        if (intent == "memory_save" or "תזכור" in user_text or "תזכרי" in user_text) and not self.learning_engine:
             self.memory.extract_and_save_facts(user_text)
 
         # 4. טיפול בכוונות ספציפיות (ללא צורך ב-LLM)
@@ -127,9 +127,11 @@ class AdielBrain:
             hud_command = action_result.get("hud_command")
             system_action = action_result.get("system_action")
 
-        # 6. שמירה בזיכרון (ישן)
+        # 6. שמירה בזיכרון קצר טווח בלבד (לא עובדות קבועות - זה עובר דרך הצעות למידה עם אישור)
         self.memory.add_conversation(user_text, response_text)
-        self.memory.extract_and_save_facts(user_text)
+        # אם אין מנוע למידה חדש, שמור עובדות ישירות (fallback)
+        if not self.learning_engine:
+            self.memory.extract_and_save_facts(user_text)
 
         # 7. NEW: עיבוד למידה - יוצר הצעות לשיפור שדורשות אישור
         proposals = []

@@ -89,24 +89,44 @@ class VocabularyManager:
         print(f"[Vocab] ✅ למדתי מילה חדשה: {word} = {meaning}")
 
     def detect_unknown_words(self, text: str, known_words: set) -> List[str]:
-        """מזהה מילים לא מוכרות בטקסט"""
-        # טוקנים בעברית + אנגלית
+        """מזהה מילים לא מוכרות - רק אם נראה כמו סלנג חדש, לא כל מילה"""
+        # רק אם יש אינדיקציה לסלנג או בקשת למידה מפורשת
+        # אל תזהה אוטומטית בכל שיחה כדי לא להציף
+        if not any(kw in text for kw in ["תזכור", "תזכרי", "תלמד", "פירוש", "אומר", "סלנג"]):
+            # אם אין בקשת למידה מפורשת, אל תחפש מילים לא מוכרות אוטומטית
+            # רק אם המילה נראית כמו סלנג חריג (3+ פעמים אותה מילה חדשה?)
+            return []
+        
         tokens = re.findall(r'[\u0590-\u05FF]{2,}|[a-zA-Z]{3,}', text)
         unknown = []
         for tok in tokens:
             tok_lower = tok.lower()
-            if tok_lower not in known_words and len(tok) > 2:
-                # התעלם ממילים נפוצות מאוד
-                common_ignore = {"שלום", "תודה", "בבקשה", "אדיאל", "ג'וניור", "בוס"}
+            if tok_lower not in known_words and len(tok) > 3:  # רק מילים ארוכות יותר מ-3
+                common_ignore = {"שלום", "תודה", "בבקשה", "אדיאל", "ג'וניור", "בוס", "תזכור", "תזכרי", "תלמד", "תלמדי", "פירוש", "אומר", "סלנג"}
                 if tok not in common_ignore and tok not in self.vocab["words"]:
-                    unknown.append(tok)
-        return list(set(unknown))[:3]  # מקסימום 3 בכל פעם שלא להציף
+                    # בדוק אם זה לא פועל נפוץ
+                    if tok not in ["קוראים", "עובד", "אוהב", "שונא", "גר", "עובדת", "אוהבת"]:
+                        unknown.append(tok)
+        return list(set(unknown))[:1]  # מקסימום 1 בכל פעם
 
     def get_known_words_set(self) -> set:
-        """מחזיר סט מילים מוכרות"""
+        """מחזיר סט מילים מוכרות - בסיס גדול כדי לא לזהות מילים נפוצות כלא מוכרות"""
         base_hebrew = set([
-            "אני", "אתה", "שלום", "תודה", "כן", "לא", "מה", "איך", "למה",
-            "בוס", "יאללה", "סגור", "על", "זה", "אחלה", "סבבה", "בקטנה"
+            # מילות יסוד
+            "אני", "אתה", "את", "הוא", "היא", "אנחנו", "אתם", "אתן", "הם", "הן",
+            "שלום", "תודה", "בבקשה", "סליחה", "כן", "לא", "מה", "מי", "איך", "למה", "כמה", "איפה", "מתי", "איזה",
+            "בוס", "יאללה", "סגור", "על", "זה", "אחלה", "סבבה", "בקטנה", "תודה", "בכיף",
+            # פעלים נפוצים
+            "קוראים", "עובד", "עובדת", "אוהב", "אוהבת", "שונא", "שונאת", "גר", "גרה", "לומד", "לומדת",
+            "עושה", "רוצה", "יכול", "צריך", "יש", "אין", "היה", "הייתה", "יהיה",
+            "תזכור", "תזכרי", "תלמד", "תלמדי", "תפתח", "תפתחי", "תחפש", "תסגור",
+            # עצמים
+            "פרויקט", "עבודה", "בית", "משפחה", "חבר", "חברה", "כלב", "חתול", "ילד", "ילדה",
+            "מחשב", "טלפון", "קוד", "שגיאה", "מסך", "חלון", "דפדפן", "גוגל", "כרום",
+            "אדיאל", "ג'וניור", "גוניור", "זוכר", "זוכרת", "יודע", "יודעת", "עלי", "שלי",
+            "פיצה", "אוכל", "מים", "קפה", "סרט", "מוזיקה", "שיר",
+            "היום", "מחר", "אתמול", "עכשיו", "בוקר", "צהריים", "ערב", "לילה",
+            "טוב", "רע", "גדול", "קטן", "חדש", "ישן", "יפה", "מגניב",
         ])
         learned = set(self.vocab["words"].keys())
         return base_hebrew.union(learned)
@@ -328,41 +348,59 @@ class AdielLearningEngine:
     def process_interaction(self, user_text: str, assistant_text: str, intent_result: Dict) -> List[Dict]:
         """
         מעבד אינטראקציה ומחזיר רשימת הצעות ללמידה/עדכון
-        כל הצעה דורשת אישור משתמש לפני שהיא נהיית סופית
+        כל הצעה דורשת אישור - אבל לא מציף, מקסימום 2 בכל שיחה
         """
         proposals = []
         
-        # 1. חלץ עובדות וצור הצעות פרופיל
+        # 1. חלץ עובדות - רק אם יש בקשת זיכרון מפורשת או עובדה חשובה חדשה
         facts = self.profile.extract_facts(user_text)
         if facts:
-            profile_props = self.profile.update_from_facts(facts, auto_approve=False)
-            proposals.extend(profile_props)
+            # רק אם יש עובדה חדשה שלא קיימת כבר
+            new_facts = []
+            for f in facts:
+                # בדוק אם כבר קיים
+                exists = False
+                if f["key"] == "name" and self.profile.profile.get("name") == f["value"]:
+                    exists = True
+                if not exists:
+                    new_facts.append(f)
+            
+            if new_facts:
+                profile_props = self.profile.update_from_facts(new_facts, auto_approve=False)
+                # הגבל ל-1 הצעת פרופיל בכל פעם
+                if profile_props:
+                    proposals.append(profile_props[0])
         
-        # 2. זהה מילים לא מוכרות
-        known_words = self.vocab.get_known_words_set()
-        unknown = self.vocab.detect_unknown_words(user_text, known_words)
-        for word in unknown:
-            # נסה לנחש משמעות מהקשר, או שאל
-            proposal = self.vocab.learn_word(word, meaning="לא ידוע עדיין", example=user_text, source="auto_detect")
-            if proposal:
-                # שפר את התיאור
-                proposal["description_he"] = f"שמעתי מילה לא מוכרת: '{word}' במשפט '{user_text[:50]}...'. מה זה אומר? אם תסביר לי, אזכור לפעם הבאה."
-                proposals.append(proposal)
+        # 2. זהה מילים לא מוכרות - רק אם ביקשו ללמוד במפורש
+        if any(kw in user_text for kw in ["תזכור", "תזכרי", "תלמד", "סלנג", "פירוש"]):
+            known_words = self.vocab.get_known_words_set()
+            unknown = self.vocab.detect_unknown_words(user_text, known_words)
+            for word in unknown[:1]:  # מקסימום 1
+                proposal = self.vocab.learn_word(word, meaning="לא ידוע עדיין", example=user_text, source="auto_detect")
+                if proposal:
+                    proposal["description_he"] = f"שמעתי מילה לא מוכרת: '{word}' במשפט '{user_text[:50]}...'. מה זה אומר? אם תסביר לי, אזכור לפעם הבאה."
+                    proposals.append(proposal)
         
-        # 3. בדוק אם צריך ללמוד intent חדש או תיקון
-        intent_proposal = self.intelligence.should_create_proposal(user_text, assistant_text, intent_result)
-        if intent_proposal:
-            proposals.append(intent_proposal)
+        # 3. בדוק אם צריך ללמוד intent חדש - רק אם confidence נמוך מאוד
+        if intent_result["confidence"] < 0.25 and len(user_text.split()) > 3:
+            intent_proposal = self.intelligence.should_create_proposal(user_text, assistant_text, intent_result)
+            if intent_proposal and len(proposals) < 2:  # רק אם אין כבר 2 הצעות
+                proposals.append(intent_proposal)
         
-        # 4. אם המשתמש אמר "תזכור" במפורש, תמיד צור הצעה
-        if any(kw in user_text for kw in ["תזכור", "תזכרי", "תלמד", "תלמדי"]):
-            proposals.append({
-                "id": f"explicit_memory_{int(datetime.now().timestamp())}",
-                "type": "explicit_memory",
-                "user_text": user_text,
-                "description_he": f"ביקשת שאזכור: '{user_text}'. לשמור את זה בזיכרון הקבוע שלי?",
-                "risk": "low"
-            })
+        # 4. אם המשתמש אמר "תזכור" במפורש וזו לא עובדה שזיהינו כבר
+        if any(kw in user_text for kw in ["תזכור", "תזכרי"]) and not facts:
+            # רק אם זה לא סתם "תזכור שאני..." שכבר טופל כ-fact
+            if len(proposals) == 0:  # רק אם אין עדיין הצעה
+                proposals.append({
+                    "id": f"explicit_memory_{int(datetime.now().timestamp())}",
+                    "type": "explicit_memory",
+                    "user_text": user_text,
+                    "description_he": f"ביקשת שאזכור: '{user_text}'. לשמור את זה בזיכרון הקבוע שלי?",
+                    "risk": "low"
+                })
+        
+        # הגבל ל-2 הצעות מקסימום בכל שיחה כדי לא להציף
+        proposals = proposals[:2]
         
         # שמור הצעות ממתינות
         self.pending_proposals.extend(proposals)

@@ -8,6 +8,29 @@ Or: uvicorn main:app --host 0.0.0.0 --port 8765 --reload
 """
 import os
 import sys
+
+# בדיקת תלויות קריטיות עם הודעה בעברית אם חסר
+try:
+    import fastapi
+except ModuleNotFoundError:
+    print("\n" + "="*60)
+    print("  ❌ שגיאה: fastapi לא מותקן!")
+    print("  אתה מריץ את main.py בלי venv או בלי התקנה")
+    print("="*60)
+    print("\nפתרונות:")
+    print("1. הכי קל: דאבל קליק על scripts\\fix_fastapi.bat")
+    print("2. או: scripts\\run_with_autofix.bat")
+    print("3. או ידנית:")
+    print("   venv\\Scripts\\activate")
+    print("   pip install -r backend\\requirements.txt")
+    print("   python backend\\main.py")
+    print("\nאם אין venv:")
+    print("   python -m venv venv")
+    print("   venv\\Scripts\\activate")
+    print("   pip install fastapi uvicorn")
+    print("="*60 + "\n")
+    sys.exit(1)
+
 import asyncio
 import json
 import base64
@@ -421,20 +444,26 @@ async def get_profile():
 
 @app.post("/speak")
 async def speak_endpoint(req: SpeakRequest):
-    """TTS ישיר"""
+    """TTS ישיר עם base64"""
     if not tts_engine:
         raise HTTPException(500, "TTS not available")
     
-    path = await tts_engine.synthesize(req.text, play=req.play)
+    result = await tts_engine.synthesize(req.text, play=req.play)
+    path = None
+    b64 = None
+    if isinstance(result, tuple):
+        path, b64 = result
+    elif isinstance(result, str):
+        path = result
     
-    # Broadcast to frontend
     await manager.broadcast({
         "type": "tts",
         "text": req.text,
-        "audio_path": path
+        "audio_path": path,
+        "audio_base64": b64
     })
     
-    return {"text": req.text, "audio": path}
+    return {"text": req.text, "audio": path, "audio_base64": b64[:100]+"..." if b64 and len(b64)>100 else b64}
 
 @app.post("/wake")
 async def manual_wake():
