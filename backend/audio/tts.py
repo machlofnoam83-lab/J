@@ -287,35 +287,42 @@ class HebrewTTS:
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
-    def _play_audio(self, path: str):
-        """ניגון לא חוסם עם pygame"""
+    def _play_audio(self, playback_path: str):
+        """ניגון לא חוסם עם pygame - תוקן באג UnboundLocal"""
         def play_thread():
             try:
-                if not os.path.exists(path):
-                    # נסה wav
-                    alt = path.replace('.mp3', '.wav')
+                current_path = playback_path
+                if not os.path.exists(current_path):
+                    alt = current_path.replace('.mp3', '.wav')
                     if os.path.exists(alt):
-                        path = alt
+                        current_path = alt
                     else:
-                        return
+                        alt2 = current_path.replace('.mp3', '_pyttsx3.wav')
+                        if os.path.exists(alt2):
+                            current_path = alt2
+                        else:
+                            print(f"[TTS] File not found: {playback_path}")
+                            return
                 
                 if not HAS_PYGAME:
                     return
-                    
-                pygame.mixer.music.load(path)
+                
+                pygame.mixer.music.load(current_path)
                 pygame.mixer.music.play()
                 while pygame.mixer.music.get_busy():
                     pygame.time.wait(100)
                 try:
-                    os.remove(path)
-                    # נקה גם wav אם יש
-                    w = path.replace('.mp3', '.wav').replace('.wav', '_pyttsx3.wav')
-                    if os.path.exists(w):
-                        os.remove(w)
+                    # נקה רק קבצי temp adiel_, לא קולות מקוריים
+                    if "adiel_" in current_path and os.path.exists(current_path):
+                        os.remove(current_path)
+                        w = current_path.replace('.mp3', '.wav')
+                        if os.path.exists(w) and "adiel_" in w:
+                            os.remove(w)
                 except:
                     pass
             except Exception as e:
                 print(f"[TTS] Playback failed: {e}")
+                import traceback; traceback.print_exc()
 
         t = threading.Thread(target=play_thread, daemon=True)
         t.start()

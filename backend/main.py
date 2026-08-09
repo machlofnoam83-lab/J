@@ -94,6 +94,13 @@ except Exception as e:
     print(f"[Main] System tools import failed: {e}")
     get_system_tools = lambda: None
 
+try:
+    from audio.device_manager import get_device_manager
+    print("[Main] 🎤 Device Manager loaded - Mic selection available")
+except Exception as e:
+    print(f"[Main] Device manager not available: {e}")
+    get_device_manager = lambda: None
+
 # Init FastAPI
 app = FastAPI(title="Adiel Junior Backend", version="1.0.0")
 
@@ -442,6 +449,109 @@ async def get_profile():
         "memory": brain.memory.get_context_string()[:500] if hasattr(brain, 'memory') else ""
     }
 
+# === Audio Devices - בחירת מיקרופון ===
+
+@app.get("/audio/devices")
+async def list_audio_devices():
+    """רשימת כל המיקרופונים והרמקולים - לבחירה"""
+    try:
+        dev_manager = get_device_manager()
+        if not dev_manager:
+            raise HTTPException(500, "Device manager not available")
+        
+        devices = dev_manager.list_devices()
+        input_devices = dev_manager.list_input_devices()
+        output_devices = dev_manager.list_output_devices()
+        
+        return {
+            "all": devices,
+            "inputs": input_devices,
+            "outputs": output_devices,
+            "selected_input": dev_manager.get_selected_input(),
+            "selected_output": dev_manager.get_selected_output(),
+            "total": len(devices)
+        }
+    except Exception as e:
+        print(f"[Audio Devices] Error: {e}")
+        raise HTTPException(500, str(e))
+
+@app.post("/audio/devices/input/{device_id}")
+async def select_input_device(device_id: int):
+    """בוחר מיקרופון - אדיאל תשתמש בו מהיום"""
+    try:
+        dev_manager = get_device_manager()
+        if not dev_manager:
+            raise HTTPException(500, "Device manager not available")
+        
+        result = dev_manager.select_input_device(device_id)
+        
+        # אם הצליח, עדכן את המנועים הקיימים
+        global wake_detector, stt_engine
+        if result["success"]:
+            # צריך להפעיל מחדש את wake detector עם המיקרופון החדש
+            if wake_detector:
+                try:
+                    wake_detector.stop()
+                    def on_wake(text):
+                        asyncio.run_coroutine_threadsafe(handle_wake_word(text), asyncio.get_event_loop())
+                    
+                    from audio.wake_word import WakeWordDetector
+                    wake_detector = WakeWordDetector(on_wake=on_wake, device_id=device_id)
+                    wake_detector.start()
+                    result["restarted_wake"] = True
+                except Exception as e:
+                    result["restart_warning"] = f"צריך להפעיל מחדש את Backend כדי להשתמש במיקרופון החדש: {e}"
+            
+            if stt_engine:
+                stt_engine.device_id = device_id
+        
+        if result["success"]:
+            await manager_broadcast_safe({
+                "type": "mic_changed",
+                "device_id": device_id,
+                "device_name": result.get("device", {}).get("name", ""),
+                "message": result.get("message", "")
+            })
+        
+        return result
+    except Exception as e:
+        print(f"[Select Input] Error: {e}")
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+@app.post("/audio/devices/output/{device_id}")
+async def select_output_device(device_id: int):
+    """בוחר רמקול"""
+    try:
+        dev_manager = get_device_manager()
+        if not dev_manager:
+            raise HTTPException(500, "Device manager not available")
+        
+        result = dev_manager.select_output_device(device_id)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/audio/devices/reset")
+async def reset_audio_devices():
+    """חוזר לברירת מחדל"""
+    try:
+        dev_manager = get_device_manager()
+        if not dev_manager:
+            raise HTTPException(500, "Device manager not available")
+        
+        result = dev_manager.reset_to_default()
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+async def manager_broadcast_safe(msg: dict):
+    """עוזר ל-broadcast בטוח"""
+    try:
+        await manager.broadcast(msg)
+    except:
+        pass
+
 @app.post("/speak")
 async def speak_endpoint(req: SpeakRequest):
     """TTS ישיר עם base64"""
@@ -604,13 +714,13 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
             print(f"[Main] Screen context failed: {e}")
             screen_ctx = None
 
-    # עבד עם המוח הפרטי (עכשיו עם למידה)
+    # עבד עם המוח הפרטי (עכשיו עם למידה) - תיקון באג shadowing
     try:
-        result = await brain.process(user_text, screen_context=screen_ctx)
+        brain_result = await brain.process(user_text, screen_context=screen_ctx)
     except Exception as e:
         print(f"[Main] Brain process failed: {e}")
         import traceback; traceback.print_exc()
-        result = {
+        brain_result = {
             "text": "אופס, הייתה לי תקלה בעיבוד. תנסה שוב, בוס?",
             "intent": "error",
             "hud_command": None,
@@ -619,11 +729,11 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
             "self_updates": []
         }
 
-    response_text = result.get("text", "...")
-    hud_cmd = result.get("hud_command")
-    sys_action = result.get("system_action")
-    proposals = result.get("proposals", [])
-    self_updates = result.get("self_updates", [])
+    response_text = brain_result.get("text", "...")
+    hud_cmd = brain_result.get("hud_command")
+    sys_action = brain_result.get("system_action")
+    proposals = brain_result.get("proposals", [])
+    self_updates = brain_result.get("self_updates", [])
 
     print(f"[Main] Brain response: {response_text}")
     print(f"[Main] HUD cmd: {hud_cmd} | Sys action: {sys_action}")
@@ -637,24 +747,24 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         try:
             sys_result = system_tools.execute_action(sys_action)
             print(f"[Main] System action result: {sys_result}")
-            result["system_result"] = sys_result
+            brain_result["system_result"] = sys_result
         except Exception as e:
             print(f"[Main] System action failed: {e}")
 
-    # שלח ל-frontend - תשובה + הצעות
+    # שלח ל-frontend - תשובה + הצעות - תיקון באג shadowing
     await manager.broadcast({
         "type": "brain_response",
         "user_text": user_text,
         "assistant_text": response_text,
-        "intent": result.get("intent"),
+        "intent": brain_result.get("intent"),
         "hud_command": hud_cmd,
         "system_action": sys_action,
         "screen_context": screen_ctx,
         "screen_image": screen_b64,
         "proposals": proposals,
         "self_updates": self_updates,
-        "user_profile": result.get("user_profile"),
-        "learning_active": result.get("learning_active", False),
+        "user_profile": brain_result.get("user_profile"),
+        "learning_active": brain_result.get("learning_active", False),
         "timestamp": datetime.now().isoformat()
     })
 
@@ -680,20 +790,20 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
             "command": hud_cmd
         })
 
-    # TTS
+    # TTS - תיקון באג
+    tts_audio_b64 = None
     if tts_engine and response_text:
         try:
-            result = await tts_engine.synthesize(response_text, play=True)
-            audio_b64 = None
-            if isinstance(result, tuple):
-                _, audio_b64 = result
-            elif isinstance(result, str) and result.startswith("data:audio"):
-                audio_b64 = result
+            tts_result = await tts_engine.synthesize(response_text, play=True)
+            if isinstance(tts_result, tuple):
+                _, tts_audio_b64 = tts_result
+            elif isinstance(tts_result, str) and tts_result.startswith("data:audio"):
+                tts_audio_b64 = tts_result
             
             await manager.broadcast({
                 "type": "assistant_speaking",
                 "text": response_text,
-                "audio_base64": audio_b64
+                "audio_base64": tts_audio_b64
             })
         except Exception as e:
             print(f"[Main] TTS failed: {e}")
@@ -703,11 +813,11 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
     return {
         "user_text": user_text,
         "assistant_text": response_text,
-        "intent": result.get("intent"),
+        "intent": brain_result.get("intent"),
         "screen_context": screen_ctx,
         "proposals": proposals,
         "self_updates": self_updates,
-        "user_profile": result.get("user_profile")
+        "user_profile": brain_result.get("user_profile")
     }
 
 # WebSocket
