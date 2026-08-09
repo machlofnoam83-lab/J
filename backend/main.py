@@ -278,7 +278,6 @@ async def trigger_auto_fix():
     log = []
     fixed = []
     
-    # נסה לתקן רכיבים חסרים
     global brain, tts_engine, vision_engine, system_tools
     
     if brain is None:
@@ -298,6 +297,127 @@ async def trigger_auto_fix():
             log.append(f"TTS fix failed: {e}")
     
     return {"fixed": fixed, "log": log, "status": "fixed" if fixed else "no_fix_needed"}
+
+# === NEW: Learning & Self-Update Endpoints ===
+
+@app.get("/proposals")
+async def get_proposals():
+    """כל ההצעות שממתינות לאישור - למידה + עדכון עצמי"""
+    if not brain:
+        raise HTTPException(500, "Brain not initialized")
+    
+    proposals = []
+    self_updates = []
+    
+    if hasattr(brain, 'learning_engine') and brain.learning_engine:
+        proposals = brain.learning_engine.get_pending_proposals()
+    
+    if hasattr(brain, 'self_update_manager') and brain.self_update_manager:
+        self_updates = brain.self_update_manager.get_pending_updates()
+    
+    return {
+        "learning_proposals": proposals,
+        "self_update_proposals": self_updates,
+        "total_pending": len(proposals) + len(self_updates)
+    }
+
+@app.post("/proposals/{proposal_id}/approve")
+async def approve_proposal(proposal_id: str, extra: Dict = None):
+    """מאשר הצעת למידה - המילה/עובדה הופכת לסופית"""
+    if not brain or not hasattr(brain, 'learning_engine') or not brain.learning_engine:
+        raise HTTPException(500, "Learning engine not available")
+    
+    extra = extra or {}
+    result = brain.learning_engine.approve_proposal(proposal_id, extra_data=extra)
+    
+    if result["success"]:
+        # Broadcast לקליינטים
+        await manager.broadcast({
+            "type": "proposal_approved",
+            "proposal_id": proposal_id,
+            "message": result["message"]
+        })
+        return result
+    else:
+        raise HTTPException(404, result["error"])
+
+@app.post("/proposals/{proposal_id}/reject")
+async def reject_proposal(proposal_id: str):
+    """דוחה הצעת למידה"""
+    if not brain or not hasattr(brain, 'learning_engine') or not brain.learning_engine:
+        raise HTTPException(500, "Learning engine not available")
+    
+    result = brain.learning_engine.reject_proposal(proposal_id)
+    
+    if result["success"]:
+        await manager.broadcast({
+            "type": "proposal_rejected",
+            "proposal_id": proposal_id,
+            "message": result["message"]
+        })
+        return result
+    else:
+        raise HTTPException(404, result["error"])
+
+class SelfUpdateApproveRequest(BaseModel):
+    reason: str = ""
+
+@app.post("/self-updates/{update_id}/approve")
+async def approve_self_update(update_id: str):
+    """מאשר עדכון עצמי של אדיאל - היא משתפרת אבל רק באישורך"""
+    if not brain or not hasattr(brain, 'self_update_manager') or not brain.self_update_manager:
+        raise HTTPException(500, "Self-update manager not available")
+    
+    result = brain.self_update_manager.approve_update(update_id)
+    
+    if result["success"]:
+        await manager.broadcast({
+            "type": "self_update_approved",
+            "update_id": update_id,
+            "message": result["message"],
+            "update": result.get("update")
+        })
+        return result
+    else:
+        raise HTTPException(404, result["error"])
+
+@app.post("/self-updates/{update_id}/reject")
+async def reject_self_update(update_id: str, req: SelfUpdateApproveRequest = None):
+    """דוחה עדכון עצמי"""
+    if not brain or not hasattr(brain, 'self_update_manager') or not brain.self_update_manager:
+        raise HTTPException(500, "Self-update manager not available")
+    
+    reason = req.reason if req else ""
+    result = brain.self_update_manager.reject_update(update_id, reason=reason)
+    
+    if result["success"]:
+        await manager.broadcast({
+            "type": "self_update_rejected",
+            "update_id": update_id,
+            "message": result["message"]
+        })
+        return result
+    else:
+        raise HTTPException(404, result["error"])
+
+@app.get("/profile")
+async def get_profile():
+    """פרופיל המשתמש שאדיאל זוכרת - הזיכרון החכם"""
+    if not brain or not hasattr(brain, 'learning_engine') or not brain.learning_engine:
+        raise HTTPException(500, "Learning engine not available")
+    
+    profile = brain.learning_engine.get_user_profile_summary()
+    smart_context = brain.learning_engine.get_smart_context()
+    
+    return {
+        "profile": profile,
+        "smart_context": smart_context,
+        "vocabulary": {
+            "count": len(brain.learning_engine.vocab.vocab.get("words", {})),
+            "words": list(brain.learning_engine.vocab.vocab.get("words", {}).keys())[-20:]
+        },
+        "memory": brain.memory.get_context_string()[:500] if hasattr(brain, 'memory') else ""
+    }
 
 @app.post("/speak")
 async def speak_endpoint(req: SpeakRequest):
@@ -435,7 +555,7 @@ async def listen_for_command():
         })
 
 async def process_user_input(user_text: str, with_screen=True) -> Dict:
-    """עיבוד קלט משתמש - לב המוח"""
+    """עיבוד קלט משתמש - לב המוח עם למידה והצעות לשיפור"""
     global brain, vision_engine, system_tools, tts_engine
 
     if not brain:
@@ -446,13 +566,12 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
     if with_screen and vision_engine:
         try:
             screen_ctx = vision_engine.analyze_screen_context(include_ocr=True)
-            # קבל גם base64 קטן ל-frontend preview
             screen_b64 = vision_engine.get_base64_for_api(max_size=600)
         except Exception as e:
             print(f"[Main] Screen context failed: {e}")
             screen_ctx = None
 
-    # עבד עם המוח הפרטי
+    # עבד עם המוח הפרטי (עכשיו עם למידה)
     try:
         result = await brain.process(user_text, screen_context=screen_ctx)
     except Exception as e:
@@ -462,15 +581,23 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
             "text": "אופס, הייתה לי תקלה בעיבוד. תנסה שוב, בוס?",
             "intent": "error",
             "hud_command": None,
-            "system_action": None
+            "system_action": None,
+            "proposals": [],
+            "self_updates": []
         }
 
     response_text = result.get("text", "...")
     hud_cmd = result.get("hud_command")
     sys_action = result.get("system_action")
+    proposals = result.get("proposals", [])
+    self_updates = result.get("self_updates", [])
 
     print(f"[Main] Brain response: {response_text}")
     print(f"[Main] HUD cmd: {hud_cmd} | Sys action: {sys_action}")
+    if proposals:
+        print(f"[Main] 📚 {len(proposals)} הצעות למידה חדשות")
+    if self_updates:
+        print(f"[Main] 🤖 {len(self_updates)} הצעות שיפור עצמי")
 
     # בצע system action אם יש
     if sys_action and system_tools:
@@ -481,7 +608,7 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         except Exception as e:
             print(f"[Main] System action failed: {e}")
 
-    # שלח ל-frontend
+    # שלח ל-frontend - תשובה + הצעות
     await manager.broadcast({
         "type": "brain_response",
         "user_text": user_text,
@@ -491,10 +618,29 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         "system_action": sys_action,
         "screen_context": screen_ctx,
         "screen_image": screen_b64,
+        "proposals": proposals,
+        "self_updates": self_updates,
+        "user_profile": result.get("user_profile"),
+        "learning_active": result.get("learning_active", False),
         "timestamp": datetime.now().isoformat()
     })
 
-    # אם יש HUD command, שלח בנפרד (למקרה שהקליינט מאזין לסוג מסוים)
+    # אם יש הצעות למידה, שלח אותן בנפרד כ-cards
+    if proposals:
+        for prop in proposals:
+            await manager.broadcast({
+                "type": "learning_proposal",
+                "proposal": prop
+            })
+    
+    if self_updates:
+        for upd in self_updates:
+            await manager.broadcast({
+                "type": "self_update_proposal",
+                "proposal": upd
+            })
+
+    # אם יש HUD command, שלח בנפרד
     if hud_cmd:
         await manager.broadcast({
             "type": "hud_command",
@@ -504,9 +650,7 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
     # TTS
     if tts_engine and response_text:
         try:
-            # נקה טקסט ל-TTS (הסר קוד)
             await tts_engine.synthesize(response_text, play=True)
-            
             await manager.broadcast({
                 "type": "assistant_speaking",
                 "text": response_text
@@ -514,14 +658,16 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         except Exception as e:
             print(f"[Main] TTS failed: {e}")
 
-    # אם זה סוף שיחה, אחרי תשובה החזר ל-idle אבל השאר conversation active לעוד קצת
     app_state.activate_conversation(duration=15)
 
     return {
         "user_text": user_text,
         "assistant_text": response_text,
         "intent": result.get("intent"),
-        "screen_context": screen_ctx
+        "screen_context": screen_ctx,
+        "proposals": proposals,
+        "self_updates": self_updates,
+        "user_profile": result.get("user_profile")
     }
 
 # WebSocket
@@ -574,6 +720,57 @@ async def websocket_endpoint(websocket: WebSocket):
                         "type": "screen_data",
                         "context": ctx,
                         "image": b64
+                    }, websocket)
+
+            elif msg_type == "approve_proposal":
+                prop_id = msg.get("id", "")
+                if brain and hasattr(brain, 'learning_engine') and brain.learning_engine:
+                    result = brain.learning_engine.approve_proposal(prop_id, extra_data=msg.get("extra", {}))
+                    await manager.broadcast({
+                        "type": "proposal_approved" if result["success"] else "error",
+                        "proposal_id": prop_id,
+                        "message": result.get("message", "") if result["success"] else result.get("error", "")
+                    })
+
+            elif msg_type == "reject_proposal":
+                prop_id = msg.get("id", "")
+                if brain and hasattr(brain, 'learning_engine') and brain.learning_engine:
+                    result = brain.learning_engine.reject_proposal(prop_id)
+                    await manager.broadcast({
+                        "type": "proposal_rejected" if result["success"] else "error",
+                        "proposal_id": prop_id,
+                        "message": result.get("message", "")
+                    })
+
+            elif msg_type == "approve_self_update":
+                upd_id = msg.get("id", "")
+                if brain and hasattr(brain, 'self_update_manager') and brain.self_update_manager:
+                    result = brain.self_update_manager.approve_update(upd_id)
+                    await manager.broadcast({
+                        "type": "self_update_approved" if result["success"] else "error",
+                        "update_id": upd_id,
+                        "message": result.get("message", ""),
+                        "update": result.get("update")
+                    })
+
+            elif msg_type == "reject_self_update":
+                upd_id = msg.get("id", "")
+                if brain and hasattr(brain, 'self_update_manager') and brain.self_update_manager:
+                    result = brain.self_update_manager.reject_update(upd_id, reason=msg.get("reason", ""))
+                    await manager.broadcast({
+                        "type": "self_update_rejected" if result["success"] else "error",
+                        "update_id": upd_id,
+                        "message": result.get("message", "")
+                    })
+
+            elif msg_type == "get_profile":
+                if brain and hasattr(brain, 'learning_engine') and brain.learning_engine:
+                    profile = brain.learning_engine.get_user_profile_summary()
+                    smart = brain.learning_engine.get_smart_context()
+                    await manager.send_personal({
+                        "type": "profile_data",
+                        "profile": profile,
+                        "smart_context": smart
                     }, websocket)
 
             elif msg_type == "ping":

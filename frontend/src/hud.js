@@ -76,7 +76,11 @@ class AdielHUD {
             connDot: document.getElementById('connDot'),
             connText: document.getElementById('connText'),
             orbContent: document.getElementById('orbContent'),
+            proposalsArea: document.getElementById('proposalsArea'),
+            proposalsList: document.getElementById('proposalsList'),
+            proposalsBadge: document.getElementById('proposalsBadge'),
         };
+        this.proposals = []; // כל ההצעות שממתינות
     }
 
     bindEvents() {
@@ -257,21 +261,58 @@ class AdielHUD {
                 if (text) {
                     if (msg.type === 'brain_response') {
                         this.addMessage('assistant', text);
-                        // Show screen preview if attached
                         if (msg.screen_image) {
                             this.showScreenPreview(msg.screen_image, msg.screen_context);
                         }
-                        // Handle HUD command
                         if (msg.hud_command) {
                             this.handleHUDCommand(msg.hud_command);
                         }
+                        // NEW: הצעות למידה
+                        if (msg.proposals && msg.proposals.length > 0) {
+                            msg.proposals.forEach(p => this.addProposal(p, 'learning'));
+                        }
+                        if (msg.self_updates && msg.self_updates.length > 0) {
+                            msg.self_updates.forEach(p => this.addProposal(p, 'self_update'));
+                        }
+                        if (msg.user_profile) {
+                            console.log('[HUD] User profile', msg.user_profile);
+                        }
                     }
-                    // Visualizer speaking
                     this.setSpeaking(true, text);
-                    // Auto stop speaking visual after estimated duration
                     const duration = Math.max(2000, text.length * 80);
                     setTimeout(() => this.setSpeaking(false), duration);
                 }
+                break;
+
+            case 'learning_proposal':
+                this.addProposal(msg.proposal, 'learning');
+                break;
+
+            case 'self_update_proposal':
+                this.addProposal(msg.proposal, 'self_update');
+                break;
+
+            case 'proposal_approved':
+                this.addMessage('assistant', `✅ ${msg.message || 'למדתי! תודה בוס, אני חכמה יותר עכשיו.'}`);
+                this.removeProposalCard(msg.proposal_id);
+                break;
+
+            case 'proposal_rejected':
+                this.addMessage('assistant', `❌ ${msg.message || 'סגור, לא אזכור את זה.'}`);
+                this.removeProposalCard(msg.proposal_id);
+                break;
+
+            case 'self_update_approved':
+                this.addMessage('assistant', `🚀 ${msg.message || 'עדכנתי את עצמי! המוח שלי השתפר.'}`);
+                this.removeProposalCard(msg.update_id);
+                if (msg.update && msg.update.explanation_for_user) {
+                    this.addMessage('assistant', `הסבר: ${msg.update.explanation_for_user.substring(0,300)}...`);
+                }
+                break;
+
+            case 'self_update_rejected':
+                this.addMessage('assistant', `👌 ${msg.message || 'סגור, לא אעדכן את זה.'}`);
+                this.removeProposalCard(msg.update_id);
                 break;
 
             case 'hud_command':
@@ -291,8 +332,157 @@ class AdielHUD {
                 break;
 
             case 'pong':
-                // keepalive
                 break;
+        }
+    }
+
+    // === NEW: Proposals System - אדיאל רוצה ללמוד ומבקשת אישור ===
+
+    addProposal(proposal, type='learning') {
+        this.proposals.push(proposal);
+        this.renderProposalCard(proposal, type);
+        this.updateProposalsBadge();
+        
+        // פתח את אזור ההצעות
+        if (this.elements.proposalsArea) {
+            this.elements.proposalsArea.classList.remove('hidden');
+        }
+        
+        // אם זה הצעת אוצר מילים / פרופיל חשובה, הודע בצ'אט
+        if (proposal.type === 'profile_new' || proposal.type === 'vocabulary') {
+            this.addMessage('assistant', `📚 ${proposal.description_he} - זה ממתין לאישורך למטה, בוס.`);
+        }
+    }
+
+    renderProposalCard(proposal, type) {
+        if (!this.elements.proposalsList) return;
+        
+        const existing = document.getElementById(`proposal-${proposal.id}`);
+        if (existing) return; // כבר קיים
+        
+        const card = document.createElement('div');
+        card.className = `proposal-card type-${proposal.type || type}`;
+        card.id = `proposal-${proposal.id}`;
+        
+        const risk = proposal.risk || 'low';
+        const riskLabel = {low: 'סיכון נמוך', medium: 'בינוני', high: 'גבוה'}[risk] || risk;
+        
+        const title = proposal.title || proposal.description_he?.substring(0,40) || 'הצעה חדשה';
+        const description = proposal.description_he || proposal.description || '';
+        const explanation = proposal.explanation_for_user || proposal.what_it_does || '';
+        const beforeAfter = proposal.before_example && proposal.after_example ? 
+            `<div class="proposal-explanation"><b>לפני:</b> ${this.escapeHtml(proposal.before_example)}<br><b>אחרי:</b> ${this.escapeHtml(proposal.after_example)}</div>` : 
+            (explanation ? `<div class="proposal-explanation">${this.escapeHtml(explanation)}</div>` : '');
+        
+        card.innerHTML = `
+            <div class="proposal-title">${this.escapeHtml(title)}</div>
+            <div class="proposal-description">${this.escapeHtml(description)}</div>
+            <div class="proposal-meta">
+                <span class="proposal-tag">${this.escapeHtml(proposal.type || type)}</span>
+                <span class="proposal-tag risk-${risk}">${riskLabel}</span>
+                ${proposal.word ? `<span class="proposal-tag">${this.escapeHtml(proposal.word)}</span>` : ''}
+            </div>
+            ${beforeAfter}
+            <div class="proposal-actions">
+                <button class="proposal-btn approve" data-id="${proposal.id}" data-type="${type}">✅ אשר - למד/עדכן</button>
+                <button class="proposal-btn reject" data-id="${proposal.id}" data-type="${type}">❌ דחה</button>
+            </div>
+        `;
+        
+        // אירועי כפתורים
+        card.querySelector('.approve')?.addEventListener('click', (e) => {
+            const id = e.target.getAttribute('data-id');
+            const t = e.target.getAttribute('data-type');
+            this.approveProposal(id, t);
+        });
+        card.querySelector('.reject')?.addEventListener('click', (e) => {
+            const id = e.target.getAttribute('data-id');
+            const t = e.target.getAttribute('data-type');
+            this.rejectProposal(id, t);
+        });
+        
+        this.elements.proposalsList.appendChild(card);
+    }
+
+    updateProposalsBadge() {
+        if (this.elements.proposalsBadge) {
+            this.elements.proposalsBadge.textContent = this.proposals.length;
+        }
+    }
+
+    removeProposalCard(id) {
+        const card = document.getElementById(`proposal-${id}`);
+        if (card) {
+            card.style.animation = 'msgEnter 0.3s reverse';
+            setTimeout(() => card.remove(), 300);
+        }
+        this.proposals = this.proposals.filter(p => p.id !== id);
+        this.updateProposalsBadge();
+        if (this.proposals.length === 0 && this.elements.proposalsArea) {
+            this.elements.proposalsArea.classList.add('hidden');
+        }
+    }
+
+    approveProposal(id, type) {
+        console.log(`[HUD] Approving ${type} proposal ${id}`);
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            this.addMessage('assistant', 'אני לא מחוברת ל-Backend לאישור.');
+            return;
+        }
+        
+        if (type === 'self_update') {
+            // Self-update approval - דורש הסבר מלא
+            fetch(`http://${window.location.hostname}:8765/self-updates/${id}/approve`, {method: 'POST'})
+                .then(r => r.json())
+                .then(data => {
+                    console.log('Self-update approved', data);
+                    if (!data.success) throw new Error(data.error);
+                })
+                .catch(() => {
+                    // Fallback via WS
+                    this.ws.send(JSON.stringify({type: 'approve_self_update', id: id}));
+                });
+            // גם דרך WS
+            this.ws.send(JSON.stringify({type: 'approve_self_update', id: id}));
+        } else {
+            // Learning proposal
+            fetch(`http://${window.location.hostname}:8765/proposals/${id}/approve`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({})
+            }).then(r => r.json()).then(data => {
+                console.log('Proposal approved', data);
+            }).catch(() => {});
+            // Fallback via WS
+            this.ws.send(JSON.stringify({type: 'approve_proposal', id: id}));
+        }
+        
+        // אופטימי - הסר מיד
+        const card = document.getElementById(`proposal-${id}`);
+        if (card) {
+            card.querySelectorAll('button').forEach(b => b.disabled = true);
+            card.querySelector('.approve').textContent = '⏳ מאשר...';
+        }
+    }
+
+    rejectProposal(id, type) {
+        console.log(`[HUD] Rejecting ${type} proposal ${id}`);
+        if (type === 'self_update') {
+            fetch(`http://${window.location.hostname}:8765/self-updates/${id}/reject`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({reason: 'user rejected via HUD'})
+            }).catch(()=>{});
+            this.ws?.send(JSON.stringify({type: 'reject_self_update', id: id}));
+        } else {
+            fetch(`http://${window.location.hostname}:8765/proposals/${id}/reject`, {method: 'POST'}).catch(()=>{});
+            this.ws?.send(JSON.stringify({type: 'reject_proposal', id: id}));
+        }
+        
+        const card = document.getElementById(`proposal-${id}`);
+        if (card) {
+            card.querySelectorAll('button').forEach(b => b.disabled = true);
+            card.querySelector('.reject').textContent = '⏳ דוחה...';
         }
     }
 

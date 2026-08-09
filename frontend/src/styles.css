@@ -745,5 +745,162 @@ body {
     opacity: 0.5;
 }
 
+/* Proposals - Learning & Self-Update Cards */
+.proposals-area {
+    background: linear-gradient(135deg, rgba(0,210,255,0.08), rgba(0,255,170,0.05));
+    border: 1px solid rgba(0,210,255,0.25);
+    border-radius: 12px;
+    padding: 10px;
+    animation: proposalsEnter 0.5s cubic-bezier(0.16,1,0.3,1);
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.proposals-area.hidden { display: none !important; }
+
+@keyframes proposalsEnter {
+    from { opacity: 0; transform: translateY(-15px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.proposals-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hud-accent);
+}
+
+.proposals-badge {
+    background: var(--hud-accent);
+    color: black;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 20px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.proposals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.proposal-card {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.proposal-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--hud-accent);
+}
+
+.proposal-card.type-vocabulary::before { background: var(--hud-accent-2); }
+.proposal-card.type-profile_new::before,
+.proposal-card.type-profile_update::before { background: #ff8a00; }
+.proposal-card.type-self_update::before { background: #a855f7; }
+.proposal-card.type-intent_learn::before { background: #00ffaa; }
+
+.proposal-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hud-text);
+    margin-bottom: 4px;
+}
+
+.proposal-description {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--hud-text-dim);
+    margin-bottom: 8px;
+}
+
+.proposal-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.proposal-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--hud-text-dim);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.proposal-tag.risk-low { border-color: var(--hud-success); color: var(--hud-success); }
+.proposal-tag.risk-medium { border-color: var(--hud-warning); color: var(--hud-warning); }
+.proposal-tag.risk-high { border-color: var(--hud-error); color: var(--hud-error); }
+
+.proposal-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.proposal-btn {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Heebo', sans-serif;
+}
+
+.proposal-btn.approve {
+    background: linear-gradient(135deg, var(--hud-success), var(--hud-accent-2));
+    color: black;
+}
+
+.proposal-btn.approve:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,255,136,0.3);
+}
+
+.proposal-btn.reject {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--hud-text-dim);
+}
+
+.proposal-btn.reject:hover {
+    background: rgba(255,68,68,0.1);
+    border-color: var(--hud-error);
+    color: var(--hud-error);
+}
+
+.proposal-explanation {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(0,210,255,0.06);
+    border-radius: 6px;
+    border: 1px dashed rgba(0,210,255,0.15);
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--hud-text-dim);
+    white-space: pre-wrap;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
 /* Utilities */
 .hidden { display: none !important; }
