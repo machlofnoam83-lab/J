@@ -1,12 +1,16 @@
 """
-Hebrew TTS Engine - Natural & Fast
-דיבור עברי טבעי עם edge-tts + pygame playback
+Hebrew TTS Engine - Natural & Fast v2.0 with Auto-Fix
+דיבור עברי טבעי - עם מערכת fallback אוטומטית שמתקנת
+
+Chain: edge-tts (עברית טבעית) -> pyttsx3 (אופליין) -> win32 SAPI (Windows) -> gTTS
+מחזיר גם base64 ל-frontend playback
 """
 import os
 import asyncio
 import tempfile
 import threading
-from typing import Optional
+import base64
+from typing import Optional, Tuple
 import uuid
 
 try:
@@ -14,19 +18,33 @@ try:
     HAS_EDGE = True
 except:
     HAS_EDGE = False
-    print("[TTS] edge-tts not available")
+    print("[TTS] edge-tts not available - will use fallback")
 
 try:
     import pygame
     HAS_PYGAME = True
 except:
     HAS_PYGAME = False
+    print("[TTS] pygame-ce not available - no local playback")
 
-# קולות עבריים מומלצים - נבדקו לאיכות טבעית
+# Fallbacks
+try:
+    import pyttsx3
+    HAS_PYTTSX3 = True
+except:
+    HAS_PYTTSX3 = False
+
+try:
+    import win32com.client
+    HAS_WIN32 = True
+except:
+    HAS_WIN32 = False
+
+# קולות עבריים מומלצים
 HEBREW_VOICES = {
-    "avigail": "he-IL-AvigailNeural",  # נשי, צעיר, טבעי מאוד - ברירת מחדל לג'וניור
-    "hila": "he-IL-HilaNeural",        # נשי, בוגר יותר
-    "asaf": "he-IL-AsafNeural",        # גברי
+    "avigail": "he-IL-AvigailNeural",
+    "hila": "he-IL-HilaNeural",
+    "asaf": "he-IL-AsafNeural",
 }
 
 class HebrewTTS:
@@ -37,45 +55,133 @@ class HebrewTTS:
         self.temp_dir = os.path.join(tempfile.gettempdir(), "adiel_tts")
         os.makedirs(self.temp_dir, exist_ok=True)
         
-        # אתחול pygame למיקסר
+        # אתחול pygame
         if HAS_PYGAME:
             try:
-                pygame.mixer.init(frequency=24000)
+                pygame.mixer.quit()
+                pygame.mixer.init(frequency=24000, size=-16, channels=2, buffer=512)
+                print(f"[TTS] Pygame mixer ready")
             except Exception as e:
                 print(f"[TTS] Pygame mixer init failed: {e}")
 
-        print(f"[TTS] Initialized with voice {self.voice_id}")
+        # אתחול pyttsx3 fallback
+        self.pyttsx3_engine = None
+        if HAS_PYTTSX3:
+            try:
+                self.pyttsx3_engine = pyttsx3.init()
+                self.pyttsx3_engine.setProperty('rate', 180)
+                print(f"[TTS] pyttsx3 fallback ready")
+            except Exception as e:
+                print(f"[TTS] pyttsx3 init failed: {e}")
+
+        print(f"[TTS] Initialized - Edge:{HAS_EDGE} Pygame:{HAS_PYGAME} pyttsx3:{HAS_PYTTSX3} SAPI:{HAS_WIN32} voice:{self.voice_id}")
 
     async def _synthesize_edge(self, text: str, output_path: str) -> bool:
-        """סינתזה עם edge-tts"""
+        """סינתזה עם edge-tts - הכי טבעי לעברית"""
         if not HAS_EDGE:
             return False
         
         try:
-            # הוספת SSML קל לשיפור טבעיות
-            # edge-tts מקבל rate/pitch כ-%
             communicate = edge_tts.Communicate(
                 text,
                 self.voice_id,
                 rate=self.rate,
                 pitch=self.pitch
             )
-            
             await communicate.save(output_path)
-            return True
+            
+            # בדוק שהקובץ נוצר ולא ריק
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 100:
+                return True
+            return False
         except Exception as e:
             print(f"[TTS] edge-tts failed: {e}")
+            # אם נכשל בגלל אינטרנט, ננסה fallback
             return False
 
-    async def synthesize(self, text: str, play=True) -> Optional[str]:
+    def _synthesize_pyttsx3(self, text: str, output_path: str) -> bool:
+        """Fallback 1: pyttsx3 אופליין"""
+        if not HAS_PYTTSX3 or not self.pyttsx3_engine:
+            return False
+        
+        try:
+            # pyttsx3 רוצה wav, לא mp3
+            wav_path = output_path.replace('.mp3', '.wav')
+            self.pyttsx3_engine.save_to_file(text, wav_path)
+            self.pyttsx3_engine.runAndWait()
+            
+            if os.path.exists(wav_path) and os.path.getsize(wav_path) > 100:
+                # אם ביקשו mp3, נשאיר wav וגם נעתיק
+                if output_path != wav_path:
+                    import shutil
+                    shutil.copy(wav_path, output_path.replace('.mp3', '_pyttsx3.wav'))
+                return True
+            return False
+        except Exception as e:
+            print(f"[TTS] pyttsx3 failed: {e}")
+            return False
+
+    def _synthesize_sapi(self, text: str) -> bool:
+        """Fallback 2: Windows SAPI - מדבר ישירות, בלי קובץ"""
+        if not HAS_WIN32:
+            return False
+        try:
+            speaker = win32com.client.Dispatch("SAPI.SpVoice")
+            speaker.Speak(text)
+            return True
+        except Exception as e:
+            print(f"[TTS] SAPI failed: {e}")
+            return False
+
+    def _synthesize_pyttsx3_direct(self, text: str) -> bool:
+        """pyttsx3 דיבור ישיר"""
+        if not HAS_PYTTSX3 or not self.pyttsx3_engine:
+            return False
+        try:
+            self.pyttsx3_engine.say(text)
+            self.pyttsx3_engine.runAndWait()
+            return True
+        except Exception as e:
+            print(f"[TTS] pyttsx3 direct failed: {e}")
+            return False
+
+    def _file_to_base64(self, path: str) -> Optional[str]:
+        """ממיר קובץ קול ל-base64 ל-frontend"""
+        try:
+            if not os.path.exists(path):
+                # נסה wav
+                wav = path.replace('.mp3', '.wav')
+                if os.path.exists(wav):
+                    path = wav
+                else:
+                    wav2 = path.replace('.mp3', '_pyttsx3.wav')
+                    if os.path.exists(wav2):
+                        path = wav2
+                    else:
+                        return None
+            
+            with open(path, 'rb') as f:
+                data = f.read()
+                if len(data) < 100:
+                    return None
+                b64 = base64.b64encode(data).decode('utf-8')
+                # זהה סוג
+                if path.endswith('.mp3'):
+                    return f"data:audio/mpeg;base64,{b64}"
+                else:
+                    return f"data:audio/wav;base64,{b64}"
+        except Exception as e:
+            print(f"[TTS] base64 failed: {e}")
+            return None
+
+    async def synthesize(self, text: str, play=True) -> Optional[Tuple[str, Optional[str]]]:
         """
-        מסנתז טקסט ומנגן (או שומר)
-        מחזיר נתיב לקובץ
+        מסנתז טקסט - עם fallback chain אוטומטי
+        מחזיר (path, base64) - base64 ל-frontend playback
         """
         if not text or not text.strip():
             return None
 
-        # ניקוי טקסט ל-TTS - הסר אימוג'ים, תקן
         clean_text = self._prepare_text_for_tts(text)
         if not clean_text:
             return None
@@ -83,29 +189,58 @@ class HebrewTTS:
         file_id = str(uuid.uuid4())[:8]
         output_path = os.path.join(self.temp_dir, f"adiel_{file_id}.mp3")
         
-        success = await self._synthesize_edge(clean_text, output_path)
+        print(f"[TTS] Synthesizing: '{clean_text[:50]}...'")
         
-        if not success:
-            print("[TTS] Synthesis failed, no fallback yet")
-            return None
-            
-        print(f"[TTS] Synthesized: '{clean_text[:50]}...' -> {output_path}")
-
-        if play and HAS_PYGAME:
-            self._play_audio(output_path)
+        # נסיון 1: edge-tts (הכי טוב לעברית)
+        if HAS_EDGE:
+            success = await self._synthesize_edge(clean_text, output_path)
+            if success:
+                print(f"[TTS] ✓ edge-tts success -> {output_path}")
+                b64 = self._file_to_base64(output_path)
+                if play and HAS_PYGAME:
+                    self._play_audio(output_path)
+                return output_path, b64
+            else:
+                print(f"[TTS] edge-tts failed, trying fallback...")
         
-        return output_path
+        # נסיון 2: pyttsx3 עם קובץ + ניגון
+        if HAS_PYTTSX3:
+            wav_path = output_path.replace('.mp3', '.wav')
+            success = self._synthesize_pyttsx3(clean_text, wav_path)
+            if success:
+                print(f"[TTS] ✓ pyttsx3 file success")
+                b64 = self._file_to_base64(wav_path)
+                if play:
+                    # pyttsx3 כבר ניגן בקובץ? ננגן שוב ישירות
+                    self._synthesize_pyttsx3_direct(clean_text)
+                return wav_path, b64
+        
+        # נסיון 3: Windows SAPI ישיר (בלי קובץ, רק ניגון)
+        if HAS_WIN32 and play:
+            success = self._synthesize_sapi(clean_text)
+            if success:
+                print(f"[TTS] ✓ SAPI direct success")
+                return None, None  # אין קובץ, אבל ניגן
+        
+        # נסיון 4: pyttsx3 ישיר (אחרון)
+        if HAS_PYTTSX3 and play:
+            success = self._synthesize_pyttsx3_direct(clean_text)
+            if success:
+                print(f"[TTS] ✓ pyttsx3 direct success")
+                return None, None
+        
+        print(f"[TTS] ✗ All TTS methods failed for: {clean_text[:30]}")
+        print(f"[TTS] בדוק: pip install edge-tts pyttsx3 pygame-ce")
+        print(f"[TTS] ובדוק רמקולים + ווליום Windows")
+        return None
 
     def _prepare_text_for_tts(self, text: str) -> str:
-        """הכנת טקסט ל-TTS - תיקון סלנג וסימנים"""
+        """הכנת טקסט ל-TTS"""
         import re
-        
-        # הסר markdown, קוד, אימוג'ים
         text = re.sub(r'```.*?```', ' ', text, flags=re.DOTALL)
         text = re.sub(r'`[^`]+`', ' ', text)
         text = re.sub(r'[#*_\[\]]', ' ', text)
         
-        # תיקון סלנג לכתיב ש-TTS יבין טוב יותר
         slang_fixes = {
             "יאללה": "יאללה",
             "סגור": "סגור",
@@ -115,31 +250,40 @@ class HebrewTTS:
         for k, v in slang_fixes.items():
             text = text.replace(k, v)
         
-        # הגבל אורך - edge-tts מוגבל
         if len(text) > 800:
             text = text[:800] + "."
             
-        # הוסף הפסקות טבעיות
         text = text.replace("?", "? ")
         text = text.replace("!", "! ")
         text = text.replace(",", ", ")
-        
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
     def _play_audio(self, path: str):
-        """ניגון לא חוסם"""
+        """ניגון לא חוסם עם pygame"""
         def play_thread():
             try:
                 if not os.path.exists(path):
+                    # נסה wav
+                    alt = path.replace('.mp3', '.wav')
+                    if os.path.exists(alt):
+                        path = alt
+                    else:
+                        return
+                
+                if not HAS_PYGAME:
                     return
+                    
                 pygame.mixer.music.load(path)
                 pygame.mixer.music.play()
                 while pygame.mixer.music.get_busy():
                     pygame.time.wait(100)
-                # נקה קובץ אחרי ניגון
                 try:
                     os.remove(path)
+                    # נקה גם wav אם יש
+                    w = path.replace('.mp3', '.wav').replace('.wav', '_pyttsx3.wav')
+                    if os.path.exists(w):
+                        os.remove(w)
                 except:
                     pass
             except Exception as e:
@@ -148,18 +292,16 @@ class HebrewTTS:
         t = threading.Thread(target=play_thread, daemon=True)
         t.start()
 
-    def synthesize_sync(self, text: str, play=True) -> Optional[str]:
+    def synthesize_sync(self, text: str, play=True):
         """גרסה סינכרונית"""
         try:
-            # נסה לקבל loop קיים, אם לא - צור חדש
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    # אם ה-loop רץ (FastAPI), השתמש ב-run_in_executor
                     import concurrent.futures
                     with concurrent.futures.ThreadPoolExecutor() as pool:
                         future = pool.submit(asyncio.run, self.synthesize(text, play))
-                        return future.result(timeout=15)
+                        return future.result(timeout=20)
                 else:
                     return loop.run_until_complete(self.synthesize(text, play))
             except RuntimeError:
@@ -175,7 +317,7 @@ class HebrewTTS:
             except:
                 pass
 
-# פונקציית wrapper פשוטה ל-backend main
+# Singleton
 _global_tts = None
 
 def get_tts_engine():
@@ -184,15 +326,22 @@ def get_tts_engine():
         _global_tts = HebrewTTS(voice="avigail")
     return _global_tts
 
-async def speak_hebrew(text: str, play=True) -> Optional[str]:
+async def speak_hebrew(text: str, play=True):
     engine = get_tts_engine()
-    return await engine.synthesize(text, play=play)
+    result = await engine.synthesize(text, play=play)
+    if result:
+        if isinstance(result, tuple):
+            return result[0]
+        return result
+    return None
 
 # Test
 if __name__ == "__main__":
     async def test():
         tts = HebrewTTS()
-        await tts.synthesize("שלום בוס! אני אדיאל ג'וניור, העוזרת האישית שלך. מוכנה לפעולה!", play=True)
-        await asyncio.sleep(5)
+        print("Testing TTS chain...")
+        result = await tts.synthesize("שלום בוס! אני אדיאל ג'וניור, בדיקה. אם אתה שומע אותי, הרמקולים עובדים!", play=True)
+        print(f"Result: {result}")
+        await asyncio.sleep(6)
 
     asyncio.run(test())

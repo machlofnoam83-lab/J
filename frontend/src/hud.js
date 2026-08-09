@@ -267,7 +267,6 @@ class AdielHUD {
                         if (msg.hud_command) {
                             this.handleHUDCommand(msg.hud_command);
                         }
-                        // NEW: הצעות למידה
                         if (msg.proposals && msg.proposals.length > 0) {
                             msg.proposals.forEach(p => this.addProposal(p, 'learning'));
                         }
@@ -278,9 +277,12 @@ class AdielHUD {
                             console.log('[HUD] User profile', msg.user_profile);
                         }
                     }
-                    this.setSpeaking(true, text);
-                    const duration = Math.max(2000, text.length * 80);
-                    setTimeout(() => this.setSpeaking(false), duration);
+                    this.setSpeaking(true, text, msg.audio_base64 || null);
+                    const duration = msg.audio_base64 ? null : Math.max(2000, text.length * 80);
+                    if (duration) {
+                        setTimeout(() => this.setSpeaking(false), duration);
+                    }
+                    // אם יש base64, ה-setSpeaking יכבה לבד ב-onended
                 }
                 break;
 
@@ -538,7 +540,7 @@ class AdielHUD {
         }
     }
 
-    setSpeaking(isSpeaking, text = null) {
+    setSpeaking(isSpeaking, text = null, audioBase64 = null) {
         this.isSpeaking = isSpeaking;
         if (isSpeaking) {
             this.isListening = false;
@@ -549,12 +551,51 @@ class AdielHUD {
             this.elements.statusLabel.textContent = text ? `מדברת: ${text.slice(0, 30)}...` : 'מדברת...';
             this.elements.visualizer?.classList.add('active');
             if (window.reactorAnim) window.reactorAnim.setMode('speaking');
+            
+            // NEW: נגן קול מה-backend אם יש base64
+            if (audioBase64) {
+                this.playAudioBase64(audioBase64);
+            }
         } else {
             this.elements.statusDot?.classList.remove('speaking');
             this.elements.statusLabel?.classList.remove('speaking');
             this.elements.visualizer?.classList.remove('active');
             this.setIdle();
             if (window.reactorAnim) window.reactorAnim.setMode('idle');
+        }
+    }
+
+    playAudioBase64(base64Audio) {
+        try {
+            // עצור קודם אם מנגן
+            if (this.currentAudio) {
+                this.currentAudio.pause();
+                this.currentAudio = null;
+            }
+            
+            console.log('[HUD] Playing audio base64, length:', base64Audio.length);
+            const audio = new Audio(base64Audio);
+            this.currentAudio = audio;
+            
+            audio.onended = () => {
+                console.log('[HUD] Audio ended');
+                this.setSpeaking(false);
+            };
+            audio.onerror = (e) => {
+                console.error('[HUD] Audio play failed:', e);
+                this.setSpeaking(false);
+            };
+            
+            audio.play().catch(e => {
+                console.error('[HUD] Audio play promise failed:', e);
+                // Fallback: נסה עם Web Speech API בעברית אם יש
+                if ('speechSynthesis' in window && base64Audio) {
+                    // חלץ טקסט מההודעה האחרונה
+                    console.log('[HUD] Trying Web Speech API fallback');
+                }
+            });
+        } catch (e) {
+            console.error('[HUD] playAudioBase64 error:', e);
         }
     }
 

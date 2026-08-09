@@ -486,7 +486,6 @@ async def handle_wake_word(detected_text: str):
         import random
         ack = random.choice(ack_texts)
         
-        # synthesized path but also send text
         await manager.broadcast({
             "type": "listening",
             "state": True,
@@ -494,11 +493,16 @@ async def handle_wake_word(detected_text: str):
         })
 
         try:
-            await tts_engine.synthesize(ack, play=True)
-            # שלח גם כ-audio message
+            result = await tts_engine.synthesize(ack, play=True)
+            # result יכול להיות (path, base64) או path
+            audio_b64 = None
+            if isinstance(result, tuple):
+                _, audio_b64 = result
+            
             await manager.broadcast({
                 "type": "assistant_speaking",
-                "text": ack
+                "text": ack,
+                "audio_base64": audio_b64
             })
         except Exception as e:
             print(f"[Main] TTS ack failed: {e}")
@@ -650,10 +654,17 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
     # TTS
     if tts_engine and response_text:
         try:
-            await tts_engine.synthesize(response_text, play=True)
+            result = await tts_engine.synthesize(response_text, play=True)
+            audio_b64 = None
+            if isinstance(result, tuple):
+                _, audio_b64 = result
+            elif isinstance(result, str) and result.startswith("data:audio"):
+                audio_b64 = result
+            
             await manager.broadcast({
                 "type": "assistant_speaking",
-                "text": response_text
+                "text": response_text,
+                "audio_base64": audio_b64
             })
         except Exception as e:
             print(f"[Main] TTS failed: {e}")
