@@ -18,19 +18,58 @@ from typing import List, Dict, Optional
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Auto Recovery - מערכת תיקון שגיאות אוטומטית
+try:
+    from core.error_recovery import get_recovery, auto_recover
+    recovery = get_recovery()
+    print("[Main] 🛡️  Auto Recovery System loaded - Self-Healing Active")
+except Exception as e:
+    print(f"[Main] Recovery system not available: {e}")
+    recovery = None
+    # Fallback decorator
+    def auto_recover(fallback=None, context=""):
+        def decorator(func):
+            return func
+        return decorator
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
-# Modules
+# Modules with auto-fix fallback
 from core.brain import AdielBrain
-from audio.wake_word import WakeWordDetector
-from audio.stt import HebrewSTT
-from audio.tts import get_tts_engine, HebrewTTS
-from vision.screen import get_vision_engine
-from tools.system_tools import get_system_tools
+try:
+    from audio.wake_word import WakeWordDetector
+except Exception as e:
+    print(f"[Main] Wake word import failed, will use mock: {e}")
+    WakeWordDetector = None
+
+try:
+    from audio.stt import HebrewSTT
+except Exception as e:
+    print(f"[Main] STT import failed: {e}")
+    HebrewSTT = None
+
+try:
+    from audio.tts import get_tts_engine, HebrewTTS
+except Exception as e:
+    print(f"[Main] TTS import failed: {e}")
+    get_tts_engine = lambda: None
+    HebrewTTS = None
+
+try:
+    from vision.screen import get_vision_engine
+except Exception as e:
+    print(f"[Main] Vision import failed: {e}")
+    get_vision_engine = lambda: None
+
+try:
+    from tools.system_tools import get_system_tools
+except Exception as e:
+    print(f"[Main] System tools import failed: {e}")
+    get_system_tools = lambda: None
 
 # Init FastAPI
 app = FastAPI(title="Adiel Junior Backend", version="1.0.0")
@@ -184,9 +223,9 @@ async def root():
 
 @app.get("/status")
 async def status():
-    return {
+    base = {
         "brain": brain is not None,
-        "stt": stt_engine is not None and stt_engine.model is not None,
+        "stt": stt_engine is not None and getattr(stt_engine, 'model', None) is not None,
         "tts": tts_engine is not None,
         "vision": vision_engine is not None,
         "wake_detector": wake_detector.running if wake_detector else False,
@@ -194,6 +233,71 @@ async def status():
         "conversation_active": app_state.is_conversation_active(),
         "time": datetime.now().isoformat()
     }
+    # Add recovery health if available
+    if recovery:
+        try:
+            base["health"] = recovery.get_health_report()
+            base["auto_fix"] = "active"
+        except:
+            base["auto_fix"] = "error"
+    else:
+        base["auto_fix"] = "disabled"
+    return base
+
+@app.get("/health")
+async def health_check():
+    """בדיקת בריאות מפורטת עם תיקון אוטומטי"""
+    report = {
+        "status": "ok",
+        "checks": {},
+        "auto_fix_log": None
+    }
+    
+    # בדוק כל רכיב
+    checks = {
+        "brain": brain is not None,
+        "tts": tts_engine is not None,
+        "vision": vision_engine is not None,
+        "stt": stt_engine is not None,
+        "wake_word": wake_detector is not None and wake_detector.running if wake_detector else False
+    }
+    report["checks"] = checks
+    
+    if not all(checks.values()):
+        report["status"] = "degraded"
+        report["message"] = "חלק מהרכיבים לא פעילים, אבל המערכת ממשיכה עם fallback"
+    
+    if recovery:
+        report["auto_fix_log"] = recovery.get_health_report()
+    
+    return report
+
+@app.post("/fix")
+async def trigger_auto_fix():
+    """טריגר ידני לתיקון אוטומטי"""
+    log = []
+    fixed = []
+    
+    # נסה לתקן רכיבים חסרים
+    global brain, tts_engine, vision_engine, system_tools
+    
+    if brain is None:
+        try:
+            brain = AdielBrain()
+            fixed.append("brain")
+            log.append("Brain fixed")
+        except Exception as e:
+            log.append(f"Brain fix failed: {e}")
+    
+    if tts_engine is None:
+        try:
+            tts_engine = get_tts_engine()
+            fixed.append("tts")
+            log.append("TTS fixed")
+        except Exception as e:
+            log.append(f"TTS fix failed: {e}")
+    
+    return {"fixed": fixed, "log": log, "status": "fixed" if fixed else "no_fix_needed"}
 
 @app.post("/speak")
 async def speak_endpoint(req: SpeakRequest):

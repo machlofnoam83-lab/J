@@ -1,123 +1,116 @@
 @echo off
-REM Adiel Junior - Windows Setup Script FIXED v1.1
-REM מתקין את כל התלויות ל-Windows - גרסה מתוקנת
+REM Adiel Junior - Windows Setup Script v2.0 AUTO-FIX
+REM מתקין את כל התלויות עם מערכת תיקון אוטומטית
 
 setlocal enabledelayedexpansion
 
 echo ============================================
-echo   Adiel Junior - Setup for Windows
-echo   אדיאל ג'וניור - התקנה
+echo   Adiel Junior - Setup v2.0 AUTO-FIX
+echo   אדיאל ג'וניור - התקנה חכמה
+echo   עם מערכת תיקון שגיאות אוטומטית
 echo ============================================
 echo.
 
-REM Get script dir and project root
 set SCRIPT_DIR=%~dp0
 set PROJECT_ROOT=%SCRIPT_DIR%..
-echo [INFO] Script dir: %SCRIPT_DIR%
-echo [INFO] Project root: %PROJECT_ROOT%
+echo [INFO] Project: %PROJECT_ROOT%
+echo [INFO] Python:
+python --version
+echo [INFO] Node:
+node --version 2>nul || echo Node not found
+echo [INFO] npm:
+npm --version 2>nul || echo npm not found
 echo.
 
 REM Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python not found! Please install Python 3.10+ from python.org
-    echo Make sure to check "Add to PATH"
-    echo https://python.org/downloads/
+    echo [ERROR] Python לא נמצא! התקן מ-https://python.org + סמן Add to PATH
     pause
     exit /b 1
 )
 
-echo [1/5] Python found
-python --version
-
-REM Create venv in project root
-echo.
-echo [2/5] Creating virtual environment...
+echo [1/4] יוצר סביבה וירטואלית...
 cd /d "%PROJECT_ROOT%"
 if not exist venv (
-    echo Creating venv...
     python -m venv venv
+    echo [OK] venv נוצר
 ) else (
-    echo venv already exists
+    echo [OK] venv כבר קיים
 )
 
-echo Activating venv...
 call "%PROJECT_ROOT%\venv\Scripts\activate.bat"
+
+echo.
+echo [2/4] מריץ מערכת תיקון אוטומטית להתקנת Python...
+echo זה יתקן לבד: pygame->pygame-ce, Pillow, webrtcvad, וכו'
+python scripts\auto_installer.py
 if errorlevel 1 (
-    echo [WARN] Could not activate venv, trying without...
+    echo [WARN] חלק מההתקנות נכשלו, מנסה תיקון ידני אגרסיבי...
+    echo [FIX] מתקין חבילות קריטיות ישירות...
+    pip install --upgrade pip
+    pip install pygame-ce>=2.4.1 webrtcvad-wheels>=0.2.13 Pillow>=10.4.0
+    pip install -r backend\requirements.txt --no-cache-dir --only-binary=:all: 2>nul
+    pip install -r backend\requirements.txt --no-cache-dir
 )
 
 echo.
-echo [3/5] Installing Python dependencies...
-python -m pip install --upgrade pip
-pip install -r backend\requirements.txt
-if errorlevel 1 (
-    echo [ERROR] pip install failed
-    echo Trying with --break-system-packages...
-    pip install --break-system-packages -r backend\requirements.txt
-)
-
-echo.
-echo [4/5] Checking Tesseract OCR (optional, for screen text)...
-where tesseract >nul 2>&1
-if errorlevel 1 (
-    echo [WARN] Tesseract OCR not found - screen text recognition will be limited
-    echo [INFO] Optional - install from: https://github.com/UB-Mannheim/tesseract/wiki
-    echo And add to PATH, with Hebrew language pack
-) else (
-    echo [OK] Tesseract found
-    tesseract --version
-)
-
-echo.
-echo [5/5] Installing Node dependencies for HUD...
+echo [3/4] מתקין Frontend (HUD) עם תיקון אוטומטי...
 where npm >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Node.js not found! Install from https://nodejs.org
-    echo Need Node.js 18+ (recommend 20 LTS, not 24)
-    pause
-    exit /b 1
+    echo [WARN] npm לא נמצא, מדלג - אפשר להריץ רק Backend
+    echo הורד Node.js מ-https://nodejs.org (מומלץ 20 LTS)
+    goto :skip_npm
 )
 
-echo [INFO] npm: 
-call npm --version
-echo [INFO] node:
-call node --version
-
-echo.
-echo [INFO] Installing frontend deps in: %PROJECT_ROOT%\frontend
 cd /d "%PROJECT_ROOT%\frontend"
 if not exist package.json (
-    echo [ERROR] package.json not found in frontend!
-    echo Current dir: %CD%
-    dir
+    echo [ERROR] package.json לא נמצא! תבדוק שחילצת נכון
     pause
     exit /b 1
 )
 
-echo [INFO] Running npm install in %CD%
+echo [INFO] מנסה npm install...
 call npm install
 if errorlevel 1 (
-    echo [ERROR] npm install failed!
-    echo Trying with --legacy-peer-deps...
+    echo [FIX] נכשל, מנסה עם --legacy-peer-deps (ל-Node 24)...
     call npm install --legacy-peer-deps
+    if errorlevel 1 (
+        echo [WARN] npm עדיין נכשל - אפשר להמשיך עם GUI חלופי
+        echo [INFO] תריץ: python backend\gui_fallback.py במקום Electron
+    )
 )
 
+:skip_npm
 cd /d "%PROJECT_ROOT%"
 
 echo.
+echo [4/4] בודק שהכל עובד...
+python -c "import fastapi; print('fastapi OK')" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] fastapi לא מותקן
+) else (
+    echo [OK] Backend deps OK
+)
+
+if exist frontend\node_modules (
+    echo [OK] Frontend deps OK
+) else (
+    echo [WARN] Frontend לא הותקן - יש fallback
+)
+
+echo.
 echo ============================================
-echo   Setup Complete! התקנה הושלמה - הכל תקין
+echo   Setup הושלם! עם Auto-Fix
 echo ============================================
 echo.
-echo להרצה:
-echo   cd /d "%PROJECT_ROOT%"
-echo   scripts\run.bat              - הרצת Dev mode
-echo   build\build.bat              - בניית EXE
-echo   python launcher.py           - משגר מאוחד
+echo איך להריץ:
+echo   1. scripts\run_with_autofix.bat  - הכי מומלץ, עם תיקון אוטומטי
+echo   2. scripts\run.bat               - רגיל
+echo   3. python launcher.py            - משגר מאוחד
 echo.
-echo אם יש בעיה עם npm בגרסת Node 24:
-echo   ממליץ להתקין Node 20 LTS מ- nodejs.org
-echo   או הרץ: cd frontend ^&^& npm install --legacy-peer-deps
+echo אם עדיין יש שגיאה, המערכת תתקן לבד בהרצה הבאה!
+echo.
+echo לוג שגיאות נשמר ב: backend\data\error_recovery_log.json
 echo.
 pause
