@@ -77,27 +77,41 @@ class HebrewTTS:
         print(f"[TTS] Initialized - Edge:{HAS_EDGE} Pygame:{HAS_PYGAME} pyttsx3:{HAS_PYTTSX3} SAPI:{HAS_WIN32} voice:{self.voice_id}")
 
     async def _synthesize_edge(self, text: str, output_path: str) -> bool:
-        """סינתזה עם edge-tts - הכי טבעי לעברית"""
+        """סינתזה עם edge-tts - הכי טבעי לעברית - עם fallback קולות"""
         if not HAS_EDGE:
             return False
         
-        try:
-            communicate = edge_tts.Communicate(
-                text,
-                self.voice_id,
-                rate=self.rate,
-                pitch=self.pitch
-            )
-            await communicate.save(output_path)
-            
-            # בדוק שהקובץ נוצר ולא ריק
-            if os.path.exists(output_path) and os.path.getsize(output_path) > 100:
-                return True
-            return False
-        except Exception as e:
-            print(f"[TTS] edge-tts failed: {e}")
-            # אם נכשל בגלל אינטרנט, ננסה fallback
-            return False
+        # רשימת קולות לנסות לפי סדר עדיפות
+        voices_to_try = [self.voice_id, "he-IL-HilaNeural", "he-IL-AsafNeural", "he-IL-AvigailNeural"]
+        # הסר כפילויות תוך שמירת סדר
+        voices_to_try = list(dict.fromkeys(voices_to_try))
+        
+        for voice in voices_to_try:
+            try:
+                # נסיון 1: בלי rate/pitch (הכי יציב)
+                communicate = edge_tts.Communicate(text, voice)
+                await communicate.save(output_path)
+                
+                if os.path.exists(output_path) and os.path.getsize(output_path) > 100:
+                    if voice != self.voice_id:
+                        print(f"[TTS] ✓ edge-tts success with fallback voice {voice}")
+                    return True
+                    
+            except Exception as e:
+                print(f"[TTS] edge-tts voice {voice} failed (no params): {e}")
+                
+                # נסיון 2: עם rate/pitch רק אם בלי נכשל? בד"כ בלי עדיף
+                try:
+                    communicate = edge_tts.Communicate(text, voice, rate=self.rate, pitch=self.pitch)
+                    await communicate.save(output_path)
+                    if os.path.exists(output_path) and os.path.getsize(output_path) > 100:
+                        return True
+                except Exception as e2:
+                    print(f"[TTS] edge-tts voice {voice} failed (with params): {e2}")
+                    continue
+        
+        print(f"[TTS] All edge-tts voices failed for text: {text[:30]}...")
+        return False
 
     def _synthesize_pyttsx3(self, text: str, output_path: str) -> bool:
         """Fallback 1: pyttsx3 אופליין"""
