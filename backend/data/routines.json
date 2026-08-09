@@ -1,0 +1,156 @@
+{
+  "routines": [
+    {
+      "id": "morning_routine",
+      "name": "בוקר טוב - שגרת בוקר",
+      "description": "כל בוקר ב-08:00: מייל, מזג אוויר, משימות, חדשות",
+      "schedule": "08:00",
+      "enabled": true,
+      "last_run": null,
+      "steps": [
+        {
+          "id": "m1",
+          "name": "פתיחת מייל וסינון דחופים",
+          "action": "check_email",
+          "params": {
+            "filter": "urgent",
+            "limit": 10
+          },
+          "order": 1,
+          "enabled": true
+        },
+        {
+          "id": "m2",
+          "name": "מזג אוויר היום",
+          "action": "weather",
+          "params": {
+            "city": "תל אביב"
+          },
+          "order": 2,
+          "enabled": true
+        },
+        {
+          "id": "m3",
+          "name": "משימות להיום מלוח שנה",
+          "action": "calendar_today",
+          "params": {},
+          "order": 3,
+          "enabled": true
+        },
+        {
+          "id": "m4",
+          "name": "חדשות טק חשובות",
+          "action": "research",
+          "params": {
+            "topic": "AI news today",
+            "depth": 3
+          },
+          "order": 4,
+          "enabled": true
+        },
+        {
+          "id": "m5",
+          "name": "פתיחת אפליקציות עבודה",
+          "action": "open_apps",
+          "params": {
+            "apps": [
+              "chrome",
+              "code",
+              "spotify"
+            ]
+          },
+          "order": 5,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "evening_routine",
+      "name": "סיכום יום - שגרת ערב",
+      "description": "כל ערב ב-18:00: סיכום משימות, ארגון קבצים, דוח יומי",
+      "schedule": "18:00",
+      "enabled": true,
+      "last_run": null,
+      "steps": [
+        {
+          "id": "e1",
+          "name": "סיכום מיילים שלא נקראו",
+          "action": "email_summary",
+          "params": {},
+          "order": 1,
+          "enabled": true
+        },
+        {
+          "id": "e2",
+          "name": "ארגון קבצי הורדות",
+          "action": "organize_files",
+          "params": {
+            "source": "~/Downloads"
+          },
+          "order": 2,
+          "enabled": true
+        },
+        {
+          "id": "e3",
+          "name": "הפקת דוח יומי",
+          "action": "daily_report",
+          "params": {},
+          "order": 3,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "focus_mode",
+      "name": "מצב פוקוס - Deep Work",
+      "description": "כשצריך להתרכז: סגירת התראות, מוזיקה, טיימר",
+      "schedule": "manual",
+      "enabled": true,
+      "last_run": null,
+      "steps": [
+        {
+          "id": "f1",
+          "name": "השתקת התראות",
+          "action": "mute_notifications",
+          "params": {},
+          "order": 1,
+          "enabled": true
+        },
+        {
+          "id": "f2",
+          "name": "ניגון מוזיקת פוקוס בספוטיפיי",
+          "action": "play_spotify",
+          "params": {
+            "query": "focus music",
+            "action": "play"
+          },
+          "order": 2,
+          "enabled": true
+        },
+        {
+          "id": "f3",
+          "name": "פתיחת VS Code + טרמינל",
+          "action": "open_apps",
+          "params": {
+            "apps": [
+              "code",
+              "terminal"
+            ]
+          },
+          "order": 3,
+          "enabled": true
+        },
+        {
+          "id": "f4",
+          "name": "התחלת טיימר 50 דקות",
+          "action": "timer",
+          "params": {
+            "minutes": 50
+          },
+          "order": 4,
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}
