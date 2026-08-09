@@ -1,34 +1,45 @@
-# Backend Core
-fastapi==0.110.0
-uvicorn[standard]==0.27.1
-websockets==12.0
-pydantic==2.6.1
+# ============================================
+# Adiel Junior - Requirements - Python 3.12+ Compatible
+# תואם לפייתון מודרני 3.12, 3.13 - עם Wheels מוכנים
+# ============================================
+
+# Backend Core - שוחררו גרסאות נעולות
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0
+pydantic>=2.9.0
 
 # Audio - Hebrew STT/TTS
-faster-whisper==1.0.2
-vosk==0.3.45
-sounddevice==0.4.6
-soundfile==0.12.1
-edge-tts==6.1.10
-pygame==2.5.2
-webrtcvad==2.0.10
+faster-whisper>=1.1.1
+vosk>=0.3.45
+sounddevice>=0.5.0
+soundfile>=0.12.1
+edge-tts>=6.1.12
 
-# Vision
-mss==9.0.1
-Pillow==10.2.0
-numpy==1.26.4
-opencv-python==4.9.0.80
-pytesseract==0.3.10
+# TTS Playback - FIX: pygame-ce במקום pygame הישן
+# pygame-ce היא גרסת הקהילה המודרנית, עובדת נייטיב ב-Python 3.12+ ללא קומפילציה
+pygame-ce>=2.4.1
+
+# VAD - FIX: webrtcvad-wheels במקום webrtcvad הישן שנכשל בקומפילציה
+# webrtcvad המקורי לא מתקמפל ב-3.12, הגרסה הזו מגיעה עם wheels מוכנים
+webrtcvad-wheels>=0.2.13
+
+# Vision - FIX: Pillow שודרג ל-10.4.0+ לפתור KeyError: '__version__'
+mss>=9.0.2
+Pillow>=10.4.0
+numpy>=1.26.4
+opencv-python>=4.10.0.84
+pytesseract>=0.3.13
 
 # System
-pygetwindow==0.0.9
-pyautogui==0.9.54
-psutil==5.9.8
-requests==2.31.0
+pygetwindow>=0.0.9
+pyautogui>=0.9.54
+psutil>=6.1.0
+requests>=2.32.0
 
 # AI Optional - Local LLM via Ollama or Cloud
-openai==1.12.0
-ollama==0.1.7
+openai>=1.52.0
+ollama>=0.4.2
 
 # Utils
-python-dotenv==1.0.1
+python-dotenv>=1.0.1
