@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adiel Junior - אדיאל ג'וניור</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div id="app" class="hud-container mode-center">
+        <!-- Header - draggable -->
+        <div class="hud-header" id="dragHandle">
+            <div class="header-left">
+                <div class="core-status-dot" id="statusDot"></div>
+                <span class="header-title">ADIEL JUNIOR</span>
+                <span class="header-subtitle">אדיאל ג'וניור</span>
+            </div>
+            <div class="header-controls">
+                <button class="icon-btn" id="btnSide" title="שים בצד">◧</button>
+                <button class="icon-btn" id="btnCenter" title="חזור לאמצע">◫</button>
+                <button class="icon-btn" id="btnOrb" title="הסתר לכדור">●</button>
+                <button class="icon-btn close" id="btnClose" title="סגור">✕</button>
+            </div>
+        </div>
+
+        <!-- Main HUD Area -->
+        <div class="hud-main">
+            <!-- Iron Man Reactor Core -->
+            <div class="reactor-container" id="reactorContainer">
+                <canvas id="reactorCanvas" width="200" height="200"></canvas>
+                <div class="reactor-core-glow"></div>
+                <div class="reactor-ring ring-1"></div>
+                <div class="reactor-ring ring-2"></div>
+                <div class="reactor-ring ring-3"></div>
+                <div class="listening-pulse" id="listeningPulse"></div>
+            </div>
+
+            <!-- Status Text -->
+            <div class="status-area">
+                <div class="status-label" id="statusLabel">מאזינה למילת הפעלה...</div>
+                <div class="wake-hint">אמור <span class="wake-word">״אדיאל ג׳וניור״</span> להתעוררות</div>
+                <div class="shortcut-hint">Ctrl+Shift+A להתעוררות מהירה</div>
+            </div>
+
+            <!-- Visualizer -->
+            <div class="visualizer-container" id="visualizer">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div><div class="bar"></div>
+            </div>
+
+            <!-- Conversation -->
+            <div class="conversation-area" id="conversationArea">
+                <div class="conversation-inner" id="conversationInner">
+                    <div class="msg assistant welcome">
+                        <div class="msg-avatar">AJ</div>
+                        <div class="msg-content">
+                            <div class="msg-text">שלום בוס! אני אדיאל ג'וניור. אמור "אדיאל ג'וניור" ואני כאן. יכולה גם לראות את המסך שלך ולעזור בקוד.</div>
+                            <div class="msg-time">עכשיו</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen Preview -->
+            <div class="screen-preview hidden" id="screenPreview">
+                <div class="preview-header">מה שאני רואה במסך:</div>
+                <div class="preview-image-container">
+                    <img id="previewImage" class="preview-img" />
+                    <div class="preview-overlay"></div>
+                </div>
+                <div class="preview-context" id="previewContext"></div>
+            </div>
+
+            <!-- Input -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="textInput" placeholder="או כתוב לי כאן בעברית..." autocomplete="off" />
+                    <button id="btnSend" class="send-btn">
+                        <span>➤</span>
+                    </button>
+                </div>
+                <div class="input-actions">
+                    <button class="action-btn" id="btnWake">🎤 אדיאל ג'וניור</button>
+                    <button class="action-btn" id="btnScreen">🖥️ מה את רואה?</button>
+                    <button class="action-btn" id="btnClear">🗑️ נקה</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orb Mode Content (minimal) -->
+        <div class="orb-content" id="orbContent">
+            <div class="orb-core"></div>
+            <div class="orb-pulse"></div>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="connection-bar">
+            <div class="conn-dot" id="connDot"></div>
+            <span id="connText">מתחברת ל-Backend...</span>
+            <span class="backend-port">:8765</span>
+        </div>
+    </div>
+
+    <script src="./animations.js"></script>
+    <script src="./hud.js"></script>
+</body>
+</html>

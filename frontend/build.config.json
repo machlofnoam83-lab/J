@@ -1,0 +1,24 @@
+{
+  "appId": "com.adiel.junior",
+  "productName": "Adiel Junior",
+  "directories": {
+    "output": "dist",
+    "buildResources": "src/assets"
+  },
+  "win": {
+    "target": ["nsis", "portable"],
+    "icon": "src/assets/icon.png"
+  },
+  "files": [
+    "main.js",
+    "preload.js",
+    "src/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "../backend/dist/",
+      "to": "backend",
+      "filter": ["**/*"]
+    }
+  ]
+}

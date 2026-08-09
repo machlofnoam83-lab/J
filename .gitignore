@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+venv/
+env/
+.env
+.venv
+*.egg-info/
+dist/
+build/pyinstaller_build/
+build/*.spec
+
+# Backend data
+backend/data/whisper_models/
+backend/data/vosk-model*/
+backend/data/screenshots/*.jpg
+backend/data/memory.json
+backend/dist/
+backend/__pycache__/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/out/
+frontend/.electron-builder.env
+
+# Models
+*.onnx
+*.bin
+*.pt
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Audio temp
+*.mp3
+*.wav
+temp/
+tmp/
+
+# Env keys
+.env.local
+.env.production
