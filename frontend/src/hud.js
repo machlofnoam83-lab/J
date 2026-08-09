@@ -6,7 +6,7 @@
 class AdielHUD {
     constructor() {
         this.ws = null;
-        this.wsUrl = 'ws://localhost:8765/ws';
+        this.wsUrl = this.detectWebSocketUrl();
         this.connected = false;
         this.currentMode = 'center';
         this.isListening = false;
@@ -18,6 +18,37 @@ class AdielHUD {
         this.bindEvents();
         this.connectWebSocket();
         this.updateConnectionUI('connecting');
+    }
+
+    detectWebSocketUrl() {
+        // Try to detect preview environment (Arena / e2b)
+        // Format: https://{port}-{sandboxId}.e2b.app
+        const host = window.location.hostname;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        
+        // If running on e2b preview domain
+        if (host.includes('.e2b.app') && host.includes('-')) {
+            // Extract sandbox id: {port}-{id}.e2b.app -> {id}.e2b.app
+            const parts = host.split('-');
+            if (parts.length >= 2) {
+                const portPart = parts[0]; // e.g., "3000"
+                const rest = parts.slice(1).join('-'); // {id}.e2b.app
+                // Backend should be on 8765 with same id
+                const backendHost = `8765-${rest}`;
+                const wsUrl = `${protocol}//${backendHost}/ws`;
+                console.log(`[HUD] Detected e2b preview, backend WS: ${wsUrl}`);
+                return wsUrl;
+            }
+        }
+        
+        // If localhost:3000 dev, backend on 8765 local
+        if (host === 'localhost' || host === '127.0.0.1') {
+            return 'ws://localhost:8765/ws';
+        }
+        
+        // Fallback - try same host with 8765 port or relative
+        // For production Electron, localhost is correct
+        return 'ws://localhost:8765/ws';
     }
 
     initElements() {
