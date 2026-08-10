@@ -255,6 +255,42 @@ class AdielBrain:
             if not screen_context:
                 return {"handled_locally": False, "response": None}
 
+        elif intent == "dictionary_lookup":
+            word = entities.get("word", "").strip()
+            if not word:
+                import re
+                words = re.findall(r'[\u0590-\u05FF]{2,}', user_text)
+                if words:
+                    word = words[-1]
+            if word:
+                try:
+                    from .hebrew_dictionary import get_hebrew_dictionary
+                    heb_dict = get_hebrew_dictionary()
+                    result = heb_dict.lookup(word)
+                    if result.get("found"):
+                        meaning = result.get("meaning", "")
+                        example = result.get("example", "")
+                        synonyms = result.get("synonyms", [])
+                        resp = f"📚 {word}: {meaning}"
+                        if example:
+                            resp += f"\nדוגמה: {example}"
+                        if synonyms:
+                            resp += f"\nנרדפות: {', '.join(synonyms[:3])}"
+                        if result.get("english"):
+                            resp += f"\nEnglish: {result['english']}"
+                        return {"handled_locally": True, "response": resp}
+                    else:
+                        suggestions = result.get("suggestion", [])
+                        sug_text = f" התכוונת ל: {', '.join(suggestions)}?" if suggestions else ""
+                        stats = heb_dict.get_stats()
+                        resp = f"לא מצאתי את '{word}' במילון (יש לי {stats['total_all']} מילים).{sug_text} רוצה שאלמד? תגיד: תלמד את המילה {word}"
+                        return {"handled_locally": True, "response": resp}
+                except Exception as e:
+                    print(f"[Brain] Dict failed: {e}")
+                    return {"handled_locally": True, "response": f"ניסיתי לחפש '{word}' אבל הייתה שגיאה."}
+            else:
+                return {"handled_locally": True, "response": "איזו מילה לחפש, בוס? תגיד: מה זה [מילה]"}
+
         elif intent == "system_open":
             app = entities.get("app") or entities.get("app_query", "unknown")
             return {"handled_locally": True, "response": f"על זה, פותחת {entities.get('app_he', app)}.", "system_action": {"type": "open_app", "app": app}}

@@ -29,7 +29,12 @@ class HebrewIntentClassifier:
             "screen_analysis": [
                 "מה אתה רואה", "מה את רואה", "מה יש על המסך", "תסרוק מסך",
                 "מה פתוח", "תבדקי מסך", "יש שגיאה", "תעזרי לי עם הקוד",
-                "מה השגיאה", "למה לא עובד", "תנתח", "תסתכל"
+                "מה השגיאה", "למה לא עובד", "תנתח", "תסתכל",
+                "תקרא", "מה כתוב", "תקרא טקסט"
+            ],
+            "dictionary_lookup": [
+                "מה זה", "מה הפירוש", "פירוש המילה", "מה המשמעות",
+                "תסביר", "מה אומר", "מילון", "הגדרה", "מה הפרוש"
             ],
             "system_open": [
                 "תפתח", "תפתחי", "open", "תריץ", "תפעיל", "launch"
@@ -66,23 +71,18 @@ class HebrewIntentClassifier:
         self.training_data = [
             ("שים את החלון בצד", "hud_dock_side"),
             ("תזוזי הצידה בבקשה", "hud_dock_side"),
-            ("את מפריעה באמצע", "hud_dock_side"),
             ("חזרי לאמצע המסך", "hud_center"),
             ("תבואי למרכז", "hud_center"),
-            ("תתמקמי באמצע", "hud_center"),
             ("תיעלמי רגע", "hud_hide"),
-            ("הסתרי את עצמך", "hud_hide"),
-            ("שקט, תנוחי", "hud_hide"),
             ("מה אתה רואה במסך", "screen_analysis"),
-            ("יש לי שגיאה בקוד", "screen_analysis"),
-            ("תעזור לי להבין את השגיאה", "screen_analysis"),
-            ("תסתכל על המסך שלי", "screen_analysis"),
+            ("תקרא מה כתוב", "screen_analysis"),
+            ("מה זה פאנן", "dictionary_lookup"),
+            ("מה הפירוש של סגור", "dictionary_lookup"),
+            ("תסביר מה זה יאללה", "dictionary_lookup"),
             ("תפתח את כרום", "system_open"),
-            ("תפעיל את הויזואל סטודיו", "system_open"),
             ("תגביר ווליום", "system_volume"),
-            ("תנמיך קצת", "system_volume"),
-            ("תחפש בגוגל איך לעשות", "system_search"),
-            ("מה השעה עכשיו", "time_date"),
+            ("תחפש בגוגל", "system_search"),
+            ("מה השעה", "time_date"),
             ("תזכור שאני אוהב", "memory_save"),
             ("ביי תודה", "goodbye"),
         ]
@@ -214,5 +214,21 @@ class HebrewIntentClassifier:
 
         elif intent == "screen_analysis":
             entities["needs_screen"] = True
+
+        elif intent == "dictionary_lookup":
+            patterns = [
+                r"מה זה ([\u0590-\u05FF]+)",
+                r"מה הפירוש של ([\u0590-\u05FF]+)",
+                r"פירוש המילה ([\u0590-\u05FF]+)",
+            ]
+            for pat in patterns:
+                m = re.search(pat, text_lower)
+                if m:
+                    entities["word"] = m.group(1).strip().split()[0]
+                    break
+            if "word" not in entities:
+                words = re.findall(r'[\u0590-\u05FF]{2,}', text)
+                if words:
+                    entities["word"] = words[-1]
 
         return entities

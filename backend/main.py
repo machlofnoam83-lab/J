@@ -121,6 +121,15 @@ except Exception as e:
     get_device_manager = lambda: None
 
 try:
+    from core.hebrew_dictionary import get_hebrew_dictionary
+    print("[Main] 📚 Hebrew Dictionary loaded - מילון עברי מלא!")
+    HAS_HEBREW_DICT = True
+except Exception as e:
+    print(f"[Main] Hebrew Dictionary not available: {e}")
+    HAS_HEBREW_DICT = False
+    get_hebrew_dictionary = lambda: None
+
+try:
     from tools.task_orchestrator import get_task_orchestrator
     print("[Main] 🚀 Task Orchestrator loaded - Super Agent Ready")
 except Exception as e:
@@ -594,6 +603,62 @@ async def reset_audio_devices():
         
         result = dev_manager.reset_to_default()
         return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+# === מילון עברי מלא ===
+@app.get("/dictionary/lookup")
+async def dictionary_lookup(word: str):
+    try:
+        if not HAS_HEBREW_DICT:
+            raise HTTPException(500, "Dictionary not available")
+        dict_manager = get_hebrew_dictionary()
+        result = dict_manager.lookup(word)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/dictionary/search")
+async def dictionary_search(query: str):
+    try:
+        if not HAS_HEBREW_DICT:
+            raise HTTPException(500, "Dictionary not available")
+        dict_manager = get_hebrew_dictionary()
+        results = dict_manager.search_by_meaning(query)
+        return {"query": query, "results": results, "count": len(results)}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/dictionary/stats")
+async def dictionary_stats():
+    try:
+        if not HAS_HEBREW_DICT:
+            raise HTTPException(500, "Dictionary not available")
+        return get_hebrew_dictionary().get_stats()
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/dictionary/random")
+async def dictionary_random(count: int = 5):
+    try:
+        if not HAS_HEBREW_DICT:
+            raise HTTPException(500, "Dictionary not available")
+        words = get_hebrew_dictionary().get_random_words(count)
+        return {"words": words, "count": len(words)}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.post("/dictionary/add")
+async def dictionary_add(request: Dict):
+    try:
+        if not HAS_HEBREW_DICT:
+            raise HTTPException(500, "Dictionary not available")
+        word = request.get("word", "").strip()
+        meaning = request.get("meaning", "").strip()
+        if not word or not meaning:
+            raise HTTPException(400, "word and meaning required")
+        get_hebrew_dictionary().add_word(word, meaning, request.get("type", "custom"), request.get("example", ""))
+        return {"success": True, "word": word, "meaning": meaning}
     except Exception as e:
         raise HTTPException(500, str(e))
 

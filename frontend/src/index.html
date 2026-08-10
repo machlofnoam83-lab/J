@@ -1,168 +1,206 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adiel Junior - אדיאל ג'וניור</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>אדיאל ג'וניור • ULTIMATE • מילון מלא • קול AI • דיבור מהיר</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#02050a;--panel:rgba(12,18,36,0.78);--border:rgba(0,212,255,0.14);--text:#e6f0ff;--dim:#7d8ca3;--accent:#00d4ff;--accent2:#00ffaa;--purple:#8b5cf6;--orange:#ff7a00;--green:#00ff88;--red:#ff3355}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;width:100vw;direction:rtl}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 20% 20%,rgba(0,212,255,0.07) 0%,transparent 55%),radial-gradient(ellipse at 80% 80%,rgba(139,92,246,0.07) 0%,transparent 55%),var(--bg)}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:36px 36px;animation:gridMove 20s linear infinite}
+@keyframes gridMove{to{transform:translate(36px,36px)}}
+.particles{position:absolute;inset:0;overflow:hidden}
+.particle{position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;opacity:0.25;animation:float 18s infinite linear}
+@keyframes float{from{transform:translateY(100vh) translateX(0);opacity:0}10%{opacity:0.6}90%{opacity:0.6}to{transform:translateY(-10vh) translateX(80px);opacity:0}}
+.hud{position:relative;z-index:1;width:100vw;height:100vh;display:flex;flex-direction:column}
+.topbar{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(0,212,255,0.05),transparent,rgba(139,92,246,0.05));backdrop-filter:blur(18px)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron';font-weight:900;font-size:12px;color:black;box-shadow:0 0 18px rgba(0,212,255,0.35)}
+.brand-title{font-family:'Orbitron';font-weight:800;font-size:13px;letter-spacing:1.8px}
+.brand-sub{font-size:9px;color:var(--dim);font-family:'JetBrains Mono'}
+.metrics{display:flex;gap:12px;font-family:'JetBrains Mono';font-size:10px}
+.bar{width:44px;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+.fill{height:100%;background:var(--accent);transition:width 1s}
+.fill.ai{background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 8px var(--accent)}
+.pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);font-size:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.win-btn{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--dim);cursor:pointer;transition:all .2s}
+.win-btn:hover{background:rgba(0,212,255,0.12);border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.center{flex:1;display:flex;gap:14px;padding:14px;overflow:hidden;max-width:1600px;width:100%;margin:0 auto}
+.col{width:360px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.col.center{flex:1;min-width:0}
+.col.right{width:300px}
+.panel{background:var(--panel);backdrop-filter:blur(22px) saturate(1.3);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;display:flex;flex-direction:column}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.28),transparent)}
+.head{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:linear-gradient(90deg,rgba(0,212,255,0.06),transparent);font-size:11px;font-weight:700}
+.badge{background:var(--accent);color:black;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px}
+.memory{height:130px}
+.memory-body{padding:12px;display:flex;gap:12px;align-items:center}
+.orb{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,var(--accent) 0%,rgba(0,212,255,0.18) 45%,transparent 72%);box-shadow:0 0 18px rgba(0,212,255,0.28);position:relative;flex-shrink:0}
+.orb::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px dashed rgba(0,212,255,0.28);animation:spin 12s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.m-stats{display:flex;gap:12px}
+.m-stat{display:flex;flex-direction:column}
+.m-stat b{font-family:'Orbitron';font-size:13px;color:var(--accent)}
+.m-stat span{font-size:9px;color:var(--dim);font-family:'JetBrains Mono'}
+.m-text{font-size:11px;line-height:1.4;color:var(--dim);background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:8px;margin-top:6px}
+.conv{flex:1;overflow:hidden}
+.conv-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.conv-body::-webkit-scrollbar{width:3px}
+.conv-body::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:2px}
+.msg{display:flex;gap:8px;max-width:94%;animation:msgIn .32s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;font-family:'Orbitron';flex-shrink:0}
+.msg.user .avatar{background:linear-gradient(135deg,#ff7a00,#ff5500);color:white}
+.msg.assistant .avatar{background:linear-gradient(135deg,var(--accent),var(--accent2));color:black}
+.bubble{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 12px}
+.msg.user .bubble{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.18)}
+.msg-text{font-size:12.5px;line-height:1.5}
+.msg-time{font-size:9px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono';opacity:.6}
+.reactor{height:190px;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(0,212,255,0.05) 0%,transparent 70%);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+.reactor-wrap{position:relative;width:150px;height:150px}
+.ring{position:absolute;border-radius:50%;border:1px solid;top:50%;left:50%;transform:translate(-50%,-50%)}
+.r1{width:150px;height:150px;border-color:rgba(0,212,255,0.1);border-style:dashed;animation:spin 20s linear infinite}
+.r2{width:120px;height:120px;border-color:rgba(0,255,170,0.09);animation:spin 15s linear infinite reverse}
+.r3{width:92px;height:92px;border-color:var(--accent);border-width:1.2px;opacity:.22;animation:spin 10s linear infinite}
+.core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,var(--accent) 0%,rgba(0,212,255,0.55) 55%,transparent 76%);box-shadow:0 0 28px var(--accent),0 0 56px rgba(0,212,255,0.18);animation:corePulse 2s ease-in-out infinite}
+@keyframes corePulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+.glow{position:absolute;width:68px;height:68px;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(0,212,255,0.14),transparent 70%);filter:blur(10px);animation:glowPulse 3s ease-in-out infinite}
+@keyframes glowPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.25)}}
+.data-point{position:absolute;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:3px 7px;font-family:'JetBrains Mono';font-size:8px;backdrop-filter:blur(8px)}
+.data-point span{color:var(--dim);font-size:7px}
+.data-point b{color:var(--accent);font-size:9px}
+.dp1{top:10%;left:50%;transform:translateX(-50%)}.dp2{top:50%;right:7%;transform:translateY(-50%)}.dp3{bottom:10%;left:50%;transform:translateX(-50%)}.dp4{top:50%;left:7%;transform:translateY(-50%)}
+.status{text-align:center;padding:8px}
+.status-main{font-size:14px;font-weight:700;margin-bottom:4px;transition:all .3s}
+.status-main.listening{color:var(--orange);text-shadow:0 0 10px rgba(255,122,0,0.45)}
+.status-main.speaking{color:var(--accent)}
+.wake-hint{font-size:11px;color:var(--dim)}
+.wake-word{color:var(--accent);font-weight:700;background:rgba(0,212,255,0.1);padding:2px 7px;border-radius:6px;border:1px solid rgba(0,212,255,0.14)}
+.viz{display:flex;align-items:center;justify-content:center;gap:3px;height:26px;margin:8px 0;opacity:0;transition:opacity .3s}
+.viz.active{opacity:1}
+.viz-bar{width:3px;height:5px;background:linear-gradient(to top,var(--accent),var(--accent2));border-radius:2px}
+.viz.active .viz-bar{animation:viz 0.42s ease-in-out infinite}
+@keyframes viz{0%,100%{height:4px}50%{height:22px}}
+.holo{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.tabs{display:flex;background:rgba(0,0,0,0.22);border-bottom:1px solid rgba(255,255,255,0.05)}
+.tab{flex:1;padding:9px 6px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,212,255,0.06)}
+.body{flex:1;overflow-y:auto;padding:12px}
+.pane{display:none}
+.pane.active{display:flex;flex-direction:column;gap:10px}
+.screen-holo{position:relative;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border)}
+.screen-holo img{width:100%;max-height:190px;object-fit:cover;display:block}
+.scan{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scan 2s linear infinite}
+@keyframes scan{0%{top:0}100%{top:100%}}
+.tasks-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.task-card{padding:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;cursor:pointer;transition:all .2s;text-align:right}
+.task-card:hover{background:rgba(0,212,255,0.08);border-color:var(--accent);transform:translateY(-1px);box-shadow:0 8px 18px rgba(0,212,255,0.11)}
+.task-card b{display:block;font-size:12px;margin:3px 0}
+.task-card small{font-size:10px;color:var(--dim)}
+.task-card span{font-size:17px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.quick-btn{padding:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s}
+.quick-btn:hover{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--text);transform:translateY(-1px)}
+.bottom{height:72px;display:flex;align-items:center;gap:12px;padding:0 18px;background:linear-gradient(90deg,rgba(0,0,0,0.5),rgba(10,16,32,0.85),rgba(0,0,0,0.5));border-top:1px solid var(--border);backdrop-filter:blur(18px)}
+.input-wrap{display:flex;gap:8px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:6px;transition:all .3s;flex:1}
+.input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.1),0 0 18px rgba(0,212,255,0.08)}
+#textInput{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Heebo';font-size:13px;padding:6px 10px}
+.send-btn{width:36px;height:36px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:black;font-weight:900;cursor:pointer;transition:all .2s}
+.send-btn:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(0,212,255,0.35)}
+.action-btn{padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s}
+.action-btn:hover{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--text)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1.5s infinite}
+.conn-dot.connected{background:var(--green)}
+.hidden{display:none!important}
+.proposal-card{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;position:relative}
+.proposal-card::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--accent)}
+.proposal-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px}
+.proposal-description{font-size:10px;color:var(--dim);line-height:1.4;margin-bottom:6px}
+.proposal-actions{display:flex;gap:6px}
+.proposal-btn{flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer}
+.proposal-btn.approve{background:linear-gradient(135deg,var(--green),var(--accent2));color:black}
+.proposal-btn.reject{background:rgba(255,255,255,0.06);color:var(--dim);border:1px solid rgba(255,255,255,0.08)}
+</style>
 </head>
 <body>
-    <div id="app" class="hud-container mode-center">
-        <!-- Header - draggable -->
-        <div class="hud-header" id="dragHandle">
-            <div class="header-left">
-                <div class="core-status-dot" id="statusDot"></div>
-                <span class="header-title">ADIEL JUNIOR</span>
-                <span class="header-subtitle">אדיאל ג'וניור - קול מקורי</span>
+<div class="bg"><div class="grid"></div><div class="particles" id="particles"></div></div>
+<div class="hud">
+    <header class="topbar">
+        <div class="brand"><div class="brand-icon">AJ</div><div><div class="brand-title">ADIEL JUNIOR • ULTIMATE</div><div class="brand-sub">6GB LLM • קול AI לכל שאלה • מילון מלא • דיבור מהיר</div></div><div class="status-pill"><div class="dot" id="mainDot"></div><span id="mainStatus">SYSTEMS NOMINAL</span></div></div>
+        <div style="display:flex;align-items:center;gap:16px"><div id="timeDisplay" style="font-family:'Orbitron';font-size:14px;font-weight:700;letter-spacing:1px">00:00:00</div><div style="display:flex;gap:10px;font-family:'JetBrains Mono';font-size:10px"><span>AI <b id="aiVal" style="color:var(--accent)">96%</b></span><span>📚<b id="vocabCount">0</b></span><span>🧠<b id="memoryCount">0</b></span></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><div class="win-btns"><button class="win-btn" id="btnSide">◧</button><button class="win-btn" id="btnCenter">◫</button><button class="win-btn" id="btnClose">✕</button></div></div>
+    </header>
+
+    <div class="center">
+        <div class="col">
+            <div class="panel memory">
+                <div class="head"><div>🧠 זיכרון + מילון עברי מלא (500+)</div><div class="badge" id="interactionsBadge">0</div></div>
+                <div class="memory-body"><div class="orb"></div><div style="flex:1"><div class="m-stats"><div class="m-stat"><b id="profileName">בוס</b><span>שם</span></div><div class="m-stat"><b id="projectsCount">0</b><span>פרויקטים</span></div><div class="m-stat"><b id="interactionsCount">0</b><span>שיחות</span></div></div><div class="m-text" id="memoryContext">טוען מילון עברי מלא + מוח 6GB...</div></div></div>
             </div>
-            <div class="header-controls">
-                <button class="icon-btn" id="btnSide" title="שים בצד">◧</button>
-                <button class="icon-btn" id="btnCenter" title="חזור לאמצע">◫</button>
-                <button class="icon-btn" id="btnOrb" title="הסתר לכדור">●</button>
-                <button class="icon-btn close" id="btnClose" title="סגור">✕</button>
+            <div class="panel conv">
+                <div class="head"><div>💬 שיחה אמיתית - קול AI לכל שאלה + דיבור מהיר</div><div class="badge" id="convBadge">0</div></div>
+                <div class="conv-body" id="conversationInner"><div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שלום בוס! אני אדיאל ULTIMATE - עם LLM 6GB, מבינה דיבור מהיר, קוראת טקסט עם EasyOCR, עם מילון עברי מלא 500+ מילים, ועונה תמיד עם קול AI אמיתי! תגיד "אדיאל ג'וניור"!</div><div class="msg-time">עכשיו</div></div></div></div>
             </div>
         </div>
 
-        <!-- Main HUD Area -->
-        <div class="hud-main">
-            <!-- Iron Man Reactor Core -->
-            <div class="reactor-container" id="reactorContainer">
-                <canvas id="reactorCanvas" width="200" height="200"></canvas>
-                <div class="reactor-core-glow"></div>
-                <div class="reactor-ring ring-1"></div>
-                <div class="reactor-ring ring-2"></div>
-                <div class="reactor-ring ring-3"></div>
-                <div class="listening-pulse" id="listeningPulse"></div>
+        <div class="col center">
+            <div class="reactor">
+                <div class="reactor-wrap"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="core"></div><div class="glow"></div><canvas id="reactorCanvas" width="150" height="150" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div>
+                <div class="data-point dp1"><span>VOICE</span><b>AI ALL Q</b></div><div class="data-point dp2"><span>STT</span><b>FAST HE</b></div><div class="data-point dp3"><span>LLM</span><b>6GB</b></div><div class="data-point dp4"><span>DICT</span><b id="dictCount">500+</b></div>
             </div>
-
-            <!-- Status Text -->
-            <div class="status-area">
-                <div class="status-label" id="statusLabel">מאזינה למילת הפעלה...</div>
-                <div class="wake-hint">אמור <span class="wake-word">״אדיאל ג׳וניור״</span> להתעוררות</div>
-                <div class="shortcut-hint">Ctrl+Shift+A להתעוררות מהירה</div>
-            </div>
-
-            <!-- Visualizer -->
-            <div class="visualizer-container" id="visualizer">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-                <div class="bar"></div><div class="bar"></div>
-            </div>
-
-            <!-- Conversation -->
-            <div class="conversation-area" id="conversationArea">
-                <div class="conversation-inner" id="conversationInner">
-                    <div class="msg assistant welcome">
-                        <div class="msg-avatar">AJ</div>
-                        <div class="msg-content">
-                            <div class="msg-text">שלום בוס! אני אדיאל ג'וניור עם קול מקורי חדש רק שלך. עכשיו אני זוכרת, לומדת, ומנהלת שיחה אמיתית. תבחר מיקרופון למטה ואמור "אדיאל ג'וניור".</div>
-                            <div class="msg-time">עכשיו</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Proposals -->
-            <div class="proposals-area hidden" id="proposalsArea">
-                <div class="proposals-header">
-                    <span>🧠 אדיאל רוצה ללמוד / להשתפר</span>
-                    <span class="proposals-badge" id="proposalsBadge">0</span>
-                </div>
-                <div class="proposals-list" id="proposalsList"></div>
-            </div>
-
-            <!-- Screen Preview -->
-            <div class="screen-preview hidden" id="screenPreview">
-                <div class="preview-header">מה שאני רואה במסך:</div>
-                <div class="preview-image-container">
-                    <img id="previewImage" class="preview-img" />
-                    <div class="preview-overlay"></div>
-                </div>
-                <div class="preview-context" id="previewContext"></div>
-            </div>
-
-            <!-- Mic Selector Panel -->
-            <div class="settings-panel hidden" id="micPanel">
-                <div class="settings-header">
-                    <span>🎙️ בחר מיקרופון - אדיאל תקשיב דרכו</span>
-                    <button class="icon-btn" id="btnCloseMic">✕</button>
-                </div>
-                <div class="settings-content" id="micList">
-                    <div class="loading">טוען מיקרופונים...</div>
-                </div>
-                <div class="settings-footer">
-                    <button class="action-btn" id="btnRefreshMics">🔄 רענן</button>
-                    <button class="action-btn" id="btnResetMic">↩️ ברירת מחדל</button>
-                </div>
-            </div>
-
-            <!-- Voice Selector Panel -->
-            <div class="settings-panel hidden" id="voicePanel">
-                <div class="settings-header">
-                    <span>🔊 קול מקורי של אדיאל - רק שלך</span>
-                    <button class="icon-btn" id="btnCloseVoice">✕</button>
-                </div>
-                <div class="settings-content" id="voiceList">
-                    <div class="voice-option selected" data-voice="original">
-                        <div class="voice-name">✨ קול מקורי - אדיאל (רק שלך!)</div>
-                        <div class="voice-desc">8 דגימות מקוריות שיצרתי - טבעי, צעיר, ישראלי</div>
-                        <button class="action-btn test-voice-btn" data-voice="original">▶️ בדוק קול מקורי</button>
-                    </div>
-                    <div class="voice-option" data-voice="avigail">
-                        <div class="voice-name">Avigail - עברית טבעית</div>
-                        <div class="voice-desc">Microsoft - נשי צעיר</div>
-                        <button class="action-btn test-voice-btn" data-voice="avigail">▶️ בדוק</button>
-                    </div>
-                    <div class="voice-option" data-voice="hila">
-                        <div class="voice-name">Hila - עברית בוגרת</div>
-                        <div class="voice-desc">נשי בוגרת</div>
-                        <button class="action-btn test-voice-btn" data-voice="hila">▶️ בדוק</button>
-                    </div>
-                    <div class="voice-option" data-voice="asaf">
-                        <div class="voice-name">Asaf - גברי</div>
-                        <div class="voice-desc">קול גברי</div>
-                        <button class="action-btn test-voice-btn" data-voice="asaf">▶️ בדוק</button>
-                    </div>
-                </div>
-                <div class="settings-footer">
-                    <div class="voice-info">הקול המקורי נשמר ב-frontend/src/assets/*.mp3 - רק שלך!</div>
-                </div>
-            </div>
-
-            <!-- Input -->
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="textInput" placeholder="כתוב כאן בעברית... שיחה אמיתית!" autocomplete="off" />
-                    <button id="btnSend" class="send-btn"><span>➤</span></button>
-                </div>
-                <div class="input-actions">
-                    <button class="action-btn" id="btnWake">🎤 אדיאל ג'וניור</button>
-                    <button class="action-btn" id="btnScreen">🖥️ מה את רואה?</button>
-                    <button class="action-btn" id="btnMicSelect">🎙️ מיקרופון</button>
-                    <button class="action-btn" id="btnVoiceSelect">🔊 קול מקורי</button>
-                    <button class="action-btn" id="btnClear">🗑️ נקה</button>
+            <div class="status"><div class="status-main" id="statusLabel">מאזינה למילת הפעלה...</div><div class="wake-hint">אמור <span class="wake-word">״אדיאל ג׳וניור״</span> - מבינה גם דיבור מהיר!</div><div class="viz" id="visualizer"><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div></div></div>
+            <div class="panel holo" style="flex:1">
+                <div class="tabs"><button class="tab active" data-tab="screen">🖥️ מסך + קריאת טקסט</button><button class="tab" data-tab="tasks">🚀 משימות</button><button class="tab" data-tab="dict">📚 מילון</button><button class="tab" data-tab="system">⚙️ מערכת</button></div>
+                <div class="body">
+                    <div class="pane active" id="pane-screen"><div class="screen-holo hidden" id="screenPreview"><img id="previewImage"/><div class="scan"></div></div><div id="screenPlaceholder" style="text-align:center;padding:18px;color:var(--dim);font-size:12px"><div style="font-size:28px;margin-bottom:6px">🖥️</div>תגיד "מה את רואה?" - אקרא טקסט עם EasyOCR RTL!</div><div id="previewContext" style="margin-top:10px;font-size:11px;background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;max-height:70px;overflow:auto"></div></div>
+                    <div class="pane" id="pane-tasks"><div class="tasks-grid"><div class="task-card" data-task="תקנה לי אוזניות הכי זול"><span>🛒</span><b>קנייה</b><small>זול</small></div><div class="task-card" data-task="תזמין טיסה"><span>✈️</span><b>חופשה</b><small>דיל</small></div><div class="task-card" data-task="תחקור על AI"><span>🔬</span><b>מחקר</b><small>עשרות אתרים</small></div><div class="task-card" data-task="תבדוק מיילים"><span>📧</span><b>מייל</b><small>דחוף</small></div><div class="task-card" data-task="תארגן קבצים"><span>📁</span><b>קבצים</b><small>Drive</small></div><div class="task-card" data-task="תכין דוח"><span>📊</span><b>דוח</b><small>מנהלים</small></div></div></div>
+                    <div class="pane" id="pane-dict"><div style="display:flex;gap:8px;margin-bottom:10px"><input type="text" id="dictSearch" placeholder="חפש מילה במילון העברי המלא..." style="flex:1;background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;color:white;outline:none"><button class="action-btn" id="btnDictSearch">🔍</button></div><div id="dictResult" style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;min-height:110px;font-size:12px;line-height:1.5"><div style="text-align:center;opacity:.6">📚 מילון עברי מלא - 500+ מילים<br>הקלד או תגיד "מה זה פאנן?"</div></div></div>
+                    <div class="pane" id="pane-system"><div id="micList" style="display:flex;flex-direction:column;gap:6px">טוען מיקרופונים...</div><div id="healthInfo" style="margin-top:10px">טוען...</div></div>
                 </div>
             </div>
         </div>
 
-        <!-- Orb -->
-        <div class="orb-content" id="orbContent">
-            <div class="orb-core"></div>
-            <div class="orb-pulse"></div>
-        </div>
-
-        <!-- Connection -->
-        <div class="connection-bar">
-            <div class="conn-dot" id="connDot"></div>
-            <span id="connText">מתחברת ל-Backend...</span>
-            <span class="backend-port">:8765 | זוכרת הכל</span>
+        <div class="col right">
+            <div class="panel"><div class="head"><div>⚡ מהיר + קול AI</div></div><div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="quick-btn" id="btnWake">🎤 אדיאל</button><button class="quick-btn" id="btnScreen">🖥️ מסך</button><button class="quick-btn" id="btnTrain">🧠 אמן</button><button class="quick-btn" id="btnFix">🛠️ תקן</button></div></div>
+            <div class="panel" style="flex:1"><div class="head"><div>🧠 למידה • אישור</div><div class="badge" id="proposalsBadge">0</div></div><div style="padding:10px;overflow:auto;max-height:180px" id="proposalsList"><div style="text-align:center;opacity:.5;font-size:11px">אין הצעות</div></div></div>
+            <div class="panel"><div class="head"><div>📡 מערכת</div></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">Backend</span><span id="backendStatus" style="color:var(--green)">● מחובר</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">LLM 6GB</span><span id="trueAIStatus">🧠 6GB Ready</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">קול</span><span>✨ AI לכל שאלה</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">מהיר</span><span style="color:var(--accent)">⚡ פעיל</span></div></div></div>
         </div>
     </div>
 
-    <script src="./animations.js"></script>
-    <script src="./hud.js"></script>
-    <script src="./super_hud.js"></script>
+    <div class="bottom">
+        <div style="font-family:'Orbitron';font-weight:800;color:var(--accent);font-size:10px;letter-spacing:1px">ADIEL://</div>
+        <div style="flex:1"><div class="input-wrap"><input type="text" id="textInput" placeholder="דבר עם אדיאל - מבינה דיבור מהיר, מילון מלא, קול AI!" autocomplete="off"/><button class="send-btn" id="btnSend">➤</button></div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div class="conn-dot" id="connDot"></div><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim)" id="connText">מחובר</span><button class="action-btn" id="btnClear">🗑️</button></div>
+    </div>
+</div>
+
+<script>
+// Particles
+const particlesEl = document.getElementById('particles');
+for(let i=0;i<40;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*20+'s';p.style.animationDuration=(15+Math.random()*15)+'s';particlesEl.appendChild(p);}
+// Clock
+setInterval(()=>{const el=document.getElementById('timeDisplay');if(el)el.textContent=new Date().toLocaleTimeString('he-IL',{hour12:false});},1000);
+// Metrics
+setInterval(()=>{const cpu=document.getElementById('cpuFill');const mem=document.getElementById('memFill');if(cpu)cpu.style.width=(30+Math.random()*40)+'%';if(mem)mem.style.width=(60+Math.random()*20)+'%';},2000);
+// Tabs
+document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',e=>{const n=e.target.getAttribute('data-tab');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('pane-'+n)?.classList.add('active');});});
+// Dict search
+document.getElementById('btnDictSearch')?.addEventListener('click',async()=>{
+    const w=document.getElementById('dictSearch')?.value.trim();if(!w)return;
+    const resEl=document.getElementById('dictResult');if(!resEl)return;resEl.innerHTML='🔍 מחפש במילון...';
+    try{const backendUrl=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8765':`http://${location.hostname}:8765`;const r=await fetch(`${backendUrl}/dictionary/lookup?word=${encodeURIComponent(w)}`);const d=await r.json();if(d.found){resEl.innerHTML=`<b style="color:var(--accent);font-size:14px">${d.word}</b><br><br><b>פירוש:</b> ${d.meaning}<br><br><b>סוג:</b> ${d.type||''}<br><b>דוגמה:</b> ${d.example||''}`;}else{resEl.innerHTML=`לא נמצא "${w}". תגיד "תלמד את המילה ${w}"`;}}catch(e){resEl.innerHTML=`שגיאה: ${e.message}`;}
+});
+// Reactor
+const canvas=document.getElementById('reactorCanvas');
+if(canvas){const ctx=canvas.getContext('2d');let t=0;function draw(){t++;ctx.clearRect(0,0,150,150);const cx=75,cy=75;const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,50);grad.addColorStop(0,'rgba(0,212,255,0.18)');grad.addColorStop(1,'transparent');ctx.fillStyle=grad;ctx.fillRect(0,0,150,150);ctx.fillStyle='#00d4ff';ctx.shadowColor='#00d4ff';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(cx,cy,12+Math.sin(t*0.08)*2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;requestAnimationFrame(draw);}draw();}
+console.log('Adiel Ultimate - Single File - Hebrew Dict Full - Voice for Every Question - Fast Speech');
+</script>
+<script src="./advanced_hud.js"></script>
 </body>
 </html>

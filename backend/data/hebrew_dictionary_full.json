@@ -1,0 +1,5686 @@
+{
+  "words": {
+    "שלום": {
+      "meaning": "ברכה",
+      "type": "ברכה",
+      "example": "שלום!",
+      "synonyms": [
+        "היי"
+      ],
+      "english": "hello"
+    },
+    "היי": {
+      "meaning": "ברכה לא רשמית",
+      "type": "סלנג",
+      "example": "היי בוס",
+      "synonyms": [
+        "שלום"
+      ],
+      "english": "hi"
+    },
+    "בוס": {
+      "meaning": "מנהל או כינוי חיבה",
+      "type": "סלנג",
+      "example": "יאללה בוס",
+      "synonyms": [
+        "אחי"
+      ],
+      "english": "boss"
+    },
+    "תודה": {
+      "meaning": "הכרת תודה",
+      "type": "נימוס",
+      "example": "תודה רבה",
+      "synonyms": [],
+      "english": "thanks"
+    },
+    "יאללה": {
+      "meaning": "קדימה, בוא",
+      "type": "סלנג",
+      "example": "יאללה בוא",
+      "synonyms": [
+        "קדימה"
+      ],
+      "english": "let's go"
+    },
+    "סגור": {
+      "meaning": "מוסכם",
+      "type": "סלנג",
+      "example": "סגור",
+      "synonyms": [
+        "סבבה"
+      ],
+      "english": "ok"
+    },
+    "אחלה": {
+      "meaning": "מצוין",
+      "type": "סלנג",
+      "example": "אחלה יום",
+      "synonyms": [
+        "סבבה"
+      ],
+      "english": "great"
+    },
+    "פאנן": {
+      "meaning": "מגניב, כיף",
+      "type": "סלנג צעיר",
+      "example": "פאנן!",
+      "synonyms": [
+        "מגניב"
+      ],
+      "english": "cool"
+    },
+    "אדיאל": {
+      "meaning": "עוזרת AI חכמה עם קול מקורי, מוח אמיתי מאפס, LLM 6GB",
+      "type": "שם",
+      "example": "אדיאל ג'וניור",
+      "synonyms": [],
+      "english": "Adiel"
+    },
+    "בית": {
+      "meaning": "מקום מגורים",
+      "type": "שם עצם",
+      "example": "בית - דוגמה",
+      "synonyms": [],
+      "english": "בית"
+    },
+    "עבודה": {
+      "meaning": "תעסוקה",
+      "type": "שם עצם",
+      "example": "עבודה - דוגמה",
+      "synonyms": [],
+      "english": "עבודה"
+    },
+    "זמן": {
+      "meaning": "משך",
+      "type": "שם עצם",
+      "example": "זמן - דוגמה",
+      "synonyms": [],
+      "english": "זמן"
+    },
+    "מקום": {
+      "meaning": "אתר",
+      "type": "שם עצם",
+      "example": "מקום - דוגמה",
+      "synonyms": [],
+      "english": "מקום"
+    },
+    "אדם": {
+      "meaning": "בן אנוש",
+      "type": "שם עצם",
+      "example": "אדם - דוגמה",
+      "synonyms": [],
+      "english": "אדם"
+    },
+    "חיים": {
+      "meaning": "קיום",
+      "type": "שם עצם",
+      "example": "חיים - דוגמה",
+      "synonyms": [],
+      "english": "חיים"
+    },
+    "אהבה": {
+      "meaning": "רגש חיבה",
+      "type": "רגש",
+      "example": "אהבה - דוגמה",
+      "synonyms": [],
+      "english": "אהבה"
+    },
+    "שמחה": {
+      "meaning": "אושר",
+      "type": "רגש",
+      "example": "שמחה - דוגמה",
+      "synonyms": [],
+      "english": "שמחה"
+    },
+    "כסף": {
+      "meaning": "אמצעי תשלום",
+      "type": "שם עצם",
+      "example": "כסף - דוגמה",
+      "synonyms": [],
+      "english": "כסף"
+    },
+    "מים": {
+      "meaning": "נוזל חיוני",
+      "type": "שם עצם",
+      "example": "מים - דוגמה",
+      "synonyms": [],
+      "english": "מים"
+    },
+    "אוכל": {
+      "meaning": "מזון",
+      "type": "שם עצם",
+      "example": "אוכל - דוגמה",
+      "synonyms": [],
+      "english": "אוכל"
+    },
+    "סליחה": {
+      "meaning": "התנצלות",
+      "type": "נימוס",
+      "example": "סליחה - דוגמה",
+      "synonyms": [],
+      "english": "סליחה"
+    },
+    "כן": {
+      "meaning": "הסכמה",
+      "type": "תשובה",
+      "example": "כן - דוגמה",
+      "synonyms": [],
+      "english": "כן"
+    },
+    "לא": {
+      "meaning": "שלילה",
+      "type": "תשובה",
+      "example": "לא - דוגמה",
+      "synonyms": [],
+      "english": "לא"
+    },
+    "מהיר": {
+      "meaning": "זריז",
+      "type": "תואר",
+      "example": "מהיר - דוגמה",
+      "synonyms": [],
+      "english": "מהיר"
+    },
+    "איטי": {
+      "meaning": "לא מהיר",
+      "type": "תואר",
+      "example": "איטי - דוגמה",
+      "synonyms": [],
+      "english": "איטי"
+    },
+    "חכם": {
+      "meaning": "נבון",
+      "type": "תואר",
+      "example": "חכם - דוגמה",
+      "synonyms": [],
+      "english": "חכם"
+    },
+    "טיפש": {
+      "meaning": "לא חכם",
+      "type": "תואר",
+      "example": "טיפש - דוגמה",
+      "synonyms": [],
+      "english": "טיפש"
+    },
+    "יפה": {
+      "meaning": "נאה",
+      "type": "תואר",
+      "example": "יפה - דוגמה",
+      "synonyms": [],
+      "english": "יפה"
+    },
+    "טוב": {
+      "meaning": "חיובי",
+      "type": "תואר",
+      "example": "טוב - דוגמה",
+      "synonyms": [],
+      "english": "טוב"
+    },
+    "רע": {
+      "meaning": "שלילי",
+      "type": "תואר",
+      "example": "רע - דוגמה",
+      "synonyms": [],
+      "english": "רע"
+    },
+    "גדול": {
+      "meaning": "ענק",
+      "type": "תואר",
+      "example": "גדול - דוגמה",
+      "synonyms": [],
+      "english": "גדול"
+    },
+    "קטן": {
+      "meaning": "זעיר",
+      "type": "תואר",
+      "example": "קטן - דוגמה",
+      "synonyms": [],
+      "english": "קטן"
+    },
+    "חדש": {
+      "meaning": "עדכני",
+      "type": "תואר",
+      "example": "חדש - דוגמה",
+      "synonyms": [],
+      "english": "חדש"
+    },
+    "ישן": {
+      "meaning": "עתיק",
+      "type": "תואר",
+      "example": "ישן - דוגמה",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "קרוב": {
+      "meaning": "לא רחוק",
+      "type": "תואר",
+      "example": "קרוב - דוגמה",
+      "synonyms": [],
+      "english": "קרוב"
+    },
+    "רחוק": {
+      "meaning": "לא קרוב",
+      "type": "תואר",
+      "example": "רחוק - דוגמה",
+      "synonyms": [],
+      "english": "רחוק"
+    },
+    "מלא": {
+      "meaning": "גדוש",
+      "type": "תואר",
+      "example": "מלא - דוגמה",
+      "synonyms": [],
+      "english": "מלא"
+    },
+    "ריק": {
+      "meaning": "בלי תוכן",
+      "type": "תואר",
+      "example": "ריק - דוגמה",
+      "synonyms": [],
+      "english": "ריק"
+    },
+    "תזכור": {
+      "meaning": "אל תשכח",
+      "type": "פועל",
+      "example": "תזכור - דוגמה",
+      "synonyms": [],
+      "english": "תזכור"
+    },
+    "תפתח": {
+      "meaning": "פתח",
+      "type": "פועל",
+      "example": "תפתח - דוגמה",
+      "synonyms": [],
+      "english": "תפתח"
+    },
+    "תסגור": {
+      "meaning": "סגור",
+      "type": "פועל",
+      "example": "תסגור - דוגמה",
+      "synonyms": [],
+      "english": "תסגור"
+    },
+    "תחפש": {
+      "meaning": "חפש",
+      "type": "פועל",
+      "example": "תחפש - דוגמה",
+      "synonyms": [],
+      "english": "תחפש"
+    },
+    "תעזור": {
+      "meaning": "עזור",
+      "type": "פועל",
+      "example": "תעזור - דוגמה",
+      "synonyms": [],
+      "english": "תעזור"
+    },
+    "תקנה": {
+      "meaning": "קנה",
+      "type": "פועל",
+      "example": "תקנה - דוגמה",
+      "synonyms": [],
+      "english": "תקנה"
+    },
+    "תזמין": {
+      "meaning": "הזמן",
+      "type": "פועל",
+      "example": "תזמין - דוגמה",
+      "synonyms": [],
+      "english": "תזמין"
+    },
+    "תחקור": {
+      "meaning": "חפש מידע",
+      "type": "פועל",
+      "example": "תחקור - דוגמה",
+      "synonyms": [],
+      "english": "תחקור"
+    },
+    "תקרא": {
+      "meaning": "קרא טקסט",
+      "type": "פועל",
+      "example": "תקרא - דוגמה",
+      "synonyms": [],
+      "english": "תקרא"
+    },
+    "היום": {
+      "meaning": "היום הזה",
+      "type": "זמן",
+      "example": "היום - דוגמה",
+      "synonyms": [],
+      "english": "היום"
+    },
+    "מחר": {
+      "meaning": "היום הבא",
+      "type": "זמן",
+      "example": "מחר - דוגמה",
+      "synonyms": [],
+      "english": "מחר"
+    },
+    "אתמול": {
+      "meaning": "יום שעבר",
+      "type": "זמן",
+      "example": "אתמול - דוגמה",
+      "synonyms": [],
+      "english": "אתמול"
+    },
+    "עכשיו": {
+      "meaning": "ברגע זה",
+      "type": "זמן",
+      "example": "עכשיו - דוגמה",
+      "synonyms": [],
+      "english": "עכשיו"
+    },
+    "בוקר": {
+      "meaning": "שעות בוקר",
+      "type": "זמן",
+      "example": "בוקר - דוגמה",
+      "synonyms": [],
+      "english": "בוקר"
+    },
+    "לילה": {
+      "meaning": "שעות לילה",
+      "type": "זמן",
+      "example": "לילה - דוגמה",
+      "synonyms": [],
+      "english": "לילה"
+    },
+    "פיצה": {
+      "meaning": "מאכל איטלקי",
+      "type": "אוכל",
+      "example": "פיצה - דוגמה",
+      "synonyms": [],
+      "english": "פיצה"
+    },
+    "קפה": {
+      "meaning": "משקה קפאין",
+      "type": "אוכל",
+      "example": "קפה - דוגמה",
+      "synonyms": [],
+      "english": "קפה"
+    },
+    "מחשב": {
+      "meaning": "מכשיר מחשוב",
+      "type": "טכנולוגיה",
+      "example": "מחשב - דוגמה",
+      "synonyms": [],
+      "english": "מחשב"
+    },
+    "קוד": {
+      "meaning": "קוד תכנות",
+      "type": "טכנולוגיה",
+      "example": "קוד - דוגמה",
+      "synonyms": [],
+      "english": "קוד"
+    },
+    "שגיאה": {
+      "meaning": "טעות, באג",
+      "type": "טכנולוגיה",
+      "example": "שגיאה - דוגמה",
+      "synonyms": [],
+      "english": "שגיאה"
+    },
+    "תכנות": {
+      "meaning": "כתיבת קוד",
+      "type": "טכנולוגיה",
+      "example": "תכנות - דוגמה",
+      "synonyms": [],
+      "english": "תכנות"
+    },
+    "0": {
+      "meaning": "המספר 0",
+      "type": "מספר",
+      "example": "יש 0",
+      "synonyms": [],
+      "english": "0"
+    },
+    "1": {
+      "meaning": "המספר 1",
+      "type": "מספר",
+      "example": "יש 1",
+      "synonyms": [],
+      "english": "1"
+    },
+    "2": {
+      "meaning": "המספר 2",
+      "type": "מספר",
+      "example": "יש 2",
+      "synonyms": [],
+      "english": "2"
+    },
+    "3": {
+      "meaning": "המספר 3",
+      "type": "מספר",
+      "example": "יש 3",
+      "synonyms": [],
+      "english": "3"
+    },
+    "4": {
+      "meaning": "המספר 4",
+      "type": "מספר",
+      "example": "יש 4",
+      "synonyms": [],
+      "english": "4"
+    },
+    "5": {
+      "meaning": "המספר 5",
+      "type": "מספר",
+      "example": "יש 5",
+      "synonyms": [],
+      "english": "5"
+    },
+    "6": {
+      "meaning": "המספר 6",
+      "type": "מספר",
+      "example": "יש 6",
+      "synonyms": [],
+      "english": "6"
+    },
+    "7": {
+      "meaning": "המספר 7",
+      "type": "מספר",
+      "example": "יש 7",
+      "synonyms": [],
+      "english": "7"
+    },
+    "8": {
+      "meaning": "המספר 8",
+      "type": "מספר",
+      "example": "יש 8",
+      "synonyms": [],
+      "english": "8"
+    },
+    "9": {
+      "meaning": "המספר 9",
+      "type": "מספר",
+      "example": "יש 9",
+      "synonyms": [],
+      "english": "9"
+    },
+    "10": {
+      "meaning": "המספר 10",
+      "type": "מספר",
+      "example": "יש 10",
+      "synonyms": [],
+      "english": "10"
+    },
+    "11": {
+      "meaning": "המספר 11",
+      "type": "מספר",
+      "example": "יש 11",
+      "synonyms": [],
+      "english": "11"
+    },
+    "12": {
+      "meaning": "המספר 12",
+      "type": "מספר",
+      "example": "יש 12",
+      "synonyms": [],
+      "english": "12"
+    },
+    "13": {
+      "meaning": "המספר 13",
+      "type": "מספר",
+      "example": "יש 13",
+      "synonyms": [],
+      "english": "13"
+    },
+    "14": {
+      "meaning": "המספר 14",
+      "type": "מספר",
+      "example": "יש 14",
+      "synonyms": [],
+      "english": "14"
+    },
+    "15": {
+      "meaning": "המספר 15",
+      "type": "מספר",
+      "example": "יש 15",
+      "synonyms": [],
+      "english": "15"
+    },
+    "16": {
+      "meaning": "המספר 16",
+      "type": "מספר",
+      "example": "יש 16",
+      "synonyms": [],
+      "english": "16"
+    },
+    "17": {
+      "meaning": "המספר 17",
+      "type": "מספר",
+      "example": "יש 17",
+      "synonyms": [],
+      "english": "17"
+    },
+    "18": {
+      "meaning": "המספר 18",
+      "type": "מספר",
+      "example": "יש 18",
+      "synonyms": [],
+      "english": "18"
+    },
+    "19": {
+      "meaning": "המספר 19",
+      "type": "מספר",
+      "example": "יש 19",
+      "synonyms": [],
+      "english": "19"
+    },
+    "20": {
+      "meaning": "המספר 20",
+      "type": "מספר",
+      "example": "יש 20",
+      "synonyms": [],
+      "english": "20"
+    },
+    "21": {
+      "meaning": "המספר 21",
+      "type": "מספר",
+      "example": "יש 21",
+      "synonyms": [],
+      "english": "21"
+    },
+    "22": {
+      "meaning": "המספר 22",
+      "type": "מספר",
+      "example": "יש 22",
+      "synonyms": [],
+      "english": "22"
+    },
+    "23": {
+      "meaning": "המספר 23",
+      "type": "מספר",
+      "example": "יש 23",
+      "synonyms": [],
+      "english": "23"
+    },
+    "24": {
+      "meaning": "המספר 24",
+      "type": "מספר",
+      "example": "יש 24",
+      "synonyms": [],
+      "english": "24"
+    },
+    "25": {
+      "meaning": "המספר 25",
+      "type": "מספר",
+      "example": "יש 25",
+      "synonyms": [],
+      "english": "25"
+    },
+    "26": {
+      "meaning": "המספר 26",
+      "type": "מספר",
+      "example": "יש 26",
+      "synonyms": [],
+      "english": "26"
+    },
+    "27": {
+      "meaning": "המספר 27",
+      "type": "מספר",
+      "example": "יש 27",
+      "synonyms": [],
+      "english": "27"
+    },
+    "28": {
+      "meaning": "המספר 28",
+      "type": "מספר",
+      "example": "יש 28",
+      "synonyms": [],
+      "english": "28"
+    },
+    "29": {
+      "meaning": "המספר 29",
+      "type": "מספר",
+      "example": "יש 29",
+      "synonyms": [],
+      "english": "29"
+    },
+    "30": {
+      "meaning": "המספר 30",
+      "type": "מספר",
+      "example": "יש 30",
+      "synonyms": [],
+      "english": "30"
+    },
+    "31": {
+      "meaning": "המספר 31",
+      "type": "מספר",
+      "example": "יש 31",
+      "synonyms": [],
+      "english": "31"
+    },
+    "32": {
+      "meaning": "המספר 32",
+      "type": "מספר",
+      "example": "יש 32",
+      "synonyms": [],
+      "english": "32"
+    },
+    "33": {
+      "meaning": "המספר 33",
+      "type": "מספר",
+      "example": "יש 33",
+      "synonyms": [],
+      "english": "33"
+    },
+    "34": {
+      "meaning": "המספר 34",
+      "type": "מספר",
+      "example": "יש 34",
+      "synonyms": [],
+      "english": "34"
+    },
+    "35": {
+      "meaning": "המספר 35",
+      "type": "מספר",
+      "example": "יש 35",
+      "synonyms": [],
+      "english": "35"
+    },
+    "36": {
+      "meaning": "המספר 36",
+      "type": "מספר",
+      "example": "יש 36",
+      "synonyms": [],
+      "english": "36"
+    },
+    "37": {
+      "meaning": "המספר 37",
+      "type": "מספר",
+      "example": "יש 37",
+      "synonyms": [],
+      "english": "37"
+    },
+    "38": {
+      "meaning": "המספר 38",
+      "type": "מספר",
+      "example": "יש 38",
+      "synonyms": [],
+      "english": "38"
+    },
+    "39": {
+      "meaning": "המספר 39",
+      "type": "מספר",
+      "example": "יש 39",
+      "synonyms": [],
+      "english": "39"
+    },
+    "40": {
+      "meaning": "המספר 40",
+      "type": "מספר",
+      "example": "יש 40",
+      "synonyms": [],
+      "english": "40"
+    },
+    "41": {
+      "meaning": "המספר 41",
+      "type": "מספר",
+      "example": "יש 41",
+      "synonyms": [],
+      "english": "41"
+    },
+    "42": {
+      "meaning": "המספר 42",
+      "type": "מספר",
+      "example": "יש 42",
+      "synonyms": [],
+      "english": "42"
+    },
+    "43": {
+      "meaning": "המספר 43",
+      "type": "מספר",
+      "example": "יש 43",
+      "synonyms": [],
+      "english": "43"
+    },
+    "44": {
+      "meaning": "המספר 44",
+      "type": "מספר",
+      "example": "יש 44",
+      "synonyms": [],
+      "english": "44"
+    },
+    "45": {
+      "meaning": "המספר 45",
+      "type": "מספר",
+      "example": "יש 45",
+      "synonyms": [],
+      "english": "45"
+    },
+    "46": {
+      "meaning": "המספר 46",
+      "type": "מספר",
+      "example": "יש 46",
+      "synonyms": [],
+      "english": "46"
+    },
+    "47": {
+      "meaning": "המספר 47",
+      "type": "מספר",
+      "example": "יש 47",
+      "synonyms": [],
+      "english": "47"
+    },
+    "48": {
+      "meaning": "המספר 48",
+      "type": "מספר",
+      "example": "יש 48",
+      "synonyms": [],
+      "english": "48"
+    },
+    "49": {
+      "meaning": "המספר 49",
+      "type": "מספר",
+      "example": "יש 49",
+      "synonyms": [],
+      "english": "49"
+    },
+    "50": {
+      "meaning": "המספר 50",
+      "type": "מספר",
+      "example": "יש 50",
+      "synonyms": [],
+      "english": "50"
+    },
+    "51": {
+      "meaning": "המספר 51",
+      "type": "מספר",
+      "example": "יש 51",
+      "synonyms": [],
+      "english": "51"
+    },
+    "52": {
+      "meaning": "המספר 52",
+      "type": "מספר",
+      "example": "יש 52",
+      "synonyms": [],
+      "english": "52"
+    },
+    "53": {
+      "meaning": "המספר 53",
+      "type": "מספר",
+      "example": "יש 53",
+      "synonyms": [],
+      "english": "53"
+    },
+    "54": {
+      "meaning": "המספר 54",
+      "type": "מספר",
+      "example": "יש 54",
+      "synonyms": [],
+      "english": "54"
+    },
+    "55": {
+      "meaning": "המספר 55",
+      "type": "מספר",
+      "example": "יש 55",
+      "synonyms": [],
+      "english": "55"
+    },
+    "56": {
+      "meaning": "המספר 56",
+      "type": "מספר",
+      "example": "יש 56",
+      "synonyms": [],
+      "english": "56"
+    },
+    "57": {
+      "meaning": "המספר 57",
+      "type": "מספר",
+      "example": "יש 57",
+      "synonyms": [],
+      "english": "57"
+    },
+    "58": {
+      "meaning": "המספר 58",
+      "type": "מספר",
+      "example": "יש 58",
+      "synonyms": [],
+      "english": "58"
+    },
+    "59": {
+      "meaning": "המספר 59",
+      "type": "מספר",
+      "example": "יש 59",
+      "synonyms": [],
+      "english": "59"
+    },
+    "60": {
+      "meaning": "המספר 60",
+      "type": "מספר",
+      "example": "יש 60",
+      "synonyms": [],
+      "english": "60"
+    },
+    "61": {
+      "meaning": "המספר 61",
+      "type": "מספר",
+      "example": "יש 61",
+      "synonyms": [],
+      "english": "61"
+    },
+    "62": {
+      "meaning": "המספר 62",
+      "type": "מספר",
+      "example": "יש 62",
+      "synonyms": [],
+      "english": "62"
+    },
+    "63": {
+      "meaning": "המספר 63",
+      "type": "מספר",
+      "example": "יש 63",
+      "synonyms": [],
+      "english": "63"
+    },
+    "64": {
+      "meaning": "המספר 64",
+      "type": "מספר",
+      "example": "יש 64",
+      "synonyms": [],
+      "english": "64"
+    },
+    "65": {
+      "meaning": "המספר 65",
+      "type": "מספר",
+      "example": "יש 65",
+      "synonyms": [],
+      "english": "65"
+    },
+    "66": {
+      "meaning": "המספר 66",
+      "type": "מספר",
+      "example": "יש 66",
+      "synonyms": [],
+      "english": "66"
+    },
+    "67": {
+      "meaning": "המספר 67",
+      "type": "מספר",
+      "example": "יש 67",
+      "synonyms": [],
+      "english": "67"
+    },
+    "68": {
+      "meaning": "המספר 68",
+      "type": "מספר",
+      "example": "יש 68",
+      "synonyms": [],
+      "english": "68"
+    },
+    "69": {
+      "meaning": "המספר 69",
+      "type": "מספר",
+      "example": "יש 69",
+      "synonyms": [],
+      "english": "69"
+    },
+    "70": {
+      "meaning": "המספר 70",
+      "type": "מספר",
+      "example": "יש 70",
+      "synonyms": [],
+      "english": "70"
+    },
+    "71": {
+      "meaning": "המספר 71",
+      "type": "מספר",
+      "example": "יש 71",
+      "synonyms": [],
+      "english": "71"
+    },
+    "72": {
+      "meaning": "המספר 72",
+      "type": "מספר",
+      "example": "יש 72",
+      "synonyms": [],
+      "english": "72"
+    },
+    "73": {
+      "meaning": "המספר 73",
+      "type": "מספר",
+      "example": "יש 73",
+      "synonyms": [],
+      "english": "73"
+    },
+    "74": {
+      "meaning": "המספר 74",
+      "type": "מספר",
+      "example": "יש 74",
+      "synonyms": [],
+      "english": "74"
+    },
+    "75": {
+      "meaning": "המספר 75",
+      "type": "מספר",
+      "example": "יש 75",
+      "synonyms": [],
+      "english": "75"
+    },
+    "76": {
+      "meaning": "המספר 76",
+      "type": "מספר",
+      "example": "יש 76",
+      "synonyms": [],
+      "english": "76"
+    },
+    "77": {
+      "meaning": "המספר 77",
+      "type": "מספר",
+      "example": "יש 77",
+      "synonyms": [],
+      "english": "77"
+    },
+    "78": {
+      "meaning": "המספר 78",
+      "type": "מספר",
+      "example": "יש 78",
+      "synonyms": [],
+      "english": "78"
+    },
+    "79": {
+      "meaning": "המספר 79",
+      "type": "מספר",
+      "example": "יש 79",
+      "synonyms": [],
+      "english": "79"
+    },
+    "80": {
+      "meaning": "המספר 80",
+      "type": "מספר",
+      "example": "יש 80",
+      "synonyms": [],
+      "english": "80"
+    },
+    "81": {
+      "meaning": "המספר 81",
+      "type": "מספר",
+      "example": "יש 81",
+      "synonyms": [],
+      "english": "81"
+    },
+    "82": {
+      "meaning": "המספר 82",
+      "type": "מספר",
+      "example": "יש 82",
+      "synonyms": [],
+      "english": "82"
+    },
+    "83": {
+      "meaning": "המספר 83",
+      "type": "מספר",
+      "example": "יש 83",
+      "synonyms": [],
+      "english": "83"
+    },
+    "84": {
+      "meaning": "המספר 84",
+      "type": "מספר",
+      "example": "יש 84",
+      "synonyms": [],
+      "english": "84"
+    },
+    "85": {
+      "meaning": "המספר 85",
+      "type": "מספר",
+      "example": "יש 85",
+      "synonyms": [],
+      "english": "85"
+    },
+    "86": {
+      "meaning": "המספר 86",
+      "type": "מספר",
+      "example": "יש 86",
+      "synonyms": [],
+      "english": "86"
+    },
+    "87": {
+      "meaning": "המספר 87",
+      "type": "מספר",
+      "example": "יש 87",
+      "synonyms": [],
+      "english": "87"
+    },
+    "88": {
+      "meaning": "המספר 88",
+      "type": "מספר",
+      "example": "יש 88",
+      "synonyms": [],
+      "english": "88"
+    },
+    "89": {
+      "meaning": "המספר 89",
+      "type": "מספר",
+      "example": "יש 89",
+      "synonyms": [],
+      "english": "89"
+    },
+    "90": {
+      "meaning": "המספר 90",
+      "type": "מספר",
+      "example": "יש 90",
+      "synonyms": [],
+      "english": "90"
+    },
+    "91": {
+      "meaning": "המספר 91",
+      "type": "מספר",
+      "example": "יש 91",
+      "synonyms": [],
+      "english": "91"
+    },
+    "92": {
+      "meaning": "המספר 92",
+      "type": "מספר",
+      "example": "יש 92",
+      "synonyms": [],
+      "english": "92"
+    },
+    "93": {
+      "meaning": "המספר 93",
+      "type": "מספר",
+      "example": "יש 93",
+      "synonyms": [],
+      "english": "93"
+    },
+    "94": {
+      "meaning": "המספר 94",
+      "type": "מספר",
+      "example": "יש 94",
+      "synonyms": [],
+      "english": "94"
+    },
+    "95": {
+      "meaning": "המספר 95",
+      "type": "מספר",
+      "example": "יש 95",
+      "synonyms": [],
+      "english": "95"
+    },
+    "96": {
+      "meaning": "המספר 96",
+      "type": "מספר",
+      "example": "יש 96",
+      "synonyms": [],
+      "english": "96"
+    },
+    "97": {
+      "meaning": "המספר 97",
+      "type": "מספר",
+      "example": "יש 97",
+      "synonyms": [],
+      "english": "97"
+    },
+    "98": {
+      "meaning": "המספר 98",
+      "type": "מספר",
+      "example": "יש 98",
+      "synonyms": [],
+      "english": "98"
+    },
+    "99": {
+      "meaning": "המספר 99",
+      "type": "מספר",
+      "example": "יש 99",
+      "synonyms": [],
+      "english": "99"
+    },
+    "100": {
+      "meaning": "המספר 100",
+      "type": "מספר",
+      "example": "יש 100",
+      "synonyms": [],
+      "english": "100"
+    },
+    "ינואר": {
+      "meaning": "ינואר",
+      "type": "זמן",
+      "example": "ינואר",
+      "synonyms": [],
+      "english": "ינואר"
+    },
+    "פברואר": {
+      "meaning": "פברואר",
+      "type": "זמן",
+      "example": "פברואר",
+      "synonyms": [],
+      "english": "פברואר"
+    },
+    "מרץ": {
+      "meaning": "מרץ",
+      "type": "זמן",
+      "example": "מרץ",
+      "synonyms": [],
+      "english": "מרץ"
+    },
+    "אפריל": {
+      "meaning": "אפריל",
+      "type": "זמן",
+      "example": "אפריל",
+      "synonyms": [],
+      "english": "אפריל"
+    },
+    "מאי": {
+      "meaning": "מאי",
+      "type": "זמן",
+      "example": "מאי",
+      "synonyms": [],
+      "english": "מאי"
+    },
+    "יוני": {
+      "meaning": "יוני",
+      "type": "זמן",
+      "example": "יוני",
+      "synonyms": [],
+      "english": "יוני"
+    },
+    "יולי": {
+      "meaning": "יולי",
+      "type": "זמן",
+      "example": "יולי",
+      "synonyms": [],
+      "english": "יולי"
+    },
+    "אוגוסט": {
+      "meaning": "אוגוסט",
+      "type": "זמן",
+      "example": "אוגוסט",
+      "synonyms": [],
+      "english": "אוגוסט"
+    },
+    "ספטמבר": {
+      "meaning": "ספטמבר",
+      "type": "זמן",
+      "example": "ספטמבר",
+      "synonyms": [],
+      "english": "ספטמבר"
+    },
+    "אוקטובר": {
+      "meaning": "אוקטובר",
+      "type": "זמן",
+      "example": "אוקטובר",
+      "synonyms": [],
+      "english": "אוקטובר"
+    },
+    "נובמבר": {
+      "meaning": "נובמבר",
+      "type": "זמן",
+      "example": "נובמבר",
+      "synonyms": [],
+      "english": "נובמבר"
+    },
+    "דצמבר": {
+      "meaning": "דצמבר",
+      "type": "זמן",
+      "example": "דצמבר",
+      "synonyms": [],
+      "english": "דצמבר"
+    },
+    "ראשון": {
+      "meaning": "ראשון",
+      "type": "זמן",
+      "example": "ראשון",
+      "synonyms": [],
+      "english": "ראשון"
+    },
+    "שני": {
+      "meaning": "שני",
+      "type": "זמן",
+      "example": "שני",
+      "synonyms": [],
+      "english": "שני"
+    },
+    "שלישי": {
+      "meaning": "שלישי",
+      "type": "זמן",
+      "example": "שלישי",
+      "synonyms": [],
+      "english": "שלישי"
+    },
+    "רביעי": {
+      "meaning": "רביעי",
+      "type": "זמן",
+      "example": "רביעי",
+      "synonyms": [],
+      "english": "רביעי"
+    },
+    "חמישי": {
+      "meaning": "חמישי",
+      "type": "זמן",
+      "example": "חמישי",
+      "synonyms": [],
+      "english": "חמישי"
+    },
+    "שישי": {
+      "meaning": "שישי",
+      "type": "זמן",
+      "example": "שישי",
+      "synonyms": [],
+      "english": "שישי"
+    },
+    "שבת": {
+      "meaning": "שבת",
+      "type": "זמן",
+      "example": "שבת",
+      "synonyms": [],
+      "english": "שבת"
+    },
+    "אני אמר": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "אני אמר",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "אתה אמר": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "אתה אמר",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "הוא אמר": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "הוא אמר",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "היא אמר": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "היא אמר",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "אנחנו אמרים": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו אמרים",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "אמרתי": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "אמרתי",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "אמרת": {
+      "meaning": "אמר - צורת פועל",
+      "type": "פועל",
+      "example": "אמרת",
+      "synonyms": [],
+      "english": "אמר"
+    },
+    "אני עשה": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "אני עשה",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "אתה עשה": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה עשה",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "הוא עשה": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא עשה",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "היא עשה": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "היא עשה",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "אנחנו עשהים": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו עשהים",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "עשהתי": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "עשהתי",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "עשהת": {
+      "meaning": "עשה - צורת פועל",
+      "type": "פועל",
+      "example": "עשהת",
+      "synonyms": [],
+      "english": "עשה"
+    },
+    "אני הלך": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "אני הלך",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "אתה הלך": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "אתה הלך",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "הוא הלך": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "הוא הלך",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "היא הלך": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "היא הלך",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "אנחנו הלךים": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו הלךים",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "הלךתי": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "הלךתי",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "הלךת": {
+      "meaning": "הלך - צורת פועל",
+      "type": "פועל",
+      "example": "הלךת",
+      "synonyms": [],
+      "english": "הלך"
+    },
+    "אני בא": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "אני בא",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "אתה בא": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "אתה בא",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "הוא בא": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "הוא בא",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "היא בא": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "היא בא",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "אנחנו באים": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו באים",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "באתי": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "באתי",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "באת": {
+      "meaning": "בא - צורת פועל",
+      "type": "פועל",
+      "example": "באת",
+      "synonyms": [],
+      "english": "בא"
+    },
+    "אני ראה": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "אני ראה",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "אתה ראה": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ראה",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "הוא ראה": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ראה",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "היא ראה": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "היא ראה",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "אנחנו ראהים": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ראהים",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "ראהתי": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "ראהתי",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "ראהת": {
+      "meaning": "ראה - צורת פועל",
+      "type": "פועל",
+      "example": "ראהת",
+      "synonyms": [],
+      "english": "ראה"
+    },
+    "אני שמע": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "אני שמע",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "אתה שמע": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שמע",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "הוא שמע": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שמע",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "היא שמע": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "היא שמע",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "אנחנו שמעים": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שמעים",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "שמעתי": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "שמעתי",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "שמעת": {
+      "meaning": "שמע - צורת פועל",
+      "type": "פועל",
+      "example": "שמעת",
+      "synonyms": [],
+      "english": "שמע"
+    },
+    "אני אכל": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "אני אכל",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "אתה אכל": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "אתה אכל",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "הוא אכל": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "הוא אכל",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "היא אכל": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "היא אכל",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "אנחנו אכלים": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו אכלים",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "אכלתי": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "אכלתי",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "אכלת": {
+      "meaning": "אכל - צורת פועל",
+      "type": "פועל",
+      "example": "אכלת",
+      "synonyms": [],
+      "english": "אכל"
+    },
+    "אני שתה": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "אני שתה",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "אתה שתה": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שתה",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "הוא שתה": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שתה",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "היא שתה": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "היא שתה",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "אנחנו שתהים": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שתהים",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "שתהתי": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "שתהתי",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "שתהת": {
+      "meaning": "שתה - צורת פועל",
+      "type": "פועל",
+      "example": "שתהת",
+      "synonyms": [],
+      "english": "שתה"
+    },
+    "אני ישן": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "אני ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "אתה ישן": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "הוא ישן": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "היא ישן": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "היא ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "אנחנו ישןים": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ישןים",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "ישןתי": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "ישןתי",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "ישןת": {
+      "meaning": "ישן - צורת פועל",
+      "type": "פועל",
+      "example": "ישןת",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "אני קם": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "אני קם",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "אתה קם": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "אתה קם",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "הוא קם": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "הוא קם",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "היא קם": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "היא קם",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "אנחנו קםים": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו קםים",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "קםתי": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "קםתי",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "קםת": {
+      "meaning": "קם - צורת פועל",
+      "type": "פועל",
+      "example": "קםת",
+      "synonyms": [],
+      "english": "קם"
+    },
+    "אני ישב": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "אני ישב",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "אתה ישב": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ישב",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "הוא ישב": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ישב",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "היא ישב": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "היא ישב",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "אנחנו ישבים": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ישבים",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "ישבתי": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "ישבתי",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "ישבת": {
+      "meaning": "ישב - צורת פועל",
+      "type": "פועל",
+      "example": "ישבת",
+      "synonyms": [],
+      "english": "ישב"
+    },
+    "אני עמד": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "אני עמד",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "אתה עמד": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "אתה עמד",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "הוא עמד": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "הוא עמד",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "היא עמד": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "היא עמד",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "אנחנו עמדים": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו עמדים",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "עמדתי": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "עמדתי",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "עמדת": {
+      "meaning": "עמד - צורת פועל",
+      "type": "פועל",
+      "example": "עמדת",
+      "synonyms": [],
+      "english": "עמד"
+    },
+    "אני רץ": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "אני רץ",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "אתה רץ": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "אתה רץ",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "הוא רץ": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "הוא רץ",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "היא רץ": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "היא רץ",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "אנחנו רץים": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו רץים",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "רץתי": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "רץתי",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "רץת": {
+      "meaning": "רץ - צורת פועל",
+      "type": "פועל",
+      "example": "רץת",
+      "synonyms": [],
+      "english": "רץ"
+    },
+    "אני קפץ": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "אני קפץ",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "אתה קפץ": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "אתה קפץ",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "הוא קפץ": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "הוא קפץ",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "היא קפץ": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "היא קפץ",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "אנחנו קפץים": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו קפץים",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "קפץתי": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "קפץתי",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "קפץת": {
+      "meaning": "קפץ - צורת פועל",
+      "type": "פועל",
+      "example": "קפץת",
+      "synonyms": [],
+      "english": "קפץ"
+    },
+    "אני נפל": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "אני נפל",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "אתה נפל": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "אתה נפל",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "הוא נפל": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "הוא נפל",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "היא נפל": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "היא נפל",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "אנחנו נפלים": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו נפלים",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "נפלתי": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "נפלתי",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "נפלת": {
+      "meaning": "נפל - צורת פועל",
+      "type": "פועל",
+      "example": "נפלת",
+      "synonyms": [],
+      "english": "נפל"
+    },
+    "אני קנה": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "אני קנה",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "אתה קנה": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה קנה",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "הוא קנה": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא קנה",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "היא קנה": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "היא קנה",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "אנחנו קנהים": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו קנהים",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "קנהתי": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "קנהתי",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "קנהת": {
+      "meaning": "קנה - צורת פועל",
+      "type": "פועל",
+      "example": "קנהת",
+      "synonyms": [],
+      "english": "קנה"
+    },
+    "אני מכר": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "אני מכר",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "אתה מכר": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "אתה מכר",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "הוא מכר": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "הוא מכר",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "היא מכר": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "היא מכר",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "אנחנו מכרים": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו מכרים",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "מכרתי": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "מכרתי",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "מכרת": {
+      "meaning": "מכר - צורת פועל",
+      "type": "פועל",
+      "example": "מכרת",
+      "synonyms": [],
+      "english": "מכר"
+    },
+    "אני נתן": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "אני נתן",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "אתה נתן": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "אתה נתן",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "הוא נתן": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "הוא נתן",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "היא נתן": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "היא נתן",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "אנחנו נתןים": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו נתןים",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "נתןתי": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "נתןתי",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "נתןת": {
+      "meaning": "נתן - צורת פועל",
+      "type": "פועל",
+      "example": "נתןת",
+      "synonyms": [],
+      "english": "נתן"
+    },
+    "אני לקח": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "אני לקח",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "אתה לקח": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "אתה לקח",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "הוא לקח": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "הוא לקח",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "היא לקח": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "היא לקח",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "אנחנו לקחים": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו לקחים",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "לקחתי": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "לקחתי",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "לקחת": {
+      "meaning": "לקח - צורת פועל",
+      "type": "פועל",
+      "example": "לקחת",
+      "synonyms": [],
+      "english": "לקח"
+    },
+    "אני שם": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "אני שם",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "אתה שם": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שם",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "הוא שם": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שם",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "היא שם": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "היא שם",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "אנחנו שםים": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שםים",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "שםתי": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "שםתי",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "שםת": {
+      "meaning": "שם - צורת פועל",
+      "type": "פועל",
+      "example": "שםת",
+      "synonyms": [],
+      "english": "שם"
+    },
+    "אני מצא": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "אני מצא",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "אתה מצא": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "אתה מצא",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "הוא מצא": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "הוא מצא",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "היא מצא": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "היא מצא",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "אנחנו מצאים": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו מצאים",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "מצאתי": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "מצאתי",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "מצאת": {
+      "meaning": "מצא - צורת פועל",
+      "type": "פועל",
+      "example": "מצאת",
+      "synonyms": [],
+      "english": "מצא"
+    },
+    "אני חיפש": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "אני חיפש",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "אתה חיפש": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "אתה חיפש",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "הוא חיפש": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "הוא חיפש",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "היא חיפש": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "היא חיפש",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "אנחנו חיפשים": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו חיפשים",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "חיפשתי": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "חיפשתי",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "חיפשת": {
+      "meaning": "חיפש - צורת פועל",
+      "type": "פועל",
+      "example": "חיפשת",
+      "synonyms": [],
+      "english": "חיפש"
+    },
+    "אני עבד": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "אני עבד",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "אתה עבד": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "אתה עבד",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "הוא עבד": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "הוא עבד",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "היא עבד": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "היא עבד",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "אנחנו עבדים": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו עבדים",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "עבדתי": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "עבדתי",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "עבדת": {
+      "meaning": "עבד - צורת פועל",
+      "type": "פועל",
+      "example": "עבדת",
+      "synonyms": [],
+      "english": "עבד"
+    },
+    "אני למד": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "אני למד",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "אתה למד": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "אתה למד",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "הוא למד": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "הוא למד",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "היא למד": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "היא למד",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "אנחנו למדים": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו למדים",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "למדתי": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "למדתי",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "למדת": {
+      "meaning": "למד - צורת פועל",
+      "type": "פועל",
+      "example": "למדת",
+      "synonyms": [],
+      "english": "למד"
+    },
+    "אני כתב": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "אני כתב",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "אתה כתב": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "אתה כתב",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "הוא כתב": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "הוא כתב",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "היא כתב": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "היא כתב",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "אנחנו כתבים": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו כתבים",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "כתבתי": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "כתבתי",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "כתבת": {
+      "meaning": "כתב - צורת פועל",
+      "type": "פועל",
+      "example": "כתבת",
+      "synonyms": [],
+      "english": "כתב"
+    },
+    "אני קרא": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "אני קרא",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "אתה קרא": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "אתה קרא",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "הוא קרא": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "הוא קרא",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "היא קרא": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "היא קרא",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "אנחנו קראים": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו קראים",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "קראתי": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "קראתי",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "קראת": {
+      "meaning": "קרא - צורת פועל",
+      "type": "פועל",
+      "example": "קראת",
+      "synonyms": [],
+      "english": "קרא"
+    },
+    "אני דיבר": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "אני דיבר",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "אתה דיבר": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "אתה דיבר",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "הוא דיבר": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "הוא דיבר",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "היא דיבר": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "היא דיבר",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "אנחנו דיברים": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו דיברים",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "דיברתי": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "דיברתי",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "דיברת": {
+      "meaning": "דיבר - צורת פועל",
+      "type": "פועל",
+      "example": "דיברת",
+      "synonyms": [],
+      "english": "דיבר"
+    },
+    "אני שאל": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "אני שאל",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "אתה שאל": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שאל",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "הוא שאל": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שאל",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "היא שאל": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "היא שאל",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "אנחנו שאלים": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שאלים",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "שאלתי": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "שאלתי",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "שאלת": {
+      "meaning": "שאל - צורת פועל",
+      "type": "פועל",
+      "example": "שאלת",
+      "synonyms": [],
+      "english": "שאל"
+    },
+    "אני ענה": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "אני ענה",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "אתה ענה": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ענה",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "הוא ענה": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ענה",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "היא ענה": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "היא ענה",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "אנחנו ענהים": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ענהים",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "ענהתי": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "ענהתי",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "ענהת": {
+      "meaning": "ענה - צורת פועל",
+      "type": "פועל",
+      "example": "ענהת",
+      "synonyms": [],
+      "english": "ענה"
+    },
+    "אני חשב": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "אני חשב",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "אתה חשב": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "אתה חשב",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "הוא חשב": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "הוא חשב",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "היא חשב": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "היא חשב",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "אנחנו חשבים": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו חשבים",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "חשבתי": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "חשבתי",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "חשבת": {
+      "meaning": "חשב - צורת פועל",
+      "type": "פועל",
+      "example": "חשבת",
+      "synonyms": [],
+      "english": "חשב"
+    },
+    "אני הבין": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "אני הבין",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "אתה הבין": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "אתה הבין",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "הוא הבין": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "הוא הבין",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "היא הבין": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "היא הבין",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "אנחנו הביןים": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו הביןים",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "הביןתי": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "הביןתי",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "הביןת": {
+      "meaning": "הבין - צורת פועל",
+      "type": "פועל",
+      "example": "הביןת",
+      "synonyms": [],
+      "english": "הבין"
+    },
+    "אני ידע": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "אני ידע",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "אתה ידע": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ידע",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "הוא ידע": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ידע",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "היא ידע": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "היא ידע",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "אנחנו ידעים": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ידעים",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "ידעתי": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "ידעתי",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "ידעת": {
+      "meaning": "ידע - צורת פועל",
+      "type": "פועל",
+      "example": "ידעת",
+      "synonyms": [],
+      "english": "ידע"
+    },
+    "אני רצה": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "אני רצה",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "אתה רצה": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה רצה",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "הוא רצה": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא רצה",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "היא רצה": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "היא רצה",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "אנחנו רצהים": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו רצהים",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "רצהתי": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "רצהתי",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "רצהת": {
+      "meaning": "רצה - צורת פועל",
+      "type": "פועל",
+      "example": "רצהת",
+      "synonyms": [],
+      "english": "רצה"
+    },
+    "אני אהב": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "אני אהב",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "אתה אהב": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "אתה אהב",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "הוא אהב": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "הוא אהב",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "היא אהב": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "היא אהב",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "אנחנו אהבים": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו אהבים",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "אהבתי": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "אהבתי",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "אהבת": {
+      "meaning": "אהב - צורת פועל",
+      "type": "פועל",
+      "example": "אהבת",
+      "synonyms": [],
+      "english": "אהב"
+    },
+    "אני שנא": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "אני שנא",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "אתה שנא": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שנא",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "הוא שנא": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שנא",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "היא שנא": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "היא שנא",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "אנחנו שנאים": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שנאים",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "שנאתי": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "שנאתי",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "שנאת": {
+      "meaning": "שנא - צורת פועל",
+      "type": "פועל",
+      "example": "שנאת",
+      "synonyms": [],
+      "english": "שנא"
+    },
+    "אני פחד": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "אני פחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "אתה פחד": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "אתה פחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "הוא פחד": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "הוא פחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "היא פחד": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "היא פחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "אנחנו פחדים": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו פחדים",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "פחדתי": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "פחדתי",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "פחדת": {
+      "meaning": "פחד - צורת פועל",
+      "type": "פועל",
+      "example": "פחדת",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "אני שמח": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "אני שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "אתה שמח": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "הוא שמח": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "היא שמח": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "היא שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "אנחנו שמחים": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שמחים",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "שמחתי": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "שמחתי",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "שמחת": {
+      "meaning": "שמח - צורת פועל",
+      "type": "פועל",
+      "example": "שמחת",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "אני בכה": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "אני בכה",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "אתה בכה": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה בכה",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "הוא בכה": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא בכה",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "היא בכה": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "היא בכה",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "אנחנו בכהים": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו בכהים",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "בכהתי": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "בכהתי",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "בכהת": {
+      "meaning": "בכה - צורת פועל",
+      "type": "פועל",
+      "example": "בכהת",
+      "synonyms": [],
+      "english": "בכה"
+    },
+    "אני צחק": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "אני צחק",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "אתה צחק": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "אתה צחק",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "הוא צחק": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "הוא צחק",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "היא צחק": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "היא צחק",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "אנחנו צחקים": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו צחקים",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "צחקתי": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "צחקתי",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "צחקת": {
+      "meaning": "צחק - צורת פועל",
+      "type": "פועל",
+      "example": "צחקת",
+      "synonyms": [],
+      "english": "צחק"
+    },
+    "אני שיחק": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "אני שיחק",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "אתה שיחק": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שיחק",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "הוא שיחק": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שיחק",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "היא שיחק": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "היא שיחק",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "אנחנו שיחקים": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שיחקים",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "שיחקתי": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "שיחקתי",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "שיחקת": {
+      "meaning": "שיחק - צורת פועל",
+      "type": "פועל",
+      "example": "שיחקת",
+      "synonyms": [],
+      "english": "שיחק"
+    },
+    "אני בישל": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "אני בישל",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "אתה בישל": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "אתה בישל",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "הוא בישל": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "הוא בישל",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "היא בישל": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "היא בישל",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "אנחנו בישלים": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו בישלים",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "בישלתי": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "בישלתי",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "בישלת": {
+      "meaning": "בישל - צורת פועל",
+      "type": "פועל",
+      "example": "בישלת",
+      "synonyms": [],
+      "english": "בישל"
+    },
+    "אני ניקה": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "אני ניקה",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "אתה ניקה": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ניקה",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "הוא ניקה": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ניקה",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "היא ניקה": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "היא ניקה",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "אנחנו ניקהים": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ניקהים",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "ניקהתי": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "ניקהתי",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "ניקהת": {
+      "meaning": "ניקה - צורת פועל",
+      "type": "פועל",
+      "example": "ניקהת",
+      "synonyms": [],
+      "english": "ניקה"
+    },
+    "אני סידר": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "אני סידר",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "אתה סידר": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "אתה סידר",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "הוא סידר": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "הוא סידר",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "היא סידר": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "היא סידר",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "אנחנו סידרים": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו סידרים",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "סידרתי": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "סידרתי",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "סידרת": {
+      "meaning": "סידר - צורת פועל",
+      "type": "פועל",
+      "example": "סידרת",
+      "synonyms": [],
+      "english": "סידר"
+    },
+    "אני שילם": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "אני שילם",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "אתה שילם": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "אתה שילם",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "הוא שילם": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "הוא שילם",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "היא שילם": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "היא שילם",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "אנחנו שילםים": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו שילםים",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "שילםתי": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "שילםתי",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "שילםת": {
+      "meaning": "שילם - צורת פועל",
+      "type": "פועל",
+      "example": "שילםת",
+      "synonyms": [],
+      "english": "שילם"
+    },
+    "אני קיבל": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "אני קיבל",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "אתה קיבל": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "אתה קיבל",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "הוא קיבל": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "הוא קיבל",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "היא קיבל": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "היא קיבל",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "אנחנו קיבלים": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו קיבלים",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "קיבלתי": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "קיבלתי",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "קיבלת": {
+      "meaning": "קיבל - צורת פועל",
+      "type": "פועל",
+      "example": "קיבלת",
+      "synonyms": [],
+      "english": "קיבל"
+    },
+    "אני הביא": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "אני הביא",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "אתה הביא": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "אתה הביא",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "הוא הביא": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "הוא הביא",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "היא הביא": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "היא הביא",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "אנחנו הביאים": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו הביאים",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "הביאתי": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "הביאתי",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "הביאת": {
+      "meaning": "הביא - צורת פועל",
+      "type": "פועל",
+      "example": "הביאת",
+      "synonyms": [],
+      "english": "הביא"
+    },
+    "אני ביקש": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "אני ביקש",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "אתה ביקש": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "אתה ביקש",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "הוא ביקש": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "הוא ביקש",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "היא ביקש": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "היא ביקש",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "אנחנו ביקשים": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "אנחנו ביקשים",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "ביקשתי": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "ביקשתי",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "ביקשת": {
+      "meaning": "ביקש - צורת פועל",
+      "type": "פועל",
+      "example": "ביקשת",
+      "synonyms": [],
+      "english": "ביקש"
+    },
+    "ביתים": {
+      "meaning": "בית - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ביתים",
+      "synonyms": [],
+      "english": "בית"
+    },
+    "הבית": {
+      "meaning": "בית - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הבית",
+      "synonyms": [],
+      "english": "בית"
+    },
+    "בבית": {
+      "meaning": "בית - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בבית",
+      "synonyms": [],
+      "english": "בית"
+    },
+    "לבית": {
+      "meaning": "בית - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לבית",
+      "synonyms": [],
+      "english": "בית"
+    },
+    "דירה": {
+      "meaning": "דירה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי דירה",
+      "synonyms": [],
+      "english": "דירה"
+    },
+    "דירות": {
+      "meaning": "דירה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי דירות",
+      "synonyms": [],
+      "english": "דירה"
+    },
+    "הדירה": {
+      "meaning": "דירה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הדירה",
+      "synonyms": [],
+      "english": "דירה"
+    },
+    "בדירה": {
+      "meaning": "דירה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בדירה",
+      "synonyms": [],
+      "english": "דירה"
+    },
+    "לדירה": {
+      "meaning": "דירה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לדירה",
+      "synonyms": [],
+      "english": "דירה"
+    },
+    "חדר": {
+      "meaning": "חדר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חדר",
+      "synonyms": [],
+      "english": "חדר"
+    },
+    "חדרים": {
+      "meaning": "חדר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חדרים",
+      "synonyms": [],
+      "english": "חדר"
+    },
+    "החדר": {
+      "meaning": "חדר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי החדר",
+      "synonyms": [],
+      "english": "חדר"
+    },
+    "בחדר": {
+      "meaning": "חדר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בחדר",
+      "synonyms": [],
+      "english": "חדר"
+    },
+    "לחדר": {
+      "meaning": "חדר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לחדר",
+      "synonyms": [],
+      "english": "חדר"
+    },
+    "שולחן": {
+      "meaning": "שולחן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי שולחן",
+      "synonyms": [],
+      "english": "שולחן"
+    },
+    "שולחןים": {
+      "meaning": "שולחן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי שולחןים",
+      "synonyms": [],
+      "english": "שולחן"
+    },
+    "השולחן": {
+      "meaning": "שולחן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי השולחן",
+      "synonyms": [],
+      "english": "שולחן"
+    },
+    "בשולחן": {
+      "meaning": "שולחן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בשולחן",
+      "synonyms": [],
+      "english": "שולחן"
+    },
+    "לשולחן": {
+      "meaning": "שולחן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לשולחן",
+      "synonyms": [],
+      "english": "שולחן"
+    },
+    "כיסא": {
+      "meaning": "כיסא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי כיסא",
+      "synonyms": [],
+      "english": "כיסא"
+    },
+    "כיסאים": {
+      "meaning": "כיסא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי כיסאים",
+      "synonyms": [],
+      "english": "כיסא"
+    },
+    "הכיסא": {
+      "meaning": "כיסא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הכיסא",
+      "synonyms": [],
+      "english": "כיסא"
+    },
+    "בכיסא": {
+      "meaning": "כיסא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בכיסא",
+      "synonyms": [],
+      "english": "כיסא"
+    },
+    "לכיסא": {
+      "meaning": "כיסא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לכיסא",
+      "synonyms": [],
+      "english": "כיסא"
+    },
+    "מחשבים": {
+      "meaning": "מחשב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מחשבים",
+      "synonyms": [],
+      "english": "מחשב"
+    },
+    "המחשב": {
+      "meaning": "מחשב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי המחשב",
+      "synonyms": [],
+      "english": "מחשב"
+    },
+    "במחשב": {
+      "meaning": "מחשב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי במחשב",
+      "synonyms": [],
+      "english": "מחשב"
+    },
+    "למחשב": {
+      "meaning": "מחשב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי למחשב",
+      "synonyms": [],
+      "english": "מחשב"
+    },
+    "טלפון": {
+      "meaning": "טלפון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי טלפון",
+      "synonyms": [],
+      "english": "טלפון"
+    },
+    "טלפוןים": {
+      "meaning": "טלפון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי טלפוןים",
+      "synonyms": [],
+      "english": "טלפון"
+    },
+    "הטלפון": {
+      "meaning": "טלפון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הטלפון",
+      "synonyms": [],
+      "english": "טלפון"
+    },
+    "בטלפון": {
+      "meaning": "טלפון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בטלפון",
+      "synonyms": [],
+      "english": "טלפון"
+    },
+    "לטלפון": {
+      "meaning": "טלפון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לטלפון",
+      "synonyms": [],
+      "english": "טלפון"
+    },
+    "ספר": {
+      "meaning": "ספר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ספר",
+      "synonyms": [],
+      "english": "ספר"
+    },
+    "ספרים": {
+      "meaning": "ספר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ספרים",
+      "synonyms": [],
+      "english": "ספר"
+    },
+    "הספר": {
+      "meaning": "ספר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הספר",
+      "synonyms": [],
+      "english": "ספר"
+    },
+    "בספר": {
+      "meaning": "ספר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בספר",
+      "synonyms": [],
+      "english": "ספר"
+    },
+    "לספר": {
+      "meaning": "ספר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לספר",
+      "synonyms": [],
+      "english": "ספר"
+    },
+    "עבודות": {
+      "meaning": "עבודה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי עבודות",
+      "synonyms": [],
+      "english": "עבודה"
+    },
+    "העבודה": {
+      "meaning": "עבודה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי העבודה",
+      "synonyms": [],
+      "english": "עבודה"
+    },
+    "בעבודה": {
+      "meaning": "עבודה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בעבודה",
+      "synonyms": [],
+      "english": "עבודה"
+    },
+    "לעבודה": {
+      "meaning": "עבודה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לעבודה",
+      "synonyms": [],
+      "english": "עבודה"
+    },
+    "זמןים": {
+      "meaning": "זמן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי זמןים",
+      "synonyms": [],
+      "english": "זמן"
+    },
+    "הזמן": {
+      "meaning": "זמן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הזמן",
+      "synonyms": [],
+      "english": "זמן"
+    },
+    "בזמן": {
+      "meaning": "זמן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בזמן",
+      "synonyms": [],
+      "english": "זמן"
+    },
+    "לזמן": {
+      "meaning": "זמן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לזמן",
+      "synonyms": [],
+      "english": "זמן"
+    },
+    "מקוםים": {
+      "meaning": "מקום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מקוםים",
+      "synonyms": [],
+      "english": "מקום"
+    },
+    "המקום": {
+      "meaning": "מקום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי המקום",
+      "synonyms": [],
+      "english": "מקום"
+    },
+    "במקום": {
+      "meaning": "מקום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי במקום",
+      "synonyms": [],
+      "english": "מקום"
+    },
+    "למקום": {
+      "meaning": "מקום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי למקום",
+      "synonyms": [],
+      "english": "מקום"
+    },
+    "אדםים": {
+      "meaning": "אדם - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אדםים",
+      "synonyms": [],
+      "english": "אדם"
+    },
+    "האדם": {
+      "meaning": "אדם - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האדם",
+      "synonyms": [],
+      "english": "אדם"
+    },
+    "באדם": {
+      "meaning": "אדם - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באדם",
+      "synonyms": [],
+      "english": "אדם"
+    },
+    "לאדם": {
+      "meaning": "אדם - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאדם",
+      "synonyms": [],
+      "english": "אדם"
+    },
+    "חייםים": {
+      "meaning": "חיים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חייםים",
+      "synonyms": [],
+      "english": "חיים"
+    },
+    "החיים": {
+      "meaning": "חיים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי החיים",
+      "synonyms": [],
+      "english": "חיים"
+    },
+    "בחיים": {
+      "meaning": "חיים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בחיים",
+      "synonyms": [],
+      "english": "חיים"
+    },
+    "לחיים": {
+      "meaning": "חיים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לחיים",
+      "synonyms": [],
+      "english": "חיים"
+    },
+    "אהבות": {
+      "meaning": "אהבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אהבות",
+      "synonyms": [],
+      "english": "אהבה"
+    },
+    "האהבה": {
+      "meaning": "אהבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האהבה",
+      "synonyms": [],
+      "english": "אהבה"
+    },
+    "באהבה": {
+      "meaning": "אהבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באהבה",
+      "synonyms": [],
+      "english": "אהבה"
+    },
+    "לאהבה": {
+      "meaning": "אהבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאהבה",
+      "synonyms": [],
+      "english": "אהבה"
+    },
+    "כסףים": {
+      "meaning": "כסף - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי כסףים",
+      "synonyms": [],
+      "english": "כסף"
+    },
+    "הכסף": {
+      "meaning": "כסף - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הכסף",
+      "synonyms": [],
+      "english": "כסף"
+    },
+    "בכסף": {
+      "meaning": "כסף - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בכסף",
+      "synonyms": [],
+      "english": "כסף"
+    },
+    "לכסף": {
+      "meaning": "כסף - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לכסף",
+      "synonyms": [],
+      "english": "כסף"
+    },
+    "מיםים": {
+      "meaning": "מים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מיםים",
+      "synonyms": [],
+      "english": "מים"
+    },
+    "המים": {
+      "meaning": "מים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי המים",
+      "synonyms": [],
+      "english": "מים"
+    },
+    "במים": {
+      "meaning": "מים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי במים",
+      "synonyms": [],
+      "english": "מים"
+    },
+    "למים": {
+      "meaning": "מים - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי למים",
+      "synonyms": [],
+      "english": "מים"
+    },
+    "אוכלים": {
+      "meaning": "אוכל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אוכלים",
+      "synonyms": [],
+      "english": "אוכל"
+    },
+    "האוכל": {
+      "meaning": "אוכל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האוכל",
+      "synonyms": [],
+      "english": "אוכל"
+    },
+    "באוכל": {
+      "meaning": "אוכל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באוכל",
+      "synonyms": [],
+      "english": "אוכל"
+    },
+    "לאוכל": {
+      "meaning": "אוכל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאוכל",
+      "synonyms": [],
+      "english": "אוכל"
+    },
+    "קפות": {
+      "meaning": "קפה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי קפות",
+      "synonyms": [],
+      "english": "קפה"
+    },
+    "הקפה": {
+      "meaning": "קפה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הקפה",
+      "synonyms": [],
+      "english": "קפה"
+    },
+    "בקפה": {
+      "meaning": "קפה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בקפה",
+      "synonyms": [],
+      "english": "קפה"
+    },
+    "לקפה": {
+      "meaning": "קפה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לקפה",
+      "synonyms": [],
+      "english": "קפה"
+    },
+    "קודים": {
+      "meaning": "קוד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי קודים",
+      "synonyms": [],
+      "english": "קוד"
+    },
+    "הקוד": {
+      "meaning": "קוד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הקוד",
+      "synonyms": [],
+      "english": "קוד"
+    },
+    "בקוד": {
+      "meaning": "קוד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בקוד",
+      "synonyms": [],
+      "english": "קוד"
+    },
+    "לקוד": {
+      "meaning": "קוד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לקוד",
+      "synonyms": [],
+      "english": "קוד"
+    },
+    "שגיאות": {
+      "meaning": "שגיאה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי שגיאות",
+      "synonyms": [],
+      "english": "שגיאה"
+    },
+    "השגיאה": {
+      "meaning": "שגיאה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי השגיאה",
+      "synonyms": [],
+      "english": "שגיאה"
+    },
+    "בשגיאה": {
+      "meaning": "שגיאה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בשגיאה",
+      "synonyms": [],
+      "english": "שגיאה"
+    },
+    "לשגיאה": {
+      "meaning": "שגיאה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לשגיאה",
+      "synonyms": [],
+      "english": "שגיאה"
+    },
+    "מחשבה": {
+      "meaning": "מחשבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מחשבה",
+      "synonyms": [],
+      "english": "מחשבה"
+    },
+    "מחשבות": {
+      "meaning": "מחשבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מחשבות",
+      "synonyms": [],
+      "english": "מחשבה"
+    },
+    "המחשבה": {
+      "meaning": "מחשבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי המחשבה",
+      "synonyms": [],
+      "english": "מחשבה"
+    },
+    "במחשבה": {
+      "meaning": "מחשבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי במחשבה",
+      "synonyms": [],
+      "english": "מחשבה"
+    },
+    "למחשבה": {
+      "meaning": "מחשבה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי למחשבה",
+      "synonyms": [],
+      "english": "מחשבה"
+    },
+    "שאלה": {
+      "meaning": "שאלה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי שאלה",
+      "synonyms": [],
+      "english": "שאלה"
+    },
+    "שאלות": {
+      "meaning": "שאלה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי שאלות",
+      "synonyms": [],
+      "english": "שאלה"
+    },
+    "השאלה": {
+      "meaning": "שאלה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי השאלה",
+      "synonyms": [],
+      "english": "שאלה"
+    },
+    "בשאלה": {
+      "meaning": "שאלה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בשאלה",
+      "synonyms": [],
+      "english": "שאלה"
+    },
+    "לשאלה": {
+      "meaning": "שאלה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לשאלה",
+      "synonyms": [],
+      "english": "שאלה"
+    },
+    "תשובה": {
+      "meaning": "תשובה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי תשובה",
+      "synonyms": [],
+      "english": "תשובה"
+    },
+    "תשובות": {
+      "meaning": "תשובה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי תשובות",
+      "synonyms": [],
+      "english": "תשובה"
+    },
+    "התשובה": {
+      "meaning": "תשובה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי התשובה",
+      "synonyms": [],
+      "english": "תשובה"
+    },
+    "בתשובה": {
+      "meaning": "תשובה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בתשובה",
+      "synonyms": [],
+      "english": "תשובה"
+    },
+    "לתשובה": {
+      "meaning": "תשובה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לתשובה",
+      "synonyms": [],
+      "english": "תשובה"
+    },
+    "רעיון": {
+      "meaning": "רעיון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי רעיון",
+      "synonyms": [],
+      "english": "רעיון"
+    },
+    "רעיוןים": {
+      "meaning": "רעיון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי רעיוןים",
+      "synonyms": [],
+      "english": "רעיון"
+    },
+    "הרעיון": {
+      "meaning": "רעיון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הרעיון",
+      "synonyms": [],
+      "english": "רעיון"
+    },
+    "ברעיון": {
+      "meaning": "רעיון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ברעיון",
+      "synonyms": [],
+      "english": "רעיון"
+    },
+    "לרעיון": {
+      "meaning": "רעיון - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לרעיון",
+      "synonyms": [],
+      "english": "רעיון"
+    },
+    "חלום": {
+      "meaning": "חלום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חלום",
+      "synonyms": [],
+      "english": "חלום"
+    },
+    "חלוםים": {
+      "meaning": "חלום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חלוםים",
+      "synonyms": [],
+      "english": "חלום"
+    },
+    "החלום": {
+      "meaning": "חלום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי החלום",
+      "synonyms": [],
+      "english": "חלום"
+    },
+    "בחלום": {
+      "meaning": "חלום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בחלום",
+      "synonyms": [],
+      "english": "חלום"
+    },
+    "לחלום": {
+      "meaning": "חלום - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לחלום",
+      "synonyms": [],
+      "english": "חלום"
+    },
+    "תקווה": {
+      "meaning": "תקווה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי תקווה",
+      "synonyms": [],
+      "english": "תקווה"
+    },
+    "תקווות": {
+      "meaning": "תקווה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי תקווות",
+      "synonyms": [],
+      "english": "תקווה"
+    },
+    "התקווה": {
+      "meaning": "תקווה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי התקווה",
+      "synonyms": [],
+      "english": "תקווה"
+    },
+    "בתקווה": {
+      "meaning": "תקווה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בתקווה",
+      "synonyms": [],
+      "english": "תקווה"
+    },
+    "לתקווה": {
+      "meaning": "תקווה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לתקווה",
+      "synonyms": [],
+      "english": "תקווה"
+    },
+    "פחד": {
+      "meaning": "פחד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי פחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "פחדים": {
+      "meaning": "פחד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי פחדים",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "הפחד": {
+      "meaning": "פחד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הפחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "בפחד": {
+      "meaning": "פחד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בפחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "לפחד": {
+      "meaning": "פחד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לפחד",
+      "synonyms": [],
+      "english": "פחד"
+    },
+    "שמחות": {
+      "meaning": "שמחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי שמחות",
+      "synonyms": [],
+      "english": "שמחה"
+    },
+    "השמחה": {
+      "meaning": "שמחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי השמחה",
+      "synonyms": [],
+      "english": "שמחה"
+    },
+    "בשמחה": {
+      "meaning": "שמחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בשמחה",
+      "synonyms": [],
+      "english": "שמחה"
+    },
+    "לשמחה": {
+      "meaning": "שמחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לשמחה",
+      "synonyms": [],
+      "english": "שמחה"
+    },
+    "עצב": {
+      "meaning": "עצב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי עצב",
+      "synonyms": [],
+      "english": "עצב"
+    },
+    "עצבים": {
+      "meaning": "עצב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי עצבים",
+      "synonyms": [],
+      "english": "עצב"
+    },
+    "העצב": {
+      "meaning": "עצב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי העצב",
+      "synonyms": [],
+      "english": "עצב"
+    },
+    "בעצב": {
+      "meaning": "עצב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בעצב",
+      "synonyms": [],
+      "english": "עצב"
+    },
+    "לעצב": {
+      "meaning": "עצב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לעצב",
+      "synonyms": [],
+      "english": "עצב"
+    },
+    "משפחה": {
+      "meaning": "משפחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי משפחה",
+      "synonyms": [],
+      "english": "משפחה"
+    },
+    "משפחות": {
+      "meaning": "משפחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי משפחות",
+      "synonyms": [],
+      "english": "משפחה"
+    },
+    "המשפחה": {
+      "meaning": "משפחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי המשפחה",
+      "synonyms": [],
+      "english": "משפחה"
+    },
+    "במשפחה": {
+      "meaning": "משפחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי במשפחה",
+      "synonyms": [],
+      "english": "משפחה"
+    },
+    "למשפחה": {
+      "meaning": "משפחה - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי למשפחה",
+      "synonyms": [],
+      "english": "משפחה"
+    },
+    "חבר": {
+      "meaning": "חבר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חבר",
+      "synonyms": [],
+      "english": "חבר"
+    },
+    "חברים": {
+      "meaning": "חבר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי חברים",
+      "synonyms": [],
+      "english": "חבר"
+    },
+    "החבר": {
+      "meaning": "חבר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי החבר",
+      "synonyms": [],
+      "english": "חבר"
+    },
+    "בחבר": {
+      "meaning": "חבר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בחבר",
+      "synonyms": [],
+      "english": "חבר"
+    },
+    "לחבר": {
+      "meaning": "חבר - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לחבר",
+      "synonyms": [],
+      "english": "חבר"
+    },
+    "ילד": {
+      "meaning": "ילד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ילד",
+      "synonyms": [],
+      "english": "ילד"
+    },
+    "ילדים": {
+      "meaning": "ילד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ילדים",
+      "synonyms": [],
+      "english": "ילד"
+    },
+    "הילד": {
+      "meaning": "ילד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הילד",
+      "synonyms": [],
+      "english": "ילד"
+    },
+    "בילד": {
+      "meaning": "ילד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בילד",
+      "synonyms": [],
+      "english": "ילד"
+    },
+    "לילד": {
+      "meaning": "ילד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לילד",
+      "synonyms": [],
+      "english": "ילד"
+    },
+    "אבא": {
+      "meaning": "אבא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אבא",
+      "synonyms": [],
+      "english": "אבא"
+    },
+    "אבאים": {
+      "meaning": "אבא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אבאים",
+      "synonyms": [],
+      "english": "אבא"
+    },
+    "האבא": {
+      "meaning": "אבא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האבא",
+      "synonyms": [],
+      "english": "אבא"
+    },
+    "באבא": {
+      "meaning": "אבא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באבא",
+      "synonyms": [],
+      "english": "אבא"
+    },
+    "לאבא": {
+      "meaning": "אבא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאבא",
+      "synonyms": [],
+      "english": "אבא"
+    },
+    "אמא": {
+      "meaning": "אמא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אמא",
+      "synonyms": [],
+      "english": "אמא"
+    },
+    "אמאים": {
+      "meaning": "אמא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אמאים",
+      "synonyms": [],
+      "english": "אמא"
+    },
+    "האמא": {
+      "meaning": "אמא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האמא",
+      "synonyms": [],
+      "english": "אמא"
+    },
+    "באמא": {
+      "meaning": "אמא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באמא",
+      "synonyms": [],
+      "english": "אמא"
+    },
+    "לאמא": {
+      "meaning": "אמא - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאמא",
+      "synonyms": [],
+      "english": "אמא"
+    },
+    "אח": {
+      "meaning": "אח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אח",
+      "synonyms": [],
+      "english": "אח"
+    },
+    "אחים": {
+      "meaning": "אח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אחים",
+      "synonyms": [],
+      "english": "אח"
+    },
+    "האח": {
+      "meaning": "אח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האח",
+      "synonyms": [],
+      "english": "אח"
+    },
+    "באח": {
+      "meaning": "אח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באח",
+      "synonyms": [],
+      "english": "אח"
+    },
+    "לאח": {
+      "meaning": "אח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאח",
+      "synonyms": [],
+      "english": "אח"
+    },
+    "אחות": {
+      "meaning": "אחות - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אחות",
+      "synonyms": [],
+      "english": "אחות"
+    },
+    "אחותים": {
+      "meaning": "אחות - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אחותים",
+      "synonyms": [],
+      "english": "אחות"
+    },
+    "האחות": {
+      "meaning": "אחות - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האחות",
+      "synonyms": [],
+      "english": "אחות"
+    },
+    "באחות": {
+      "meaning": "אחות - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באחות",
+      "synonyms": [],
+      "english": "אחות"
+    },
+    "לאחות": {
+      "meaning": "אחות - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאחות",
+      "synonyms": [],
+      "english": "אחות"
+    },
+    "ראש": {
+      "meaning": "ראש - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ראש",
+      "synonyms": [],
+      "english": "ראש"
+    },
+    "ראשים": {
+      "meaning": "ראש - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ראשים",
+      "synonyms": [],
+      "english": "ראש"
+    },
+    "הראש": {
+      "meaning": "ראש - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הראש",
+      "synonyms": [],
+      "english": "ראש"
+    },
+    "בראש": {
+      "meaning": "ראש - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בראש",
+      "synonyms": [],
+      "english": "ראש"
+    },
+    "לראש": {
+      "meaning": "ראש - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לראש",
+      "synonyms": [],
+      "english": "ראש"
+    },
+    "יד": {
+      "meaning": "יד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי יד",
+      "synonyms": [],
+      "english": "יד"
+    },
+    "ידים": {
+      "meaning": "יד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ידים",
+      "synonyms": [],
+      "english": "יד"
+    },
+    "היד": {
+      "meaning": "יד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי היד",
+      "synonyms": [],
+      "english": "יד"
+    },
+    "ביד": {
+      "meaning": "יד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ביד",
+      "synonyms": [],
+      "english": "יד"
+    },
+    "ליד": {
+      "meaning": "יד - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ליד",
+      "synonyms": [],
+      "english": "יד"
+    },
+    "רגל": {
+      "meaning": "רגל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי רגל",
+      "synonyms": [],
+      "english": "רגל"
+    },
+    "רגלים": {
+      "meaning": "רגל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי רגלים",
+      "synonyms": [],
+      "english": "רגל"
+    },
+    "הרגל": {
+      "meaning": "רגל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הרגל",
+      "synonyms": [],
+      "english": "רגל"
+    },
+    "ברגל": {
+      "meaning": "רגל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ברגל",
+      "synonyms": [],
+      "english": "רגל"
+    },
+    "לרגל": {
+      "meaning": "רגל - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לרגל",
+      "synonyms": [],
+      "english": "רגל"
+    },
+    "לב": {
+      "meaning": "לב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לב",
+      "synonyms": [],
+      "english": "לב"
+    },
+    "לבים": {
+      "meaning": "לב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לבים",
+      "synonyms": [],
+      "english": "לב"
+    },
+    "הלב": {
+      "meaning": "לב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי הלב",
+      "synonyms": [],
+      "english": "לב"
+    },
+    "בלב": {
+      "meaning": "לב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בלב",
+      "synonyms": [],
+      "english": "לב"
+    },
+    "ללב": {
+      "meaning": "לב - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי ללב",
+      "synonyms": [],
+      "english": "לב"
+    },
+    "מוח": {
+      "meaning": "מוח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מוח",
+      "synonyms": [],
+      "english": "מוח"
+    },
+    "מוחים": {
+      "meaning": "מוח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי מוחים",
+      "synonyms": [],
+      "english": "מוח"
+    },
+    "המוח": {
+      "meaning": "מוח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי המוח",
+      "synonyms": [],
+      "english": "מוח"
+    },
+    "במוח": {
+      "meaning": "מוח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי במוח",
+      "synonyms": [],
+      "english": "מוח"
+    },
+    "למוח": {
+      "meaning": "מוח - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי למוח",
+      "synonyms": [],
+      "english": "מוח"
+    },
+    "עין": {
+      "meaning": "עין - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי עין",
+      "synonyms": [],
+      "english": "עין"
+    },
+    "עיןים": {
+      "meaning": "עין - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי עיןים",
+      "synonyms": [],
+      "english": "עין"
+    },
+    "העין": {
+      "meaning": "עין - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי העין",
+      "synonyms": [],
+      "english": "עין"
+    },
+    "בעין": {
+      "meaning": "עין - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי בעין",
+      "synonyms": [],
+      "english": "עין"
+    },
+    "לעין": {
+      "meaning": "עין - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לעין",
+      "synonyms": [],
+      "english": "עין"
+    },
+    "אוזן": {
+      "meaning": "אוזן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אוזן",
+      "synonyms": [],
+      "english": "אוזן"
+    },
+    "אוזןים": {
+      "meaning": "אוזן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי אוזןים",
+      "synonyms": [],
+      "english": "אוזן"
+    },
+    "האוזן": {
+      "meaning": "אוזן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי האוזן",
+      "synonyms": [],
+      "english": "אוזן"
+    },
+    "באוזן": {
+      "meaning": "אוזן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי באוזן",
+      "synonyms": [],
+      "english": "אוזן"
+    },
+    "לאוזן": {
+      "meaning": "אוזן - שם עצם",
+      "type": "שם עצם",
+      "example": "ראיתי לאוזן",
+      "synonyms": [],
+      "english": "אוזן"
+    },
+    "מאוד טוב": {
+      "meaning": "טוב - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד טוב",
+      "synonyms": [],
+      "english": "טוב"
+    },
+    "הכי טוב": {
+      "meaning": "טוב - תיאור",
+      "type": "תואר",
+      "example": "זה הכי טוב",
+      "synonyms": [],
+      "english": "טוב"
+    },
+    "טוב מאוד": {
+      "meaning": "טוב - תיאור",
+      "type": "תואר",
+      "example": "זה טוב מאוד",
+      "synonyms": [],
+      "english": "טוב"
+    },
+    "יותר טוב": {
+      "meaning": "טוב - תיאור",
+      "type": "תואר",
+      "example": "זה יותר טוב",
+      "synonyms": [],
+      "english": "טוב"
+    },
+    "מאוד רע": {
+      "meaning": "רע - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד רע",
+      "synonyms": [],
+      "english": "רע"
+    },
+    "הכי רע": {
+      "meaning": "רע - תיאור",
+      "type": "תואר",
+      "example": "זה הכי רע",
+      "synonyms": [],
+      "english": "רע"
+    },
+    "רע מאוד": {
+      "meaning": "רע - תיאור",
+      "type": "תואר",
+      "example": "זה רע מאוד",
+      "synonyms": [],
+      "english": "רע"
+    },
+    "יותר רע": {
+      "meaning": "רע - תיאור",
+      "type": "תואר",
+      "example": "זה יותר רע",
+      "synonyms": [],
+      "english": "רע"
+    },
+    "מאוד גדול": {
+      "meaning": "גדול - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד גדול",
+      "synonyms": [],
+      "english": "גדול"
+    },
+    "הכי גדול": {
+      "meaning": "גדול - תיאור",
+      "type": "תואר",
+      "example": "זה הכי גדול",
+      "synonyms": [],
+      "english": "גדול"
+    },
+    "גדול מאוד": {
+      "meaning": "גדול - תיאור",
+      "type": "תואר",
+      "example": "זה גדול מאוד",
+      "synonyms": [],
+      "english": "גדול"
+    },
+    "יותר גדול": {
+      "meaning": "גדול - תיאור",
+      "type": "תואר",
+      "example": "זה יותר גדול",
+      "synonyms": [],
+      "english": "גדול"
+    },
+    "מאוד קטן": {
+      "meaning": "קטן - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד קטן",
+      "synonyms": [],
+      "english": "קטן"
+    },
+    "הכי קטן": {
+      "meaning": "קטן - תיאור",
+      "type": "תואר",
+      "example": "זה הכי קטן",
+      "synonyms": [],
+      "english": "קטן"
+    },
+    "קטן מאוד": {
+      "meaning": "קטן - תיאור",
+      "type": "תואר",
+      "example": "זה קטן מאוד",
+      "synonyms": [],
+      "english": "קטן"
+    },
+    "יותר קטן": {
+      "meaning": "קטן - תיאור",
+      "type": "תואר",
+      "example": "זה יותר קטן",
+      "synonyms": [],
+      "english": "קטן"
+    },
+    "מאוד חדש": {
+      "meaning": "חדש - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד חדש",
+      "synonyms": [],
+      "english": "חדש"
+    },
+    "הכי חדש": {
+      "meaning": "חדש - תיאור",
+      "type": "תואר",
+      "example": "זה הכי חדש",
+      "synonyms": [],
+      "english": "חדש"
+    },
+    "חדש מאוד": {
+      "meaning": "חדש - תיאור",
+      "type": "תואר",
+      "example": "זה חדש מאוד",
+      "synonyms": [],
+      "english": "חדש"
+    },
+    "יותר חדש": {
+      "meaning": "חדש - תיאור",
+      "type": "תואר",
+      "example": "זה יותר חדש",
+      "synonyms": [],
+      "english": "חדש"
+    },
+    "מאוד ישן": {
+      "meaning": "ישן - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "הכי ישן": {
+      "meaning": "ישן - תיאור",
+      "type": "תואר",
+      "example": "זה הכי ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "ישן מאוד": {
+      "meaning": "ישן - תיאור",
+      "type": "תואר",
+      "example": "זה ישן מאוד",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "יותר ישן": {
+      "meaning": "ישן - תיאור",
+      "type": "תואר",
+      "example": "זה יותר ישן",
+      "synonyms": [],
+      "english": "ישן"
+    },
+    "מאוד יפה": {
+      "meaning": "יפה - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד יפה",
+      "synonyms": [],
+      "english": "יפה"
+    },
+    "הכי יפה": {
+      "meaning": "יפה - תיאור",
+      "type": "תואר",
+      "example": "זה הכי יפה",
+      "synonyms": [],
+      "english": "יפה"
+    },
+    "יפה מאוד": {
+      "meaning": "יפה - תיאור",
+      "type": "תואר",
+      "example": "זה יפה מאוד",
+      "synonyms": [],
+      "english": "יפה"
+    },
+    "יותר יפה": {
+      "meaning": "יפה - תיאור",
+      "type": "תואר",
+      "example": "זה יותר יפה",
+      "synonyms": [],
+      "english": "יפה"
+    },
+    "מכוער": {
+      "meaning": "מכוער - תיאור",
+      "type": "תואר",
+      "example": "זה מכוער",
+      "synonyms": [],
+      "english": "מכוער"
+    },
+    "מאוד מכוער": {
+      "meaning": "מכוער - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד מכוער",
+      "synonyms": [],
+      "english": "מכוער"
+    },
+    "הכי מכוער": {
+      "meaning": "מכוער - תיאור",
+      "type": "תואר",
+      "example": "זה הכי מכוער",
+      "synonyms": [],
+      "english": "מכוער"
+    },
+    "מכוער מאוד": {
+      "meaning": "מכוער - תיאור",
+      "type": "תואר",
+      "example": "זה מכוער מאוד",
+      "synonyms": [],
+      "english": "מכוער"
+    },
+    "יותר מכוער": {
+      "meaning": "מכוער - תיאור",
+      "type": "תואר",
+      "example": "זה יותר מכוער",
+      "synonyms": [],
+      "english": "מכוער"
+    },
+    "מאוד חכם": {
+      "meaning": "חכם - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד חכם",
+      "synonyms": [],
+      "english": "חכם"
+    },
+    "הכי חכם": {
+      "meaning": "חכם - תיאור",
+      "type": "תואר",
+      "example": "זה הכי חכם",
+      "synonyms": [],
+      "english": "חכם"
+    },
+    "חכם מאוד": {
+      "meaning": "חכם - תיאור",
+      "type": "תואר",
+      "example": "זה חכם מאוד",
+      "synonyms": [],
+      "english": "חכם"
+    },
+    "יותר חכם": {
+      "meaning": "חכם - תיאור",
+      "type": "תואר",
+      "example": "זה יותר חכם",
+      "synonyms": [],
+      "english": "חכם"
+    },
+    "מאוד טיפש": {
+      "meaning": "טיפש - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד טיפש",
+      "synonyms": [],
+      "english": "טיפש"
+    },
+    "הכי טיפש": {
+      "meaning": "טיפש - תיאור",
+      "type": "תואר",
+      "example": "זה הכי טיפש",
+      "synonyms": [],
+      "english": "טיפש"
+    },
+    "טיפש מאוד": {
+      "meaning": "טיפש - תיאור",
+      "type": "תואר",
+      "example": "זה טיפש מאוד",
+      "synonyms": [],
+      "english": "טיפש"
+    },
+    "יותר טיפש": {
+      "meaning": "טיפש - תיאור",
+      "type": "תואר",
+      "example": "זה יותר טיפש",
+      "synonyms": [],
+      "english": "טיפש"
+    },
+    "מאוד מהיר": {
+      "meaning": "מהיר - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד מהיר",
+      "synonyms": [],
+      "english": "מהיר"
+    },
+    "הכי מהיר": {
+      "meaning": "מהיר - תיאור",
+      "type": "תואר",
+      "example": "זה הכי מהיר",
+      "synonyms": [],
+      "english": "מהיר"
+    },
+    "מהיר מאוד": {
+      "meaning": "מהיר - תיאור",
+      "type": "תואר",
+      "example": "זה מהיר מאוד",
+      "synonyms": [],
+      "english": "מהיר"
+    },
+    "יותר מהיר": {
+      "meaning": "מהיר - תיאור",
+      "type": "תואר",
+      "example": "זה יותר מהיר",
+      "synonyms": [],
+      "english": "מהיר"
+    },
+    "מאוד איטי": {
+      "meaning": "איטי - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד איטי",
+      "synonyms": [],
+      "english": "איטי"
+    },
+    "הכי איטי": {
+      "meaning": "איטי - תיאור",
+      "type": "תואר",
+      "example": "זה הכי איטי",
+      "synonyms": [],
+      "english": "איטי"
+    },
+    "איטי מאוד": {
+      "meaning": "איטי - תיאור",
+      "type": "תואר",
+      "example": "זה איטי מאוד",
+      "synonyms": [],
+      "english": "איטי"
+    },
+    "יותר איטי": {
+      "meaning": "איטי - תיאור",
+      "type": "תואר",
+      "example": "זה יותר איטי",
+      "synonyms": [],
+      "english": "איטי"
+    },
+    "חזק": {
+      "meaning": "חזק - תיאור",
+      "type": "תואר",
+      "example": "זה חזק",
+      "synonyms": [],
+      "english": "חזק"
+    },
+    "מאוד חזק": {
+      "meaning": "חזק - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד חזק",
+      "synonyms": [],
+      "english": "חזק"
+    },
+    "הכי חזק": {
+      "meaning": "חזק - תיאור",
+      "type": "תואר",
+      "example": "זה הכי חזק",
+      "synonyms": [],
+      "english": "חזק"
+    },
+    "חזק מאוד": {
+      "meaning": "חזק - תיאור",
+      "type": "תואר",
+      "example": "זה חזק מאוד",
+      "synonyms": [],
+      "english": "חזק"
+    },
+    "יותר חזק": {
+      "meaning": "חזק - תיאור",
+      "type": "תואר",
+      "example": "זה יותר חזק",
+      "synonyms": [],
+      "english": "חזק"
+    },
+    "חלש": {
+      "meaning": "חלש - תיאור",
+      "type": "תואר",
+      "example": "זה חלש",
+      "synonyms": [],
+      "english": "חלש"
+    },
+    "מאוד חלש": {
+      "meaning": "חלש - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד חלש",
+      "synonyms": [],
+      "english": "חלש"
+    },
+    "הכי חלש": {
+      "meaning": "חלש - תיאור",
+      "type": "תואר",
+      "example": "זה הכי חלש",
+      "synonyms": [],
+      "english": "חלש"
+    },
+    "חלש מאוד": {
+      "meaning": "חלש - תיאור",
+      "type": "תואר",
+      "example": "זה חלש מאוד",
+      "synonyms": [],
+      "english": "חלש"
+    },
+    "יותר חלש": {
+      "meaning": "חלש - תיאור",
+      "type": "תואר",
+      "example": "זה יותר חלש",
+      "synonyms": [],
+      "english": "חלש"
+    },
+    "קל": {
+      "meaning": "קל - תיאור",
+      "type": "תואר",
+      "example": "זה קל",
+      "synonyms": [],
+      "english": "קל"
+    },
+    "מאוד קל": {
+      "meaning": "קל - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד קל",
+      "synonyms": [],
+      "english": "קל"
+    },
+    "הכי קל": {
+      "meaning": "קל - תיאור",
+      "type": "תואר",
+      "example": "זה הכי קל",
+      "synonyms": [],
+      "english": "קל"
+    },
+    "קל מאוד": {
+      "meaning": "קל - תיאור",
+      "type": "תואר",
+      "example": "זה קל מאוד",
+      "synonyms": [],
+      "english": "קל"
+    },
+    "יותר קל": {
+      "meaning": "קל - תיאור",
+      "type": "תואר",
+      "example": "זה יותר קל",
+      "synonyms": [],
+      "english": "קל"
+    },
+    "קשה": {
+      "meaning": "קשה - תיאור",
+      "type": "תואר",
+      "example": "זה קשה",
+      "synonyms": [],
+      "english": "קשה"
+    },
+    "מאוד קשה": {
+      "meaning": "קשה - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד קשה",
+      "synonyms": [],
+      "english": "קשה"
+    },
+    "הכי קשה": {
+      "meaning": "קשה - תיאור",
+      "type": "תואר",
+      "example": "זה הכי קשה",
+      "synonyms": [],
+      "english": "קשה"
+    },
+    "קשה מאוד": {
+      "meaning": "קשה - תיאור",
+      "type": "תואר",
+      "example": "זה קשה מאוד",
+      "synonyms": [],
+      "english": "קשה"
+    },
+    "יותר קשה": {
+      "meaning": "קשה - תיאור",
+      "type": "תואר",
+      "example": "זה יותר קשה",
+      "synonyms": [],
+      "english": "קשה"
+    },
+    "חם": {
+      "meaning": "חם - תיאור",
+      "type": "תואר",
+      "example": "זה חם",
+      "synonyms": [],
+      "english": "חם"
+    },
+    "מאוד חם": {
+      "meaning": "חם - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד חם",
+      "synonyms": [],
+      "english": "חם"
+    },
+    "הכי חם": {
+      "meaning": "חם - תיאור",
+      "type": "תואר",
+      "example": "זה הכי חם",
+      "synonyms": [],
+      "english": "חם"
+    },
+    "חם מאוד": {
+      "meaning": "חם - תיאור",
+      "type": "תואר",
+      "example": "זה חם מאוד",
+      "synonyms": [],
+      "english": "חם"
+    },
+    "יותר חם": {
+      "meaning": "חם - תיאור",
+      "type": "תואר",
+      "example": "זה יותר חם",
+      "synonyms": [],
+      "english": "חם"
+    },
+    "קר": {
+      "meaning": "קר - תיאור",
+      "type": "תואר",
+      "example": "זה קר",
+      "synonyms": [],
+      "english": "קר"
+    },
+    "מאוד קר": {
+      "meaning": "קר - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד קר",
+      "synonyms": [],
+      "english": "קר"
+    },
+    "הכי קר": {
+      "meaning": "קר - תיאור",
+      "type": "תואר",
+      "example": "זה הכי קר",
+      "synonyms": [],
+      "english": "קר"
+    },
+    "קר מאוד": {
+      "meaning": "קר - תיאור",
+      "type": "תואר",
+      "example": "זה קר מאוד",
+      "synonyms": [],
+      "english": "קר"
+    },
+    "יותר קר": {
+      "meaning": "קר - תיאור",
+      "type": "תואר",
+      "example": "זה יותר קר",
+      "synonyms": [],
+      "english": "קר"
+    },
+    "שמח": {
+      "meaning": "שמח - תיאור",
+      "type": "תואר",
+      "example": "זה שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "מאוד שמח": {
+      "meaning": "שמח - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "הכי שמח": {
+      "meaning": "שמח - תיאור",
+      "type": "תואר",
+      "example": "זה הכי שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "שמח מאוד": {
+      "meaning": "שמח - תיאור",
+      "type": "תואר",
+      "example": "זה שמח מאוד",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "יותר שמח": {
+      "meaning": "שמח - תיאור",
+      "type": "תואר",
+      "example": "זה יותר שמח",
+      "synonyms": [],
+      "english": "שמח"
+    },
+    "עצוב": {
+      "meaning": "עצוב - תיאור",
+      "type": "תואר",
+      "example": "זה עצוב",
+      "synonyms": [],
+      "english": "עצוב"
+    },
+    "מאוד עצוב": {
+      "meaning": "עצוב - תיאור",
+      "type": "תואר",
+      "example": "זה מאוד עצוב",
+      "synonyms": [],
+      "english": "עצוב"
+    },
+    "הכי עצוב": {
+      "meaning": "עצוב - תיאור",
+      "type": "תואר",
+      "example": "זה הכי עצוב",
+      "synonyms": [],
+      "english": "עצוב"
+    },
+    "עצוב מאוד": {
+      "meaning": "עצוב - תיאור",
+      "type": "תואר",
+      "example": "זה עצוב מאוד",
+      "synonyms": [],
+      "english": "עצוב"
+    },
+    "יותר עצוב": {
+      "meaning": "עצוב - תיאור",
+      "type": "תואר",
+      "example": "זה יותר עצוב",
+      "synonyms": [],
+      "english": "עצוב"
+    }
+  },
+  "slang": {
+    "וואלה": {
+      "meaning": "באמת?",
+      "example": "וואלה לא ידעתי",
+      "english": "really?"
+    },
+    "סחתיין": {
+      "meaning": "כל הכבוד",
+      "example": "סחתיין!",
+      "english": "well done"
+    },
+    "בול": {
+      "meaning": "בדיוק",
+      "example": "בול",
+      "english": "exactly"
+    },
+    "כאילו": {
+      "meaning": "כמו",
+      "example": "כאילו מה?",
+      "english": "like"
+    },
+    "סתם": {
+      "meaning": "ללא סיבה",
+      "example": "סתם",
+      "english": "just"
+    },
+    "לגמרי": {
+      "meaning": "בהחלט",
+      "example": "לגמרי!",
+      "english": "totally"
+    },
+    "ממש": {
+      "meaning": "מאוד",
+      "example": "ממש טוב",
+      "english": "really"
+    },
+    "חיים שלי": {
+      "meaning": "כינוי חיבה",
+      "example": "תודה חיים שלי",
+      "english": "my life"
+    },
+    "נשמה": {
+      "meaning": "כינוי חיבה",
+      "example": "מה קורה נשמה?",
+      "english": "soul"
+    },
+    "כפרה": {
+      "meaning": "כינוי חיבה",
+      "example": "תודה כפרה",
+      "english": "dear"
+    }
+  },
+  "tech": {
+    "API": {
+      "meaning": "ממשק תכנות",
+      "example": "API של אדיאל",
+      "english": "API"
+    },
+    "BUG": {
+      "meaning": "שגיאה בקוד",
+      "example": "יש באג",
+      "english": "bug"
+    },
+    "HUD": {
+      "meaning": "תצוגת נתונים שקופה כמו באירון מן",
+      "example": "HUD",
+      "english": "Heads-Up Display"
+    },
+    "LLM": {
+      "meaning": "מודל שפה גדול",
+      "example": "LLM 6GB",
+      "english": "Large Language Model"
+    },
+    "TTS": {
+      "meaning": "טקסט לדיבור",
+      "example": "TTS עברי",
+      "english": "Text-To-Speech"
+    },
+    "STT": {
+      "meaning": "דיבור לטקסט",
+      "example": "STT עברי",
+      "english": "Speech-To-Text"
+    },
+    "OCR": {
+      "meaning": "זיהוי טקסט מתמונה",
+      "example": "OCR",
+      "english": "OCR"
+    }
+  }
+}
