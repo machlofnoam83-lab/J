@@ -39,7 +39,7 @@ class Model3BConfig:
         self.max_seq_len = 2048
         self.embed_dim = 3200
         self.hidden_dim = 8640
-        self.num_layers = 26
+        self.num_layers = 28  # 26 -> 28 כדי לעבור 3B!
         self.num_heads = 32
         self.num_kv_heads = 8
         self.head_dim = self.embed_dim // self.num_heads
