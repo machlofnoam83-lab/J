@@ -47,7 +47,7 @@ class BrowserAgent:
                 print("[BrowserAgent] No browser automation lib, using requests")
     
     async def start(self):
-        """מתחיל דפדפן"""
+        """מתחיל דפדפן - עם auto-install אם חסר"""
         if self.has_playwright:
             try:
                 from playwright.async_api import async_playwright
@@ -58,6 +58,20 @@ class BrowserAgent:
                 print("[BrowserAgent] Browser started")
                 return True
             except Exception as e:
+                err_msg = str(e)
+                if "Executable doesn't exist" in err_msg or "playwright install" in err_msg.lower():
+                    print(f"[BrowserAgent] Browsers missing, installing... (first time)")
+                    try:
+                        import subprocess, sys
+                        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=False, timeout=120)
+                        from playwright.async_api import async_playwright
+                        self.playwright = await async_playwright().start()
+                        self.browser = await self.playwright.chromium.launch(headless=self.headless)
+                        self.page = await self.browser.new_page()
+                        print("[BrowserAgent] Browser started after install")
+                        return True
+                    except Exception as e2:
+                        print(f"[BrowserAgent] Install failed: {e2}, fallback to requests")
                 print(f"[BrowserAgent] Playwright start failed: {e}")
         return False
 

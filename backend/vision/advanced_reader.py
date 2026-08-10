@@ -40,13 +40,18 @@ class AdvancedTextReader:
         self.has_tesseract = False
         self.easyocr_reader = None
         
-        # נסה לטעון EasyOCR - הכי טוב לעברית
+        # נסה לטעון EasyOCR - הכי טוב לעברית - עם fallback ל-iw
         try:
             import easyocr
-            # he = עברית, en = אנגלית
-            self.easyocr_reader = easyocr.Reader(['he', 'en'], gpu=False, verbose=False)
-            self.has_easyocr = True
-            print("[AdvancedReader] ✓ EasyOCR loaded (he+en) - הכי טוב לעברית!")
+            for langs in [['he', 'en'], ['iw', 'en'], ['en']]:
+                try:
+                    self.easyocr_reader = easyocr.Reader(langs, gpu=False, verbose=False)
+                    self.has_easyocr = True
+                    print(f"[AdvancedReader] ✓ EasyOCR loaded ({'+'.join(langs)}) - הכי טוב לעברית!")
+                    break
+                except Exception as e_lang:
+                    print(f"[AdvancedReader] EasyOCR langs {langs} failed: {e_lang}")
+                    continue
         except Exception as e:
             print(f"[AdvancedReader] EasyOCR not available: {e}")
         

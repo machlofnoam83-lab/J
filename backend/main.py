@@ -207,7 +207,8 @@ class AppState:
         self.is_listening = False
         self.is_speaking = False
         self.last_wake_time = 0
-        self.conversation_active_until = 0  # זמן שהשיחה פעילה (30 שניות אחרי wake)
+        self.conversation_active_until = 0
+        self.main_loop = None
 
     def is_conversation_active(self):
         return time.time() < self.conversation_active_until
@@ -225,6 +226,10 @@ async def startup_event():
     print("="*60)
     print("  אדיאל ג'וניור - Backend מתחיל...")
     print("="*60)
+
+    # שמור main loop לתיקון wake word
+    app_state.main_loop = asyncio.get_event_loop()
+    print(f"[Startup] Main loop saved")
 
     # בנה engines - lazy loading כדי לא להיתקע
     try:
@@ -274,10 +279,22 @@ async def startup_event():
     except Exception as e:
         print(f"[Startup] SystemTools failed: {e}")
 
-    # Wake word detector - עם callback
+    # Wake word detector - עם callback מתוקן
     def on_wake_detected(text: str):
         print(f"[Main] Wake word callback: {text}")
-        asyncio.run_coroutine_threadsafe(handle_wake_word(text), asyncio.get_event_loop())
+        try:
+            if app_state.main_loop and not app_state.main_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(handle_wake_word(text), app_state.main_loop)
+            else:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(handle_wake_word(text))
+        except Exception as e:
+            print(f"[Main] Wake callback error: {e}")
+            try:
+                print(f"[Main] Fallback sync wake for: {text}")
+            except:
+                pass
 
     try:
         wake_detector = WakeWordDetector(on_wake=on_wake_detected)

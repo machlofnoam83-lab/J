@@ -72,19 +72,21 @@ class LLM6GB:
             return 6.0  # ברירת מחדל
 
     def _choose_model(self) -> str:
-        """בוחר מודל לפי זיכרון והעדפה"""
+        """בוחר מודל לפי זיכרון והעדפה - משתמש בלא חסומים!"""
         if self.model_preference != "auto":
             return self.model_preference
         
-        # לפי זיכרון
+        # לפי זיכרון - מעדיף לא חסומים MIT license, לא gated
+        # phi3:mini MIT, qwen2 Apache, gemma2 Gemma license - כולם לא gated
+        # llama3.1 gated - נמנע!
         if self.available_ram_gb >= 5.5:
-            return "llama3.1:8b-q4"  # ~4.9GB, הכי חכם שנכנס ב-6GB
+            return "phi3:mini"  # 2.3GB, MIT, לא חסום, הכי טוב ל-6GB!
         elif self.available_ram_gb >= 3.0:
-            return "phi3:mini-q4"  # ~2.3GB, מהיר וחכם
+            return "phi3:mini"  # 2.3GB, MIT
         elif self.available_ram_gb >= 1.5:
-            return "qwen2:1.5b-q4"  # ~1GB, קליל
+            return "qwen2:1.5b"  # ~1GB, Apache, לא חסום
         else:
-            return "gemma2:2b"  # ~1.6GB, הכי קל
+            return "gemma2:2b"  # ~1.6GB, Gemma license
 
     def _load_model(self):
         """טוען מודל - מנסה Ollama קודם"""

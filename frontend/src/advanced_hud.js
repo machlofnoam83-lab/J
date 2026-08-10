@@ -295,11 +295,20 @@ class AdvancedHUD {
             this.els.mainStatusText.textContent = 'LISTENING';
             this.els.mainStatusDot?.classList.add('listening');
             if (this.els.orbitalListen) this.els.orbitalListen.textContent = 'REC';
+            // Avatar - תמונה בכל פריים שזוהרת כשמקשיבה!
+            const avatar = document.getElementById('avatarImg');
+            if (avatar) {
+                avatar.classList.remove('speaking');
+                avatar.classList.add('listening');
+            }
         } else {
             this.els.statusLabel?.classList.remove('listening');
             this.els.listeningPulse?.classList.remove('active');
             this.els.visualizer?.classList.remove('active');
             if (!this.els.statusLabel?.classList.contains('speaking')) this.setIdle();
+            // Avatar
+            const avatar = document.getElementById('avatarImg');
+            if (avatar) avatar.classList.remove('listening');
         }
     }
 
@@ -311,11 +320,19 @@ class AdvancedHUD {
             this.els.mainStatusText.textContent = 'SPEAKING';
             if (window.reactorAnim) window.reactorAnim.setMode('speaking');
             if (audioB64) this.playAudio(audioB64);
+            // Avatar - תמונה בכל פריים שזוהרת יפה כשמדברת!
+            const avatar = document.getElementById('avatarImg');
+            if (avatar) {
+                avatar.classList.remove('listening');
+                avatar.classList.add('speaking');
+            }
         } else {
             this.els.statusLabel?.classList.remove('speaking');
             this.els.visualizer?.classList.remove('active');
             this.setIdle();
             if (window.reactorAnim) window.reactorAnim.setMode('idle');
+            const avatar = document.getElementById('avatarImg');
+            if (avatar) avatar.classList.remove('speaking');
         }
     }
 
