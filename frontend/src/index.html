@@ -159,7 +159,22 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
                 <div class="tabs"><button class="tab active" data-tab="screen">🖥️ מסך + קריאת טקסט</button><button class="tab" data-tab="tasks">🚀 משימות</button><button class="tab" data-tab="dict">📚 מילון</button><button class="tab" data-tab="system">⚙️ מערכת</button></div>
                 <div class="body">
                     <div class="pane active" id="pane-screen"><div class="screen-holo hidden" id="screenPreview"><img id="previewImage"/><div class="scan"></div></div><div id="screenPlaceholder" style="text-align:center;padding:18px;color:var(--dim);font-size:12px"><div style="font-size:28px;margin-bottom:6px">🖥️</div>תגיד "מה את רואה?" - אקרא טקסט עם EasyOCR RTL!</div><div id="previewContext" style="margin-top:10px;font-size:11px;background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;max-height:70px;overflow:auto"></div></div>
-                    <div class="pane" id="pane-tasks"><div class="tasks-grid"><div class="task-card" data-task="תקנה לי אוזניות הכי זול"><span>🛒</span><b>קנייה</b><small>זול</small></div><div class="task-card" data-task="תזמין טיסה"><span>✈️</span><b>חופשה</b><small>דיל</small></div><div class="task-card" data-task="תחקור על AI"><span>🔬</span><b>מחקר</b><small>עשרות אתרים</small></div><div class="task-card" data-task="תבדוק מיילים"><span>📧</span><b>מייל</b><small>דחוף</small></div><div class="task-card" data-task="תארגן קבצים"><span>📁</span><b>קבצים</b><small>Drive</small></div><div class="task-card" data-task="תכין דוח"><span>📊</span><b>דוח</b><small>מנהלים</small></div></div></div>
+                    <div class="pane" id="pane-tasks">
+                        <div class="tasks-grid">
+                            <div class="task-card" data-task="תקנה לי אוזניות הכי זול"><span>🛒</span><b>קנייה</b><small>זול</small></div>
+                            <div class="task-card" data-task="תזמין טיסה"><span>✈️</span><b>חופשה</b><small>דיל</small></div>
+                            <div class="task-card" data-task="תחקור על AI"><span>🔬</span><b>מחקר</b><small>עשרות אתרים</small></div>
+                            <div class="task-card" data-task="תבדוק מיילים"><span>📧</span><b>מייל</b><small>דחוף</small></div>
+                            <div class="task-card" data-task="תארגן קבצים"><span>📁</span><b>קבצים</b><small>Drive</small></div>
+                            <div class="task-card" data-task="תכין דוח"><span>📊</span><b>דוח</b><small>מנהלים</small></div>
+                        </div>
+                        <div style="margin-top:14px; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
+                            <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--accent)">🖼️ פריימים עם תמונה וטקסט - 24 דברים שימושיים (רק 3B! טופ מקסימום)</div>
+                            <div id="framesGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:260px; overflow-y:auto;">
+                                <div style="text-align:center; opacity:0.5; font-size:11px; grid-column:span 2;">טוען 24 פריימים עם תמונה וטקסט...<br>♟️ שעון שחמט | 📅 לוח זמנים | 📧 מייל | 🕐 שעון ועוד 20</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="pane" id="pane-dict"><div style="display:flex;gap:8px;margin-bottom:10px"><input type="text" id="dictSearch" placeholder="חפש מילה במילון העברי המלא..." style="flex:1;background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;color:white;outline:none"><button class="action-btn" id="btnDictSearch">🔍</button></div><div id="dictResult" style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;min-height:110px;font-size:12px;line-height:1.5"><div style="text-align:center;opacity:.6">📚 מילון עברי מלא - 500+ מילים<br>הקלד או תגיד "מה זה פאנן?"</div></div></div>
                     <div class="pane" id="pane-system"><div id="micList" style="display:flex;flex-direction:column;gap:6px">טוען מיקרופונים...</div><div id="healthInfo" style="margin-top:10px">טוען...</div></div>
                 </div>
@@ -196,7 +211,80 @@ document.getElementById('btnDictSearch')?.addEventListener('click',async()=>{
     const resEl=document.getElementById('dictResult');if(!resEl)return;resEl.innerHTML='🔍 מחפש במילון...';
     try{const backendUrl=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8765':`http://${location.hostname}:8765`;const r=await fetch(`${backendUrl}/dictionary/lookup?word=${encodeURIComponent(w)}`);const d=await r.json();if(d.found){resEl.innerHTML=`<b style="color:var(--accent);font-size:14px">${d.word}</b><br><br><b>פירוש:</b> ${d.meaning}<br><br><b>סוג:</b> ${d.type||''}<br><b>דוגמה:</b> ${d.example||''}`;}else{resEl.innerHTML=`לא נמצא "${w}". תגיד "תלמד את המילה ${w}"`;}}catch(e){resEl.innerHTML=`שגיאה: ${e.message}`;}
 });
+// Frames - 24 עם תמונה וטקסט - כמו שביקשת
+async function loadFrames(){
+    const grid=document.getElementById('framesGrid');
+    if(!grid) return;
+    try{
+        const backendUrl=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8765':`http://${location.hostname}:8765`;
+        const r=await fetch(`${backendUrl}/frames`);
+        const data=await r.json();
+        const frames=data.frames||[];
+        grid.innerHTML='';
+        frames.slice(0,24).forEach(f=>{
+            const div=document.createElement('div');
+            div.className='task-card';
+            div.style.display='flex';
+            div.style.flexDirection='column';
+            div.style.alignItems='center';
+            div.style.textAlign='center';
+            div.style.padding='10px';
+            div.innerHTML=`<div style="font-size:24px; margin-bottom:4px;">${f.image||f.icon||'📦'}</div><b style="font-size:11px;">${f.title}</b><small style="font-size:9px; color:var(--dim); margin-top:2px;">${(f.description||'').substring(0,35)}</small><small style="font-size:8px; color:var(--accent); margin-top:4px; background:rgba(0,212,255,0.1); padding:2px 6px; border-radius:10px;">${f.data ? JSON.stringify(f.data).substring(0,35)+'...' : f.type}</small>`;
+            div.addEventListener('click',()=>{
+                const input=document.getElementById('textInput');
+                if(input){input.value=`תראה לי ${f.title}`; input.focus();}
+                // גם שולח כמשימה
+                if(window.advancedHUD && window.advancedHUD.executeTask){
+                    window.advancedHUD.executeTask(`תראה לי ${f.title}`);
+                }
+            });
+            grid.appendChild(div);
+        });
+        const dictEl=document.getElementById('dictCount');
+        if(dictEl) dictEl.textContent=frames.length+'+';
+        console.log(`Loaded ${frames.length} frames with image+text`);
+    }catch(e){
+        console.log('Frames load failed',e);
+        const fallback=[
+            {icon:'♟️',title:'שעון שחמט',desc:'טיימר לבן/שחור - אתה יכול לשחק איתי! אוכל איתו לוח זמנים',img:'♟️⏱️'},
+            {icon:'📅',title:'לוח זמנים',desc:'פגישות היום + חלונות פנויים - אוכל איתו',img:'📅'},
+            {icon:'📧',title:'מייל',desc:'5 לא נקראו, 2 דחופים - אוכל איתו',img:'📧'},
+            {icon:'🕐',title:'שעון',desc:'שעון עולם',img:'🕐'},
+            {icon:'🌤️',title:'מזג אוויר',desc:'תל אביב 27°',img:'🌤️'},
+            {icon:'📰',title:'חדשות',desc:'חדשות טק',img:'📰'},
+            {icon:'✅',title:'משימות',desc:'4 משימות',img:'✅'},
+            {icon:'📆',title:'יומן',desc:'3 פגישות',img:'📆'},
+            {icon:'🔢',title:'מחשבון',desc:'מהיר',img:'🔢'},
+            {icon:'⏲️',title:'טיימר',desc:'25 דק פומודורו',img:'⏲️'},
+            {icon:'⏱️',title:'סטופר',desc:'מדידה',img:'⏱️'},
+            {icon:'📝',title:'פתקים',desc:'מהירים',img:'📝'},
+            {icon:'📁',title:'קבצים',desc:'הורדות',img:'📁'},
+            {icon:'🎵',title:'מוזיקה',desc:'Spotify',img:'🎵'},
+            {icon:'▶️',title:'יוטיוב',desc:'סרטונים',img:'▶️'},
+            {icon:'💻',title:'קוד',desc:'VS Code',img:'💻'},
+            {icon:'🖥️',title:'טרמינל',desc:'פקודות',img:'🖥️'},
+            {icon:'🌐',title:'דפדפן',desc:'כרום',img:'🌐'},
+            {icon:'🗺️',title:'מפות',desc:'ניווט',img:'🗺️'},
+            {icon:'🌍',title:'תרגום',desc:'עברית↔אנגלית',img:'🌍'},
+            {icon:'📚',title:'מילון',desc:'800+ מילים',img:'📚'},
+            {icon:'🛒',title:'קניות',desc:'השוואת מחירים',img:'🛒'},
+            {icon:'✈️',title:'חופשות',desc:'דיל משתלם',img:'✈️'},
+            {icon:'🔬',title:'מחקר',desc:'סריקה',img:'🔬'},
+        ];
+        grid.innerHTML='';
+        fallback.forEach(f=>{
+            const div=document.createElement('div');
+            div.className='task-card';
+            div.style.textAlign='center';
+            div.innerHTML=`<div style="font-size:22px">${f.img}</div><b style="font-size:11px">${f.title}</b><small style="font-size:9px;display:block;color:var(--dim)">${f.desc}</small>`;
+            grid.appendChild(div);
+        });
+    }
+}
+setTimeout(loadFrames, 1200);
+
 // Reactor
+const canvas=document.getElementById('reactorCanvas');
 const canvas=document.getElementById('reactorCanvas');
 if(canvas){const ctx=canvas.getContext('2d');let t=0;function draw(){t++;ctx.clearRect(0,0,150,150);const cx=75,cy=75;const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,50);grad.addColorStop(0,'rgba(0,212,255,0.18)');grad.addColorStop(1,'transparent');ctx.fillStyle=grad;ctx.fillRect(0,0,150,150);ctx.fillStyle='#00d4ff';ctx.shadowColor='#00d4ff';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(cx,cy,12+Math.sin(t*0.08)*2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;requestAnimationFrame(draw);}draw();}
 console.log('Adiel Ultimate - Single File - Hebrew Dict Full - Voice for Every Question - Fast Speech');
