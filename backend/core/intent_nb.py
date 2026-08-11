@@ -81,10 +81,13 @@ class IntentNaiveBayes:
         probs = sorted(((i, e / Z) for i, e in exps.items()), key=lambda x: x[1], reverse=True)
         best_intent, best_prob = probs[0]
 
-        # דרישת ראיות: לפחות MIN_EVIDENCE n-grams שקיימים בפיצ'רים של המנצח
+        # דרישת ראיות: לפחות MIN_EVIDENCE n-grams שקיימים בפיצ'רים של המנצח,
+        # וגם כיסוי יחסי (v2.4) - במשפטים ארוכים חיים רוב ה-n-grams לא מהאימון,
+        # ו-softmax מתנפח ל-0.95 גם על התאמה שולית. דורשים שגידה ממשית.
         winner_fc = self.feature_counts.get(best_intent, Counter())
         evidence = sum(1 for g in grams if winner_fc.get(g, 0) > 0)
-        if evidence < MIN_EVIDENCE:
+        required = max(MIN_EVIDENCE, int(len(grams) * 0.15))
+        if evidence < required:
             return None, 0.0, probs[:3]
 
         return best_intent, best_prob, probs[:3]

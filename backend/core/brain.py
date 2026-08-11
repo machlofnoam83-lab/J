@@ -12,6 +12,7 @@ Adiel Junior - Brain Engine v6.0 "AdielMind" — 100% ביתי, מאפס, בלי
 - פריימים עם תמונה וטקסט - 24 דברים שימושיים
 """
 import os
+import re
 import random
 import datetime
 import asyncio
@@ -213,6 +214,30 @@ class AdielBrain:
             except Exception:
                 pass
 
+    # הרהור פנימי רק לכוונות "תוכן" - לא לפעולות טכניות
+    _PONDER_INTENTS = {"general_chat", "dictionary_lookup", "how_are_you", "identity",
+                       "screen_analysis", "memory_save", "thanks", "goodbye", "learning_chat"}
+
+    def _ponder(self, user_text: str, intent: str) -> Optional[str]:
+        """💭 הרהור פנימי (v2.4) - AdielMind יוצר משפט-מחשבה מתוך מילות המשתמש,
+        כך שהיא 'חושבת בקול' לפני הניסוח. נבסס על בקרת איכות bigram כדי לא לדבר שטויות."""
+        try:
+            if not self.mind or intent not in self._PONDER_INTENTS:
+                return None
+            stop = getattr(self.intent_classifier, "_STOPWORDS", set())
+            words = [w for w in re.findall(r'[\u0590-\u05FF]{3,}', (user_text or "").lower())
+                     if w not in stop]
+            if not words:
+                return None
+            seed = max(words, key=len)
+            gen = self.mind.generate(intent="chat", seed_words=[seed],
+                                     max_words=7, temperature=0.95)
+            if gen and len(gen.split()) >= 4 and self.mind.bigram_support(gen) >= 0.68:
+                return gen.strip()
+        except Exception:
+            return None
+        return None
+
     async def process(self, user_text: str, screen_context: Optional[str] = None) -> Dict[str, Any]:
         self.conversation_turns += 1
         self._trace = []
@@ -235,13 +260,18 @@ class AdielBrain:
         # שילוב המסווג הנלמד (NB) - כשכללי האצבע לא בטוחים, המודל הנלמד מצביע.
         # אזהרות: רק intents "בטוחים" ניתנים לעקיפה (לא פעולות כמו הזזת חלון!),
         # סף ביטחון גבוה + פער משמעותי מהמקום השני.
+        # v2.4: רק כוונות "חברתיות" רכות ניתנות לעקיפה. screen_analysis/dictionary/time_date
+        # ירדו מכאן - יש להן כללי-אצבע חדים, ועקיפת NB שגויה שם הייתה הרסנית
+        # ('מה דעתך על מוזיקה' הפך ל'ניתוח מסך' ב-95% ביטחון מנופח).
         NB_SAFE_OVERRIDES = {"greeting", "how_are_you", "thanks", "identity", "goodbye",
-                             "memory_save", "dictionary_lookup", "time_date", "screen_analysis"}
+                             "memory_save"}
         nb_used = False
-        if self.intent_nb and confidence < 0.6:
+        # v2.4: בקרות מחמירות יותר - עם קורפוס קטן NB יכול "להשתכנע" בטעות על טקסט
+        # חי (ראינו 'מוזיקה ישראלית'->ניתוח מסך!). סף גבוה + פער גדול + רק שכללי האצבע חלשים באמת.
+        if self.intent_nb and confidence < 0.55:
             nb_intent, nb_prob, nb_top = self.intent_nb.predict(user_text)
-            margin_ok = len(nb_top) < 2 or nb_top[1][1] == 0 or nb_top[0][1] >= nb_top[1][1] * 2.5
-            if nb_intent and nb_prob >= 0.7 and nb_intent in NB_SAFE_OVERRIDES and margin_ok:
+            margin_ok = len(nb_top) < 2 or nb_top[1][1] == 0 or nb_top[0][1] >= nb_top[1][1] * 3.0
+            if nb_intent and nb_prob >= 0.85 and nb_intent in NB_SAFE_OVERRIDES and margin_ok:
                 print(f"[Brain] 🎯 NB override: {intent}({confidence:.2f}) → {nb_intent}({nb_prob:.2f})")
                 intent, confidence, nb_used = nb_intent, max(confidence, nb_prob), True
                 intent_result["intent"] = intent
@@ -256,7 +286,12 @@ class AdielBrain:
             self._think("📚", f"עלו לי {len(relevant_memories)} זכרונות קשורים: \"{mem_snippet}\"" if mem_snippet else f"עלו לי {len(relevant_memories)} זכרונות קשורים")
         else:
             self._think("📚", "אין בזיכרון התייחסות לזה - רושמת לי משהו חדש")
-        
+
+        # 💭 הרהור פנימי - חושבת בקול לפני הניסוח (v2.4)
+        ponder = self._ponder(user_text, intent)
+        if ponder:
+            self._think("💭", f"מהרהרת לעצמי: \"{ponder}\"")
+
         smart_context = ""
         user_profile_summary = {}
         if self.learning_engine:

@@ -75,11 +75,12 @@ import asyncio
 import json
 import base64
 import time
+import random
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Dict, Optional
 
-BACKEND_VERSION = "2.3.0"
+BACKEND_VERSION = "2.4.0"
 
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))
@@ -273,8 +274,8 @@ app_state = AppState()
 
 async def _thought_loop():
     """💭 לולאת המחשבות הספונטניות - אדיאל חושבת לעצמה כל כמה דקות (ADIEL_THOUGHT_MINUTES)"""
-    interval = max(2.0, float(os.getenv("ADIEL_THOUGHT_MINUTES", "7"))) * 60
-    await asyncio.sleep(90)  # מחשבה ראשונה אחרי דקה וחצי - מרגיש טבעי
+    interval = max(2.0, float(os.getenv("ADIEL_THOUGHT_MINUTES", "5"))) * 60
+    await asyncio.sleep(45)  # מחשבה ראשונה אחרי 45 שניות - מרגיש טבעי
     while True:
         try:
             if brain and thought_engine:
@@ -282,6 +283,15 @@ async def _thought_loop():
                 if th:
                     print(f"[Thoughts] 💭 {th['text'][:70]}")
                     await manager_broadcast_safe({"type": "thought", **th})
+                    # 🔗 שרשרת מחשבה (v2.4) - לפעמים מחשבה אחת מולידה עוד אחת אחרי כמה שניות
+                    if random.random() < 0.35:
+                        await asyncio.sleep(4)
+                        th2 = thought_engine.reflect(brain, force=True)
+                        if th2:
+                            th2["text"] = "וזה גורם לי לחשוב גם: " + th2["text"]
+                            th2["kind"] = "chain"
+                            print(f"[Thoughts] 🔗 {th2['text'][:70]}")
+                            await manager_broadcast_safe({"type": "thought", **th2})
         except asyncio.CancelledError:
             raise
         except Exception as e:
@@ -1398,6 +1408,19 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
                 "type": "learning_proposal",
                 "proposal": prop
             })
+
+    # 🪞 הרהור אחרי התשובה (v2.4) - אדיאל ממשיכה לחשוב על השיחה קצת אחרי שהשיבה.
+    # זה מה שמבדיל "עוזרת שעונה" מעוזרת שחושבת.
+    if thought_engine and brain:
+        try:
+            refl = thought_engine.reflect_on_exchange(
+                brain, user_text, response_text, brain_result.get("intent"))
+            if refl:
+                await asyncio.sleep(1.2)  # נוחת קצת אחרי התשובה - מרגיש אנושי
+                print(f"[Thoughts] 🪞 {refl['text'][:70]}")
+                await manager.broadcast({"type": "thought", **refl})
+        except Exception as e:
+            print(f"[Thoughts] reflection failed: {e}")
     
     if self_updates:
         for upd in self_updates:

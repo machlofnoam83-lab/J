@@ -458,7 +458,9 @@ class AdvancedHUD {
 
         const kindLabels = {
             topic: '🔁 נושא חם', association: '🧬 אסוציאציה מהמודל', learning: '📈 למידה',
-            dictionary: '📚 מילון', time: '🕐 שעה ביום'
+            dictionary: '📚 מילון', time: '🕐 שעה ביום',
+            user: '💜 מחשבה עליך', curious: '🤔 סקרנות', chain: '🔗 שרשרת מחשבה',
+            reflection: '🪞 הרהור אחרי שיחה'
         };
         const time = msg.time || new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
@@ -477,7 +479,8 @@ class AdvancedHUD {
         if (this.els.thoughtsBadge) this.els.thoughtsBadge.textContent = this.thoughts.length;
 
         // 2. הודעה עדינה בצ'אט - מרגיש חי
-        this.addMessage('assistant', `💭 ${text}`, '💭 מחשבה ספונטנית · הומצאה לבד ע"י AdielMind');
+        const kindLabel = kindLabels[msg.kind] || '💭 מחשבה ספונטנית';
+        this.addMessage('assistant', `💭 ${text}`, `${kindLabel} · הומצאה לבד ע"י AdielMind`);
     }
 
     /** כפתור "תחשבי עכשיו" - מבקש מחשבה מהשרת */

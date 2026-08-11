@@ -129,6 +129,11 @@ class AdielMemory:
             self.short_term = self.short_term[-SHORT_TERM_LIMIT:]
 
     def add_conversation(self, user_text: str, assistant_text: str, save_important: bool = False):
+        # v2.4: כל שיחה סורקת עובדות על הבוס (שם/מיקום/עבודה) - כך אדיאל באמת מכירה אותך
+        try:
+            self.extract_and_save_facts(user_text)
+        except Exception:
+            pass
         self.add_short_term("user", user_text)
         self.add_short_term("assistant", assistant_text)
 
@@ -152,19 +157,24 @@ class AdielMemory:
         keywords = ["תזכור", "תזכרי", "קוראים לי", "אני עובד", "אני גר", "תשמרי", "חשוב"]
         return any(k in text for k in keywords)
 
-    def extract_and_save_facts(self, user_text: str):
-        """חלץ עובדות בסיסיות מהטקסט ושמור"""
-        # דוגמה פשוטה - ממומש מאפס
+    def extract_and_save_facts(self, user_text: str) -> bool:
+        """חלץ עובדות בסיסיות מהטקסט ושמור. שומר לדיסק רק אם משהו באמת השתנה (v2.4)"""
         patterns = {
             "name": r"קוראים לי ([\u0590-\u05FFa-zA-Z]+)",
             "location": r"אני גר ב([\u0590-\u05FFa-zA-Z ]+)",
             "work": r"אני עובד (?:ב|כ)?([\u0590-\u05FFa-zA-Z ]+)",
         }
+        changed = False
         for key, pat in patterns.items():
             m = re.search(pat, user_text)
             if m:
-                self.long_term["user_facts"][key] = m.group(1).strip()
-        self._save_long_term()
+                val = m.group(1).strip()
+                if val and self.long_term["user_facts"].get(key) != val:
+                    self.long_term["user_facts"][key] = val
+                    changed = True
+        if changed:
+            self._save_long_term()
+        return changed
 
     def search_relevant_memories(self, query: str, top_k: int = 3) -> List[Dict]:
         """חיפוש BM25 (v2.1 - מתקדם מ-TF-IDF cosine) + בוסט עדכניות"""
