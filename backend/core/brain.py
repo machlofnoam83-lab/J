@@ -338,11 +338,32 @@ class AdielBrain:
         }
 
     def _pick_varied(self, category: str, **kwargs) -> str:
-        """בחירת תבנית שלא נאמרה לאחרונה - בקרת חזרתיות"""
+        """בחירת תבנית שלא נאמרה לאחרונה - בקרת חזרתיות + דילוג על פרמטרים אפסיים
+        (שלא נגיד "למדתי 0 מילים חדשות" כשעוד לא למדנו כלום)"""
+        import string
         from .personality import LOCAL_RESPONSES
         options = LOCAL_RESPONSES.get(category, LOCAL_RESPONSES["fallback_chat"])
-        fresh = [t for t in options if t not in self._recent_responses]
-        template = random.choice(fresh if fresh else options)
+
+        def _params_ok(template: str) -> bool:
+            try:
+                fields = [f for _, f, _, _ in string.Formatter().parse(template) if f]
+            except Exception:
+                return True
+            for f in fields:
+                v = kwargs.get(f)
+                if v in (None, "", 0, "0"):
+                    return False
+            return True
+
+        pool = [t for t in options if _params_ok(t)] or options
+        fresh = [t for t in pool if t not in self._recent_responses]
+        if fresh:
+            template = random.choice(fresh)
+        else:
+            # הכול נאמר לאחרונה? לפחות אל תחזור על המשפט האחרון בדיוק
+            last = self._recent_responses[-1] if self._recent_responses else None
+            not_last = [t for t in pool if t != last]
+            template = random.choice(not_last if not_last else pool)
         try:
             return template.format(**kwargs)
         except Exception:
