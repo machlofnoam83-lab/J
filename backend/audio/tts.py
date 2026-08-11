@@ -1,8 +1,8 @@
 """
-Hebrew TTS Engine - Natural & Fast v2.0 with Auto-Fix
+Hebrew TTS Engine - Natural & Fast v2.1 with Auto-Fix — 🔓 בלי API keys!
 דיבור עברי טבעי - עם מערכת fallback אוטומטית שמתקנת
 
-Chain: edge-tts (עברית טבעית) -> pyttsx3 (אופליין) -> win32 SAPI (Windows) -> gTTS
+Chain: קולות מקוריים -> edge-tts (חינמי, מדולג אם ADIEL_OFFLINE=1) -> pyttsx3 (אופליין) -> win32 SAPI
 מחזיר גם base64 ל-frontend playback
 """
 import os
@@ -12,6 +12,9 @@ import threading
 import base64
 from typing import Optional, Tuple
 import uuid
+
+# מצב אופליין מלא - שום דבר לא יוצא לרשת (ADIEL_OFFLINE=1)
+OFFLINE_MODE = os.getenv("ADIEL_OFFLINE", "").lower() in ("1", "true", "yes", "on")
 
 try:
     import edge_tts
@@ -74,7 +77,7 @@ class HebrewTTS:
             except Exception as e:
                 print(f"[TTS] pyttsx3 init failed: {e}")
 
-        print(f"[TTS] Initialized - Edge:{HAS_EDGE} Pygame:{HAS_PYGAME} pyttsx3:{HAS_PYTTSX3} SAPI:{HAS_WIN32} voice:{self.voice_id}")
+        print(f"[TTS] Initialized - Edge:{HAS_EDGE and not OFFLINE_MODE} Pygame:{HAS_PYGAME} pyttsx3:{HAS_PYTTSX3} SAPI:{HAS_WIN32} voice:{self.voice_id} OfflineMode:{OFFLINE_MODE} (🔓 בלי מפתחות)")
 
     async def _synthesize_edge(self, text: str, output_path: str) -> bool:
         """סינתזה עם edge-tts - הכי טבעי לעברית - עם fallback קולות"""
@@ -219,8 +222,8 @@ class HebrewTTS:
         except Exception as e:
             print(f"[TTS] Custom voice check failed: {e}")
         
-        # נסיון 1: edge-tts (הכי טוב לעברית)
-        if HAS_EDGE:
+        # נסיון 1: edge-tts (הכי טוב לעברית; מדולג במצב אופליין)
+        if HAS_EDGE and not OFFLINE_MODE:
             success = await self._synthesize_edge(clean_text, output_path)
             if success:
                 print(f"[TTS] ✓ edge-tts success -> {output_path}")

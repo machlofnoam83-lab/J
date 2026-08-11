@@ -16,18 +16,12 @@ class ComputerControl:
     שליטה מלאה במחשב
     """
     def __init__(self):
+        # 🔓 בלי API keys - שליטה מקומית בלבד (אפליקציה מותקנת / דפדפן)
         self.has_pyautogui = False
-        self.has_spotipy = False
-        
+
         try:
             import pyautogui
             self.has_pyautogui = True
-        except:
-            pass
-        
-        try:
-            import spotipy
-            self.has_spotipy = True
         except:
             pass
 
@@ -101,15 +95,7 @@ class ComputerControl:
         """שליטה בספוטיפיי"""
         print(f"[ComputerControl] 🎵 Spotify: {action} {query}")
         
-        # נסה עם spotipy API אם יש
-        if self.has_spotipy:
-            try:
-                # כאן היה קוד אמיתי עם Spotify API
-                pass
-            except:
-                pass
-        
-        # Fallback - פתח ספוטיפיי + חפש
+        # 🔓 רשת ביטחון ללא API: פתיחת האפליקציה המקומית / חיפוש בדפדפן
         try:
             if query:
                 url = f"https://open.spotify.com/search/{query.replace(' ', '%20')}"

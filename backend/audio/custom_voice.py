@@ -2,10 +2,10 @@
 Custom Original Voice for Adiel Junior
 קול מקורי וחדש שיוצר במיוחד עבורך - לא הקולות הסטנדרטיים של Microsoft
 
-מכיל:
+מכיל (🔓 הכול בלי מפתחות!):
 1. Pre-recorded phrases עם קול מקורי (voice-00)
-2. דרך לייצר עוד קולות עם ElevenLabs / Edge-TTS custom
-3. Fallback ל-edge עם pitch shift ייחודי
+2. דרך לייצר עוד קולות - הקלטה עצמית / Edge-TTS חינמי עם pitch custom
+3. Fallback אופליין עם pyttsx3 (ADIEL_OFFLINE=1)
 """
 import os
 import json
@@ -101,23 +101,19 @@ def list_custom_voices():
     return available
 
 def create_custom_voice_instructions():
-    """מדריך איך ליצור עוד קולות מקוריים"""
+    """מדריך איך ליצור עוד קולות מקוריים - 🔓 100% בלי מפתחות וענן"""
     return """
-# איך ליצור עוד קולות מקוריים לאדיאל:
+# איך ליצור עוד קולות מקוריים לאדיאל - הכול ביתי, בלי API!
 
-## אופציה 1: ElevenLabs (הכי איכותי, קול חדש לגמרי)
-1. כנס ל- https://elevenlabs.io/voice-lab
-2. צור קול חדש עם Voice Design:
-   - Gender: Female, Age: Young, Accent: Israeli/Hebrew
-   - או העלה דגימת קול שלך
-3. השתמש ב-API:
-   ```python
-   from elevenlabs import generate, save
-   audio = generate(text="שלום בוס!", voice="Adiel-Custom", model="eleven_multilingual_v2")
-   save(audio, "frontend/src/assets/voice_custom.mp3")
-   ```
+## אופציה 1: הקלטה עצמית (הכי "אנחנו" 🎤)
+1. פתח "מקליט קול" ב-Windows (Voice Recorder) או כל אפליקציית הקלטה
+2. הקלט משפטים קצרים: "שלום בוס!", "כן בוס?", "על זה!", "יאללה ביי בוס"
+3. שמור כ-MP3/WAV בתיקייה: frontend/src/assets/
+4. תן שם לפי התבנית: voice_<שם>.mp3 (למשל voice_laugh.mp3)
+5. הוסף מיפוי ב-ai_voice.py: {"שלום בוס": "laugh"}
+זהו - הקול שלך (או של מישהי שאתה מכיר) הוא הקול של אדיאל!
 
-## אופציה 2: Edge-TTS עם שינוי pitch/rate ליצירת קול ייחודי
+## אופציה 2: Edge-TTS חינמי (בלי מפתח!) עם שינוי pitch/rate
 ב-tts.py יש כבר:
 ```python
 voice = "he-IL-AvigailNeural"
@@ -128,8 +124,12 @@ pitch = "+5Hz" # גבוה יותר - נשמע צעיר יותר
 - "+15% / +10Hz" = קול צעיר ואנרגטי
 - "-5% / -5Hz" = קול בוגר ורגוע
 - "-10% / +8Hz" = קול ילדותי
+לייצר קובץ: python -m backend.audio.tts (או דרך /speak endpoint)
 
-## אופציה 3: השתמש בקולות שיצרתי לך
+## אופציה 3: אופליין מלא (ADIEL_OFFLINE=1)
+pyttsx3 + קולות Windows המותקנים - עובד גם בלי אינטרנט בכלל.
+
+## אופציה 4: השתמש בקולות שיצרתי לך
 ב-frontend/src/assets/ יש כבר:
 - voice_hello.mp3 - "שלום בוס! אני אדיאל עם קול מקורי"
 - voice_wake.mp3 - "כן בוס? אני כאן, מקשיבה"

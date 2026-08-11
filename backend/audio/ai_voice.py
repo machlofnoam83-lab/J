@@ -2,11 +2,11 @@
 AI Voice Generator - קול AI אמיתי שמייצר קול לכל שאלה
 לא משנה איזו שאלה - תמיד עונה עם קול
 
-משתמש ב:
-1. ElevenLabs API עם קול מקורי (אם יש מפתח)
-2. Edge-TTS עם קול מקורי + pitch shift
-3. pyttsx3 + SAPI fallback
-4. Pre-recorded custom voices עבור משפטים נפוצים
+🔓 100% ביתי - בלי API keys, בלי ענן! שרשרת קול מלאה:
+1. קולות מקוריים שהקלטנו (voice_*.mp3) - הכי "אנחנו"
+2. Edge-TTS עברית חינמית (בלי מפתח; מדולגת אם ADIEL_OFFLINE=1)
+3. pyttsx3 לאופליין מלא - גם שומרת קובץ WAV ל-base64!
+4. Windows SAPI fallback
 
 תמיד מחזיר base64 כדי שה-frontend ינגן
 """
@@ -16,6 +16,9 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Tuple
 import uuid
+
+# מצב אופליין מלא - שום דבר לא יוצא לרשת (ADIEL_OFFLINE=1)
+OFFLINE_MODE = os.getenv("ADIEL_OFFLINE", "").lower() in ("1", "true", "yes", "on")
 
 # קולות מקוריים שיצרנו
 ASSETS_DIR = Path(__file__).parent.parent.parent / "frontend" / "src" / "assets"
@@ -31,18 +34,6 @@ try:
     HAS_PYGAME = True
 except:
     HAS_PYGAME = False
-
-try:
-    from elevenlabs.client import ElevenLabs
-    from elevenlabs import Voice, VoiceSettings
-    HAS_ELEVENLABS = True
-except:
-    HAS_ELEVENLABS = False
-    try:
-        import elevenlabs
-        HAS_ELEVENLABS = True
-    except:
-        HAS_ELEVENLABS = False
 
 class AIVoiceGenerator:
     """
@@ -66,21 +57,6 @@ class AIVoiceGenerator:
             "proposal": ASSETS_DIR / "voice_proposal.mp3",
         }
         
-        # ElevenLabs client אם יש מפתח
-        self.eleven_client = None
-        self.eleven_voice_id = None
-        
-        eleven_key = os.getenv("ELEVENLABS_API_KEY", "")
-        if eleven_key and HAS_ELEVENLABS:
-            try:
-                from elevenlabs.client import ElevenLabs
-                self.eleven_client = ElevenLabs(api_key=eleven_key)
-                # נסה למצוא קול בשם Adiel או השתמש בברירת מחדל
-                self.eleven_voice_id = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")  # Rachel default
-                print(f"[AIVoice] ElevenLabs ready - voice {self.eleven_voice_id}")
-            except Exception as e:
-                print(f"[AIVoice] ElevenLabs init failed: {e}")
-        
         # Pygame
         if HAS_PYGAME:
             try:
@@ -88,8 +64,8 @@ class AIVoiceGenerator:
                 pygame.mixer.init(frequency=24000, size=-16, channels=2, buffer=512)
             except:
                 pass
-        
-        print(f"[AIVoice] Initialized - Custom:{len([p for p in self.custom_voices.values() if p.exists()])} ElevenLabs:{HAS_ELEVENLABS and self.eleven_client is not None} Edge:{HAS_EDGE}")
+
+        print(f"[AIVoice] Initialized - Custom:{len([p for p in self.custom_voices.values() if p.exists()])} Edge:{HAS_EDGE and not OFFLINE_MODE} OfflineMode:{OFFLINE_MODE} (🔓 בלי מפתחות!)")
 
     def _get_custom_voice_match(self, text: str) -> Optional[Path]:
         """בדוק אם יש קול מקורי מתאים למשפט"""
@@ -131,65 +107,6 @@ class AIVoiceGenerator:
         except Exception as e:
             print(f"[AIVoice] base64 failed: {e}")
             return None
-
-    async def generate_elevenlabs(self, text: str) -> Optional[Tuple[Path, str]]:
-        """ייצור קול עם ElevenLabs - קול AI אמיתי לכל שאלה"""
-        if not self.eleven_client or not HAS_ELEVENLABS:
-            return None
-        
-        try:
-            print(f"[AIVoice] Generating with ElevenLabs: '{text[:40]}...'")
-            
-            # השתמש ב-client החדש
-            try:
-                from elevenlabs import VoiceSettings
-                
-                audio = self.eleven_client.text_to_speech.convert(
-                    voice_id=self.eleven_voice_id,
-                    text=text,
-                    model_id="eleven_multilingual_v2",  # תומך עברית!
-                    voice_settings=VoiceSettings(
-                        stability=0.5,
-                        similarity_boost=0.75,
-                        style=0.3,
-                        use_speaker_boost=True
-                    )
-                )
-                
-                # שמור
-                file_path = self.temp_dir / f"eleven_{uuid.uuid4().hex[:8]}.mp3"
-                with open(file_path, "wb") as f:
-                    for chunk in audio:
-                        f.write(chunk)
-                
-                if file_path.exists() and file_path.stat().st_size > 100:
-                    b64 = self._file_to_base64(file_path)
-                    print(f"[AIVoice] ✓ ElevenLabs success: {file_path.stat().st_size} bytes")
-                    return file_path, b64
-                    
-            except Exception as e:
-                print(f"[AIVoice] ElevenLabs new API failed: {e}, trying old...")
-                # Fallback ל-API ישן
-                try:
-                    import elevenlabs
-                    elevenlabs.set_api_key(os.getenv("ELEVENLABS_API_KEY"))
-                    audio = elevenlabs.generate(
-                        text=text,
-                        voice=self.eleven_voice_id,
-                        model="eleven_multilingual_v2"
-                    )
-                    file_path = self.temp_dir / f"eleven_{uuid.uuid4().hex[:8]}.mp3"
-                    with open(file_path, "wb") as f:
-                        f.write(audio)
-                    b64 = self._file_to_base64(file_path)
-                    return file_path, b64
-                except Exception as e2:
-                    print(f"[AIVoice] ElevenLabs old API failed: {e2}")
-        
-        except Exception as e:
-            print(f"[AIVoice] ElevenLabs failed: {e}")
-        
-        return None
 
     async def generate_edge(self, text: str) -> Optional[Tuple[Path, str]]:
         """Edge-TTS עם קול מקורי - fallback"""
@@ -240,33 +157,32 @@ class AIVoiceGenerator:
                 self._play_file(custom_path)
             return custom_path, b64
         
-        # 2. ElevenLabs - קול AI אמיתי שמייצר כל טקסט
-        eleven_result = await self.generate_elevenlabs(clean_text)
-        if eleven_result:
-            path, b64 = eleven_result
-            if play:
-                self._play_file(path)
-            return path, b64
-        
-        # 3. Edge-TTS - תמיד עובד, לכל שאלה
-        edge_result = await self.generate_edge(clean_text)
-        if edge_result:
-            path, b64 = edge_result
-            if play:
-                self._play_file(path)
-            return path, b64
-        
-        # 4. SAPI / pyttsx3 fallback - תמיד מדבר
+        # 2. Edge-TTS חינמי - לכל שאלה (מדולג במצב אופליין)
+        if not OFFLINE_MODE:
+            edge_result = await self.generate_edge(clean_text)
+            if edge_result:
+                path, b64 = edge_result
+                if play:
+                    self._play_file(path)
+                return path, b64
+
+        # 3. אופליין מלא: pyttsx3 שומרת קובץ WAV → base64 (עובד בלי רשת כלל!)
         try:
-            if os.name == 'nt':
-                import win32com.client
-                speaker = win32com.client.Dispatch("SAPI.SpVoice")
-                speaker.Speak(clean_text)
-                print("[AIVoice] ✓ SAPI spoke (no file but voice heard)")
-                return None, None
-        except:
-            pass
-        
+            import pyttsx3
+            engine = pyttsx3.init()
+            wav_path = self.temp_dir / f"offline_{uuid.uuid4().hex[:8]}.wav"
+            engine.save_to_file(clean_text, str(wav_path))
+            engine.runAndWait()
+            if wav_path.exists() and wav_path.stat().st_size > 100:
+                b64 = self._file_to_base64(wav_path)
+                print(f"[AIVoice] ✓ pyttsx3 OFFLINE wav success ({wav_path.stat().st_size} bytes)")
+                if play:
+                    self._play_file(wav_path)
+                return wav_path, b64
+        except Exception as e:
+            print(f"[AIVoice] pyttsx3 offline wav failed: {e}")
+
+        # 4. SAPI / pyttsx3 דיבור ישיר - בלי קובץ אבל שומעים
         try:
             import pyttsx3
             engine = pyttsx3.init()
@@ -276,7 +192,7 @@ class AIVoiceGenerator:
             return None, None
         except:
             pass
-        
+
         print("[AIVoice] ✗ All methods failed - no voice for question")
         return None, None
 

@@ -43,10 +43,11 @@ pyautogui>=0.9.54
 psutil>=7.0.0
 requests>=2.32.0
 
-# AI - LLM connectors (לא חובה - יש מוח מובנה)
-openai>=1.99.0
-ollama>=0.6.0
-elevenlabs>=2.0.0
+# 🔓 אפס API keys! המערכת 100% ביתית ומקומית:
+#    - המוח = AdielMind (ביתי, מאפס) - לא צריך OpenAI/Ollama/שום מפתח
+#    - הקול = קולות מקוריים + edge-tts חינמי + pyttsx3 אופליין
+#    - שליטה בספוטיפיי/מחשב = מקומית בלבד (בלי spotipy/API)
+#    מצב אופליין מלא: הגדר ADIEL_OFFLINE=1
 
 # Utils
 python-dotenv>=1.2.0
@@ -58,10 +59,7 @@ beautifulsoup4>=4.14.0
 lxml>=6.0.0
 pandas>=2.3.0
 openpyxl>=3.1.5
-google-api-python-client>=2.180.0
-google-auth-httplib2>=0.2.0
-google-auth-oauthlib>=1.2.0
-spotipy>=2.25.0
+# (הוסרו: google-api / spotipy / openai / elevenlabs - המערכת לא צריכה מפתחות!)
 
 # === AI Model - מודל 3B מובנה (אופציונלי - כבד!) ===
 scikit-learn>=1.7.0

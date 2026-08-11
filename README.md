@@ -2,7 +2,18 @@
 
 > **עוזרת AI אישית למחשב בסגנון Jarvis / FRIDAY מאירון מן - בעברית מלאה, עם HUD עתידני שקוף, ראיית מסך חיה, ומוח פרטי שנבנה מאפס.**
 
-![Version](https://img.shields.io/badge/version-2.0.0-00d2ff)
+## 🔓 ערבות אפס-מפתחות (No API Keys Guarantee)
+
+**אדיאל מוגדרת בזאת: הכול אנחנו יוצרים. אין שימוש ב-API keys, אין ענן, אין חשבונות:**
+
+- 🧠 **המוח** — AdielMind, מודל שפה ביתי שכתבנו מאפס (לא ChatGPT, לא OpenAI, לא Ollama). לומד מכל שיחה
+- 🔊 **הקול** — קולות שהקלטנו בעצמנו + Edge-TTS חינמי (ללא מפתח) + pyttsx3 שעובד **בלי רשת בכלל**
+- 👂 **האזנה** — Whisper/Vosk מקומיים על המחשב שלך
+- 👁️ **ראייה** — OCR מקומי (EasyOCR/Tesseract), בלי שירותי ענן
+- 🎵 **שליטה** — אפליקציות מקומיות ודפדפן בלבד; הוסרו spotipy / google-api / openai / elevenlabs
+- ✈️ **מצב אופליין מלא** — `ADIEL_OFFLINE=1` (ראה `.env.example`): שום בקשת רשת לא תצא, אפילו TTS חינמי
+
+![Version](https://img.shields.io/badge/version-2.1.1-00d2ff)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Electron](https://img.shields.io/badge/electron-43-00ffaa)
 ![FastAPI](https://img.shields.io/badge/fastapi-0.141-009688)

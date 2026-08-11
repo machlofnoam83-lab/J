@@ -39,7 +39,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Dict, Optional
 
-BACKEND_VERSION = "2.1.0"
+BACKEND_VERSION = "2.1.1"
 
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))

@@ -22,4 +22,4 @@ contextBridge.exposeInMainWorld('adielAPI', {
 });
 
 // Version
-contextBridge.exposeInMainWorld('adielVersion', '2.1.0');
+contextBridge.exposeInMainWorld('adielVersion', '2.1.1');

@@ -1,6 +1,6 @@
 {
   "name": "adiel-junior-hud",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "אדיאל ג'וניור - עוזרת AI אישית עם HUD עתידני",
   "main": "main.js",
   "scripts": {
