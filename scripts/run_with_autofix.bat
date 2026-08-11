@@ -1,22 +1,40 @@
 @echo off
 chcp 65001 >nul
-title Adiel Junior - Auto Runner v2.2.2
+title Adiel Junior - Auto Runner v2.2.3
 REM ============================================================
-REM  Adiel Junior - Auto Runner (v2.2.2)
+REM  Adiel Junior - Auto Runner (v2.2.3)
 REM  עדכון אוטומטי (git או ZIP) + תיקון תלויות + הרצה נקייה
 REM ============================================================
 
 REM --- הגנה: לרוץ מעותק ב-TEMP כדי שעדכון הקובץ עצמו לא ישבור את הריצה ---
+REM --- חשוב: העותק ב-TEMP מקבל את נתיב הפרויקט האמיתי ב-ADIEL_ROOT ---
 if /i "%~f0"=="%TEMP%\adiel_auto_runner.bat" goto :main
+for %%I in ("%~dp0..") do set ADIEL_ROOT=%%~fI
 copy /y "%~f0" "%TEMP%\adiel_auto_runner.bat" >nul 2>&1
 call "%TEMP%\adiel_auto_runner.bat" %*
 exit /b %ERRORLEVEL%
 
 :main
 setlocal EnableExtensions EnableDelayedExpansion
-set SCRIPT_DIR=%~dp0
-set PROJECT_ROOT=%SCRIPT_DIR%..
+if defined ADIEL_ROOT (
+    set PROJECT_ROOT=%ADIEL_ROOT%
+) else (
+    for %%I in ("%~dp0..") do set PROJECT_ROOT=%%~fI
+)
+set SCRIPT_DIR=%PROJECT_ROOT%\scripts\
 cd /d "%PROJECT_ROOT%"
+
+REM בדיקת שפיות: אם הנתיב לא נראה כמו הפרויקט - לעצור מיד במקום להשחית נתיבים
+if not exist "%PROJECT_ROOT%\backend\main.py" (
+    echo ============================================================
+    echo   [ERROR] לא מצאתי את backend\main.py בנתיב:
+    echo   %PROJECT_ROOT%
+    echo.
+    echo   הרץ את הקובץ הזה מתוך תיקיית הפרויקט ^(scripts\run_with_autofix.bat^)
+    echo ============================================================
+    pause
+    exit /b 1
+)
 
 REM UTF-8 לכל תהליכי הפייתון - מונע UnicodeEncodeError באימוג'י
 set PYTHONUTF8=1
@@ -25,7 +43,7 @@ set REPO_ZIP_URL=https://codeload.github.com/machlofnoam83-lab/J/zip/refs/heads/
 set DID_UPDATE=
 
 echo ============================================================
-echo   Adiel Junior - Auto Runner v2.2.2
+echo   Adiel Junior - Auto Runner v2.2.3
 echo   עדכון אוטומטי + תיקון שגיאות + הרצה בלי Backend כפול
 echo ============================================================
 echo.
