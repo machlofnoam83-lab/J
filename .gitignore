@@ -18,6 +18,7 @@ backend/data/whisper_models/
 backend/data/vosk-model*/
 backend/data/screenshots/*.jpg
 backend/data/memory.json
+backend/data/adiel_lm.json
 backend/dist/
 backend/__pycache__/
 

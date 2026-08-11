@@ -1,5 +1,5 @@
 /**
- * Advanced HUD - v2.0 ULTIMATE UPGRADE
+ * Advanced HUD - v2.1 AdielMind
  * מיושר במלואו ל-index.html - בלי קריסות, עם בדיקות קיום לכל אלמנט
  */
 
@@ -170,11 +170,12 @@ class AdvancedHUD {
                 this.connected = true;
                 this.reconnectAttempts = 0;
                 this.updateConn('connected');
-                this.addMessage('assistant', '🚀 v2.0 ULTIMATE מחוברת! שידרגו: ספריות 2026, HUD חדש, /frames חי, תיקוני באגים. איך אני, בוס?');
+                this.addMessage('assistant', '🚀 v2.1 AdielMind מחובר! השדרוג החדש: מודל שפה ביתי שלומד מכל שיחה, מסווג כוונות נלמד, וזיכרון BM25. הכול מאפס, בלי ענן ובלי API keys. איך אני, בוס?');
                 this.loadMics();
                 this.loadProfile();
                 this.loadHealth();
                 this.loadFrames();
+                this.loadModelStatus();
                 if (this._pingInterval) clearInterval(this._pingInterval);
                 this._pingInterval = setInterval(() => {
                     if (this.ws?.readyState === 1) this.ws.send(JSON.stringify({ type: 'ping' }));
@@ -225,12 +226,16 @@ class AdvancedHUD {
             case 'brain_response':
                 this.hideThinking();
                 if (msg.assistant_text) {
-                    this.addMessage('assistant', msg.assistant_text);
+                    this.addMessage('assistant', msg.assistant_text, this.modelLabel(msg.model_used));
                     if (msg.screen_image) this.showScreen(msg.screen_image, msg.screen_context);
                     if (msg.proposals) msg.proposals.forEach(p => this.addProposal(p));
                     if (msg.self_updates) msg.self_updates.forEach(p => this.addProposal(p));
                     if (msg.user_profile) this.updateProfileUI(msg.user_profile);
                 }
+                break;
+            case 'model_trained':
+                this.addMessage('assistant', `🧠 ${msg.message || 'המודל אומן מחדש!'}`);
+                this.loadModelStatus();
                 break;
             case 'assistant_speaking':
                 this.hideThinking();
@@ -328,14 +333,27 @@ class AdvancedHUD {
     }
 
     // ================= שיחה =================
-    addMessage(role, text) {
+    modelLabel(modelUsed) {
+        const map = {
+            'adielmind-lm': '🧠 AdielMind · נוצר בזמן אמת',
+            'template-varied': '🧠 AdielMind · תבנית חכמה',
+            'local-rules': '⚡ כלל מקומי · מיידי',
+            'jarvis-team': '🤖 צוות JARVIS',
+            'identity': '🧠 AdielMind · זהות',
+            'screen-context': '🖥️ ניתוח מסך חי',
+        };
+        return map[modelUsed] || (modelUsed ? `🧠 ${modelUsed}` : '');
+    }
+
+    addMessage(role, text, meta) {
         const inner = this.els.conversationInner;
         if (!inner || !text) return;
         const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
         const div = document.createElement('div');
         div.className = `msg ${role}`;
         const avatarLabel = role === 'user' ? 'אתה' : 'AJ';
-        div.innerHTML = `<div class="avatar">${avatarLabel}</div><div class="bubble"><div class="msg-text">${this.escapeHtml(text)}</div><div class="msg-time">${time}</div></div>`;
+        const metaHtml = meta ? `<div class="msg-meta">${this.escapeHtml(meta)}</div>` : '';
+        div.innerHTML = `<div class="avatar">${avatarLabel}</div><div class="bubble"><div class="msg-text">${this.escapeHtml(text)}</div>${metaHtml}<div class="msg-time">${time}</div></div>`;
         inner.appendChild(div);
         inner.scrollTop = inner.scrollHeight;
         this.updateMsgBadges();
@@ -715,9 +733,28 @@ class AdvancedHUD {
     }
 
     // ================= פעולות מערכת =================
-    trainAI() {
-        this.addMessage('assistant', '🧠 מאמן... שולח משימת מחקר לצבירת ידע');
-        this.executeTask('תחקור על בינה מלאכותית');
+    async trainAI() {
+        this.addMessage('assistant', '🧠 מאמנת את AdielMind מחדש על כל השיחות והידע... שנייה, בוס');
+        try {
+            const data = await this.apiPost('/model/train');
+            const s = data.stats || {};
+            this.addMessage('assistant', `✅ אימון הושלם! ${s.total_words?.toLocaleString?.() || s.total_words} מילים, אוצר ${(s.vocab_size || 0).toLocaleString()} מילים, ${s.intent_count || 0} כוונות. ${s.corpus_total ? `(${s.corpus_total} משפטים בקורפוס)` : ''}`);
+            this.loadModelStatus();
+        } catch (e) {
+            this.addMessage('assistant', `❌ האימון נכשל: ${e.message}`);
+        }
+    }
+
+    async loadModelStatus() {
+        try {
+            const data = await this.apiGet('/model/status');
+            if (this.els.trueAIStatus) {
+                const k = ((data.total_words || 0) / 1000).toFixed(1);
+                this.els.trueAIStatus.textContent = `🧠 AdielMind ${k}K מילים`;
+            }
+        } catch (e) {
+            console.log('[HUD] Model status failed', e);
+        }
     }
 
     fixSystem() {
@@ -733,7 +770,7 @@ class AdvancedHUD {
     clearConversation() {
         const inner = this.els.conversationInner;
         if (inner) {
-            inner.innerHTML = `<div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שיחה נוקתה, אבל אני זוכרת הכל! v2.0 מוכנה.</div><div class="msg-time">עכשיו</div></div></div>`;
+            inner.innerHTML = `<div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שיחה נוקתה, אבל אני זוכרת הכל! v2.1 עם AdielMind מוכנה.</div><div class="msg-time">עכשיו</div></div></div>`;
             this.updateMsgBadges();
         }
     }
@@ -760,5 +797,5 @@ class AdvancedHUD {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.advancedHUD = new AdvancedHUD();
-    console.log('[Advanced HUD] v2.0 ULTIMATE UPGRADE initialized');
+    console.log('[Advanced HUD] v2.1 AdielMind initialized');
 });

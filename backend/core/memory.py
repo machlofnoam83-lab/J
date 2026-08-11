@@ -108,6 +108,16 @@ class AdielMemory:
         if docs:
             self.embedding_engine.fit(docs)
 
+        # BM25 index (v2.1) - tokenizer + tf לכל שיחה + אורך ממוצע
+        self._bm25_docs = []  # [(tf Counter, length, conv_ref)]
+        for conv in self.long_term.get("conversations", [])[-100:]:
+            text = conv.get("user", "") + " " + conv.get("assistant", "")
+            tokens = HebrewTokenizer.tokenize(text)
+            self._bm25_docs.append((Counter(tokens), len(tokens), conv))
+        self._bm25_avgdl = (
+            sum(l for _, l, _ in self._bm25_docs) / max(len(self._bm25_docs), 1)
+        )
+
     def add_short_term(self, role: str, content: str):
         entry = {
             "role": role,
@@ -154,20 +164,41 @@ class AdielMemory:
         self._save_long_term()
 
     def search_relevant_memories(self, query: str, top_k: int = 3) -> List[Dict]:
-        """חיפוש סמנטי מקומי בזיכרון"""
+        """חיפוש BM25 (v2.1 - מתקדם מ-TF-IDF cosine) + בוסט עדכניות"""
         if not self.long_term.get("conversations"):
             return []
-        
-        query_vec = self.embedding_engine.tfidf_vector(query)
+
+        bm25_docs = getattr(self, "_bm25_docs", None)
+        if not bm25_docs:
+            return []
+
+        q_tokens = set(HebrewTokenizer.tokenize(query))
+        if not q_tokens:
+            return []
+
+        N = len(bm25_docs)
+        avgdl = max(self._bm25_avgdl, 1e-6)
+        k1, b = 1.5, 0.75
         scored = []
-        for conv in self.long_term["conversations"][-50:]:  # חפש ב-50 האחרונות
-            doc_text = conv.get("user", "") + " " + conv.get("assistant", "")
-            doc_vec = self.embedding_engine.tfidf_vector(doc_text)
-            score = self.embedding_engine.cosine_similarity(query_vec, doc_vec)
-            scored.append((score, conv))
-        
+        for idx, (tf, dl, conv) in enumerate(bm25_docs):
+            if dl == 0:
+                continue
+            score = 0.0
+            for t in q_tokens:
+                f = tf.get(t, 0)
+                if f == 0:
+                    continue
+                n_t = self.embedding_engine.doc_freq.get(t, 0)
+                idf = math.log(1 + (N - n_t + 0.5) / (n_t + 0.5))
+                score += idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * dl / avgdl))
+            # שיחות אחרונות מקבלות עדיפות קלה
+            recency = idx / max(N - 1, 1)
+            score *= (0.85 + 0.3 * recency)
+            if score > 1.0:
+                scored.append((score, conv))
+
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [conv for score, conv in scored[:top_k] if score > 0.15]
+        return [conv for score, conv in scored[:top_k]]
 
     def get_context_string(self) -> str:
         """בנה string של context ל-LLM"""

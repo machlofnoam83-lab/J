@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>אדיאל ג'וניור • v2.0 ULTIMATE UPGRADE</title>
+<title>אדיאל ג'וניור • v2.1 AdielMind • מודל ביתי</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -59,6 +59,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .msg.user .bubble{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.18)}
 .msg-text{font-size:12.5px;line-height:1.5;word-break:break-word}
 .msg-time{font-size:9px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono';opacity:.6}
+.msg-meta{font-size:9px;color:var(--accent2);margin-top:5px;font-family:'JetBrains Mono';opacity:.85;border-top:1px dashed rgba(255,255,255,0.08);padding-top:3px}
 /* אינדיקטור "חושבת" */
 .thinking-dots{display:inline-flex;gap:4px;align-items:center;padding:4px 2px}
 .thinking-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:think 1.2s infinite}
@@ -163,7 +164,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 <div class="bg"><div class="grid"></div><div class="particles" id="particles"></div></div>
 <div class="hud">
     <header class="topbar">
-        <div class="brand"><div class="brand-icon">AJ</div><div><div class="brand-title">ADIEL JUNIOR • v2.0</div><div class="brand-sub">ULTIMATE UPGRADE • קול AI • מילון מלא • 24 פריימים</div></div><div class="status-pill"><div class="dot" id="mainDot"></div><span id="mainStatus">SYSTEMS NOMINAL</span></div></div>
+        <div class="brand"><div class="brand-icon">AJ</div><div><div class="brand-title">ADIEL JUNIOR • v2.1</div><div class="brand-sub">AdielMind • מודל ביתי שלומד • בלי ענן</div></div><div class="status-pill"><div class="dot" id="mainDot"></div><span id="mainStatus">SYSTEMS NOMINAL</span></div></div>
         <div style="display:flex;align-items:center;gap:16px"><div id="timeDisplay" style="font-family:'Orbitron';font-size:14px;font-weight:700;letter-spacing:1px">00:00:00</div><div style="display:flex;gap:10px;font-family:'JetBrains Mono';font-size:10px"><span>AI <b id="aiVal" style="color:var(--accent)">96%</b></span><span>📚<b id="vocabCount">0</b></span><span>🧠<b id="memoryCount">0</b></span></div></div>
         <div style="display:flex;align-items:center;gap:8px"><div class="win-btns"><button class="win-btn" id="btnSide" title="צד">◧</button><button class="win-btn" id="btnCenter" title="מרכז">◫</button><button class="win-btn" id="btnClose" title="סגור">✕</button></div></div>
     </header>
@@ -176,14 +177,14 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
             </div>
             <div class="panel conv">
                 <div class="head"><div>💬 שיחה אמיתית - קול AI לכל שאלה</div><div class="badge" id="convBadge">0</div></div>
-                <div class="conv-body" id="conversationInner"><div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שלום בוס! אני אדיאל v2.0 - שודרגתי לגמרי 🚀 מבינה דיבור מהיר, קוראת טקסט RTL, מילון עברי מלא, ועונה תמיד עם קול AI אמיתי. תגיד "אדיאל ג'וניור" או כתוב לי למטה!</div><div class="msg-time">עכשיו</div></div></div></div>
+                <div class="conv-body" id="conversationInner"><div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שלום בוס! אני אדיאל v2.1 עם AdielMind - מודל שפה ביתי שלומד מכל שיחה, בלי ענן ובלי API keys 🧠 מבינה דיבור מהיר, מילון עברי מלא, וקול AI. תגיד "אדיאל ג'וניור" או כתוב לי למטה!</div><div class="msg-time">עכשיו</div></div></div></div>
             </div>
         </div>
 
         <div class="col center">
             <div class="reactor">
                 <div class="reactor-wrap"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="glow"></div><img id="avatarImg" class="avatar-core" src="./assets/adiel_avatar.png" onerror="this.style.display='none'"/><div class="core"></div><canvas id="reactorCanvas" width="150" height="150" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div>
-                <div class="data-point dp1"><span>VOICE</span><b>AI ALL Q</b></div><div class="data-point dp2"><span>STT</span><b>FAST HE</b></div><div class="data-point dp3"><span>VER</span><b>2.0</b></div><div class="data-point dp4"><span>FRAMES</span><b id="dictCount">24</b></div>
+                <div class="data-point dp1"><span>VOICE</span><b>AI ALL Q</b></div><div class="data-point dp2"><span>STT</span><b>FAST HE</b></div><div class="data-point dp3"><span>MIND</span><b>v6</b></div><div class="data-point dp4"><span>FRAMES</span><b id="dictCount">24</b></div>
             </div>
             <div class="status"><div class="status-main" id="statusLabel">מאזינה למילת הפעלה...</div><div class="wake-hint">אמור <span class="wake-word">״אדיאל ג׳וניור״</span> - מבינה גם דיבור מהיר!</div><div class="viz" id="visualizer"><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div></div></div>
             <div class="panel holo" style="flex:1">
@@ -217,12 +218,12 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
         <div class="col right">
             <div class="panel"><div class="head"><div>⚡ פעולות מהירות</div></div><div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="quick-btn" id="btnWake">🎤 אדיאל</button><button class="quick-btn" id="btnScreen">🖥️ מסך</button><button class="quick-btn" id="btnTrain">🧠 אמן</button><button class="quick-btn" id="btnFix">🛠️ תקן</button></div></div>
             <div class="panel" style="flex:1"><div class="head"><div>👤 פרופיל</div></div><div style="padding:10px;font-size:11px;line-height:1.8;overflow:auto" id="profileInfo"><div class="loading">טוען פרופיל...</div></div></div>
-            <div class="panel"><div class="head"><div>📡 סטטוס</div></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">Backend</span><span id="backendStatus" style="color:var(--green)">● מחובר</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">מוח</span><span id="trueAIStatus">🧠 מוכן</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">קול</span><span>✨ AI לכל שאלה</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">גרסה</span><span style="color:var(--accent)">v2.0 UPGRADED</span></div></div></div>
+            <div class="panel"><div class="head"><div>📡 סטטוס</div></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">Backend</span><span id="backendStatus" style="color:var(--green)">● מחובר</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">מוח</span><span id="trueAIStatus">🧠 מוכן</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">קול</span><span>✨ AI לכל שאלה</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">גרסה</span><span style="color:var(--accent)">v2.1 AdielMind</span></div></div></div>
         </div>
     </div>
 
     <div class="bottom">
-        <div style="font-family:'Orbitron';font-weight:800;color:var(--accent);font-size:10px;letter-spacing:1px">ADIEL://2.0</div>
+        <div style="font-family:'Orbitron';font-weight:800;color:var(--accent);font-size:10px;letter-spacing:1px">ADIEL://2.1</div>
         <div style="flex:1"><div class="input-wrap"><input type="text" id="textInput" placeholder="דבר עם אדיאל - מבינה דיבור מהיר, מילון מלא, קול AI!" autocomplete="off"/><button class="send-btn" id="btnSend">➤</button></div></div>
         <div style="display:flex;align-items:center;gap:10px"><div class="conn-dot" id="connDot"></div><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim)" id="connText">מתחבר...</span><button class="action-btn" id="btnClear">🗑️</button></div>
     </div>
@@ -270,7 +271,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
         }
         draw();
     }
-    console.log('Adiel Junior v2.0 ULTIMATE UPGRADE - HUD ready');
+    console.log('Adiel Junior v2.1 AdielMind - self-built model, no cloud, no API keys');
 })();
 </script>
 <script src="./advanced_hud.js"></script>

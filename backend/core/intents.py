@@ -52,7 +52,19 @@ class HebrewIntentClassifier:
                 "תזכור", "תזכרי", "תשמור", "תשמרי", "אל תשכח", "זכור"
             ],
             "goodbye": [
-                "ביי", "להתראות", "תודה", "יום טוב", "לילה טוב", "סיימנו"
+                "ביי", "להתראות", "יום טוב", "לילה טוב", "סיימנו"
+            ],
+            "greeting": [
+                "היי", "שלום", "הלו", "בוקר טוב", "ערב טוב", "מה נשמע", "אהלן", "hi", "hello", "hey"
+            ],
+            "how_are_you": [
+                "מה קורה", "מה העניינים", "איך את", "איך אתה", "איך מרגישה", "מה שלומך", "how are you"
+            ],
+            "thanks": [
+                "תודה", "תודה רבה", "אחלה תודה", "תודה לך", "thanks", "thank you", "תודה על", "אלופה", "כל הכבוד"
+            ],
+            "identity": [
+                "מי את", "מה את", "מי אתה", "מה אתה", "איזה מודל", "מי יצר אותך", "who are you"
             ]
         }
         
@@ -84,7 +96,15 @@ class HebrewIntentClassifier:
             ("תחפש בגוגל", "system_search"),
             ("מה השעה", "time_date"),
             ("תזכור שאני אוהב", "memory_save"),
-            ("ביי תודה", "goodbye"),
+            ("ביי להתראות", "goodbye"),
+            ("היי אדיאל", "greeting"),
+            ("שלום בוקר טוב", "greeting"),
+            ("מה קורה מה נשמע", "how_are_you"),
+            ("איך את מרגישה היום", "how_are_you"),
+            ("תודה רבה לך", "thanks"),
+            ("אחלה תודה על העזרה", "thanks"),
+            ("מי את אדיאל", "identity"),
+            ("מה את בדיוק", "identity"),
         ]
         
         # חישוב centroid TF לכל intent
@@ -100,10 +120,17 @@ class HebrewIntentClassifier:
                 all_tokens.extend(self._tokenize(doc))
             self.intent_centroids[intent] = Counter(all_tokens)
 
+    # מילות קישור נטולות משמעות - מסוננות מה-centroids כדי למנוע התאמות כוזבות
+    _STOPWORDS = {
+        "את", "אתה", "אתם", "אני", "הוא", "היא", "של", "על", "אל", "עם", "לי", "לך",
+        "זה", "זאת", "הם", "אנחנו", "כל", "או", "גם", "לא", "כן", "אם", "כי", "יש",
+        "the", "a", "is", "to", "of", "and", "in", "on", "it"
+    }
+
     def _tokenize(self, text: str) -> List[str]:
         text = text.lower()
         tokens = re.findall(r'[\u0590-\u05FF]+|[a-z]+', text)
-        return tokens
+        return [t for t in tokens if t not in self._STOPWORDS]
 
     def _keyword_match(self, text: str) -> Tuple[str, float]:
         """חיפוש ישיר במילות מפתח - דיוק גבוה"""

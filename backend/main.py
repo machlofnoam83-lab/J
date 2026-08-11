@@ -39,7 +39,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Dict, Optional
 
-BACKEND_VERSION = "2.0.0"
+BACKEND_VERSION = "2.1.0"
 
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))
@@ -400,7 +400,8 @@ async def health_check():
         "tts": tts_engine is not None,
         "vision": vision_engine is not None,
         "stt": stt_engine is not None,
-        "wake_word": wake_detector is not None and wake_detector.running if wake_detector else False
+        "wake_word": wake_detector is not None and wake_detector.running if wake_detector else False,
+        "adielmind": brain is not None and getattr(brain, "mind", None) is not None
     }
     report["checks"] = checks
     
@@ -740,6 +741,43 @@ async def get_single_frame(frame_id: str):
         return frame
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+# === 🧠 AdielMind - מודל השפה הביתי ===
+
+@app.get("/model/status")
+async def model_status():
+    """סטטוס המודל הביתי - קורפוס, כוונות, מסווג NB"""
+    if not brain:
+        raise HTTPException(500, "Brain not initialized")
+    return brain.model_status()
+
+@app.post("/model/train")
+async def model_train():
+    """אימון מלא מחדש של AdielMind: קורפוס בסיס + כל השיחות מהזיכרון"""
+    if not brain:
+        raise HTTPException(500, "Brain not initialized")
+    try:
+        stats = brain.retrain_model()
+        await manager_broadcast_safe({
+            "type": "model_trained",
+            "stats": stats,
+            "message": f"אומנתי מחדש! {stats['total_words']:,} מילים, vocab {stats['vocab_size']:,}"
+        })
+        return {"success": True, "stats": stats,
+                "message": f"🧠 AdielMind אומן מחדש: {stats['total_words']:,} מילים מ-{stats.get('corpus_total', 0)} משפטים"}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.get("/model/generate")
+async def model_generate(text: str = "שלום בוס", intent: Optional[str] = None, temperature: float = 0.9):
+    """דיבוג: ייצור טקסט עם המודל הביתי - רואים מה הוא למד"""
+    try:
+        from core.adiel_lm import get_adiel_lm
+        lm = get_adiel_lm()
+        sample = lm.generate(intent=intent, seed_words=[text], max_words=20, temperature=temperature)
+        return {"seed": text, "intent": intent, "generated": sample, "stats": lm.stats()}
     except Exception as e:
         raise HTTPException(500, str(e))
 
@@ -1232,6 +1270,7 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         "user_text": user_text,
         "assistant_text": response_text,
         "intent": brain_result.get("intent"),
+        "model_used": brain_result.get("model_used"),
         "hud_command": hud_cmd,
         "system_action": sys_action,
         "screen_context": screen_ctx,
@@ -1321,6 +1360,7 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         "user_text": user_text,
         "assistant_text": response_text,
         "intent": brain_result.get("intent"),
+        "model_used": brain_result.get("model_used"),
         "screen_context": screen_ctx,
         "proposals": proposals,
         "self_updates": self_updates,
