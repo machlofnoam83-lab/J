@@ -1,6 +1,6 @@
 /**
- * Advanced HUD - v2.1 AdielMind
- * מיושר במלואו ל-index.html - בלי קריסות, עם בדיקות קיום לכל אלמנט
+ * Advanced HUD - v2.2
+ * מיושר במלואו ל-index.html - מצבי חלון (center/side/orb), טאב מודל, בלי קריסות
  */
 
 class AdvancedHUD {
@@ -18,6 +18,21 @@ class AdvancedHUD {
         this.connectWS();
         this.startClocks();
         this.startMetrics();
+        this.initMode();
+    }
+
+    /** מצב חלון (center/side/orb) - מסנכרן את ה־CSS עם Electron */
+    setMode(mode) {
+        if (!mode) return;
+        document.body.classList.remove('mode-center', 'mode-side', 'mode-orb');
+        document.body.classList.add(`mode-${mode}`);
+        console.log('[HUD] Mode:', mode);
+    }
+
+    initMode() {
+        if (window.adielAPI?.getCurrentMode) {
+            window.adielAPI.getCurrentMode().then(m => m && this.setMode(m)).catch(() => {});
+        }
     }
 
     $(id) { return document.getElementById(id); }
@@ -77,6 +92,13 @@ class AdvancedHUD {
             connDot: this.$('connDot'),
             connText: this.$('connText'),
             avatar: this.$('avatarImg'),
+            orbView: this.$('orbView'),
+            modelWords: this.$('modelWords'),
+            modelVocab: this.$('modelVocab'),
+            modelIntents: this.$('modelIntents'),
+            memoryConvs: this.$('memoryConvs'),
+            nbIntents: this.$('nbIntents'),
+            nbFeatures: this.$('nbFeatures'),
         };
     }
 
@@ -85,18 +107,32 @@ class AdvancedHUD {
         this.$('btnSide')?.addEventListener('click', () => this.switchMode('side'));
         this.$('btnCenter')?.addEventListener('click', () => this.switchMode('center'));
         this.$('btnOrb')?.addEventListener('click', () => this.switchMode('orb'));
+        this.$('btnMin')?.addEventListener('click', () => window.adielAPI ? window.adielAPI.minimize() : null);
         this.$('btnClose')?.addEventListener('click', () => window.adielAPI ? window.adielAPI.close() : window.close());
 
         // Input
         this.$('btnSend')?.addEventListener('click', () => this.sendText());
         this.els.textInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.sendText(); });
 
-        // Quick actions
+        // Quick actions (כולל גרסת מצב-צד עם ה־2)
         this.$('btnWake')?.addEventListener('click', () => this.triggerWake());
+        this.$('btnWake2')?.addEventListener('click', () => this.triggerWake());
         this.$('btnScreen')?.addEventListener('click', () => this.askScreen());
+        this.$('btnScreen2')?.addEventListener('click', () => this.askScreen());
         this.$('btnTrain')?.addEventListener('click', () => this.trainAI());
+        this.$('btnTrain2')?.addEventListener('click', () => this.trainAI());
         this.$('btnFix')?.addEventListener('click', () => this.fixSystem());
         this.$('btnClear')?.addEventListener('click', () => this.clearConversation());
+        this.$('btnClear2')?.addEventListener('click', () => this.clearConversation());
+        this.$('btnFrames')?.addEventListener('click', () => this.switchTab('tasks'));
+        this.$('btnCenter2')?.addEventListener('click', () => this.switchMode('center'));
+        this.$('btnTrainModel')?.addEventListener('click', () => this.trainAI());
+
+        // Orb - לחיצה מחזירה למרכז ומעירה
+        this.els.orbView?.addEventListener('click', () => {
+            this.switchMode('center');
+            this.triggerWake();
+        });
 
         // Dictionary search
         this.$('btnDictSearch')?.addEventListener('click', () => this.searchDictionary());
@@ -118,14 +154,8 @@ class AdvancedHUD {
             });
         });
 
-        // Orb (Electron modes)
-        this.$('orbContent')?.addEventListener('click', () => {
-            this.switchMode('center');
-            this.triggerWake();
-        });
-
         if (window.adielAPI) {
-            window.adielAPI.onModeChanged((mode) => console.log('[HUD] Mode changed:', mode));
+            window.adielAPI.onModeChanged((mode) => this.setMode(mode));
             window.adielAPI.onSimulateWake?.(() => this.onWake('קיצור מקלדת'));
             window.adielAPI.onBackendStatus?.((st) => {
                 if (st && st.running === false) this.updateConn('disconnected');
@@ -165,12 +195,12 @@ class AdvancedHUD {
         this.updateConn('connecting');
         try {
             this.ws = new WebSocket(this.wsUrl);
-            this.ws.onopen = () => {
+                this.ws.onopen = () => {
                 console.log('[AdvancedHUD] Connected');
                 this.connected = true;
                 this.reconnectAttempts = 0;
                 this.updateConn('connected');
-                this.addMessage('assistant', '🚀 v2.1 AdielMind מחובר! השדרוג החדש: מודל שפה ביתי שלומד מכל שיחה, מסווג כוונות נלמד, וזיכרון BM25. הכול מאפס, בלי ענן ובלי API keys. איך אני, בוס?');
+                this.addMessage('assistant', '🚀 v2.2 מחובר! AdielMind — מודל שפה ביתי שלומד מכל שיחה, מסווג כוונות נלמד, וזיכרון BM25. הכול מאפס, בלי ענן ובלי API keys. איך אני, בוס?');
                 this.loadMics();
                 this.loadProfile();
                 this.loadHealth();
@@ -204,7 +234,12 @@ class AdvancedHUD {
     }
 
     updateConn(state) {
-        if (this.els.connDot) this.els.connDot.className = 'conn-dot ' + (state === 'connected' ? 'connected' : state === 'connecting' ? 'connecting' : '');
+        const colors = { connected: 'var(--green)', connecting: 'var(--orange)', disconnected: 'var(--red)' };
+        if (this.els.connDot) {
+            const c = colors[state] || 'var(--red)';
+            this.els.connDot.style.background = c;
+            this.els.connDot.style.boxShadow = `0 0 8px ${c}`;
+        }
         if (this.els.connText) this.els.connText.textContent = state === 'connected' ? 'ONLINE' : state === 'connecting' ? 'מתחברת...' : 'מנותק';
         if (this.els.backendStatus) {
             this.els.backendStatus.textContent = state === 'connected' ? '● מחובר' : '○ מנותק';
@@ -281,6 +316,7 @@ class AdvancedHUD {
             if (this.els.mainStatusText) this.els.mainStatusText.textContent = 'LISTENING';
             this.els.mainStatusDot?.classList.add('listening');
             if (this.els.avatar) { this.els.avatar.classList.remove('speaking'); this.els.avatar.classList.add('listening'); }
+            if (this.els.orbView) { this.els.orbView.classList.remove('speaking'); this.els.orbView.classList.add('listening'); }
         } else {
             sl?.classList.remove('listening');
             this.els.visualizer?.classList.remove('active');
@@ -288,6 +324,7 @@ class AdvancedHUD {
             if (label && sl) sl.textContent = label;
             if (!sl?.classList.contains('speaking')) this.setIdle();
             this.els.avatar?.classList.remove('listening');
+            this.els.orbView?.classList.remove('listening');
         }
     }
 
@@ -300,10 +337,12 @@ class AdvancedHUD {
             if (this.els.mainStatusText) this.els.mainStatusText.textContent = 'SPEAKING';
             if (audioB64) this.playAudio(audioB64);
             if (this.els.avatar) { this.els.avatar.classList.remove('listening'); this.els.avatar.classList.add('speaking'); }
+            if (this.els.orbView) { this.els.orbView.classList.remove('listening'); this.els.orbView.classList.add('speaking'); }
         } else {
             sl?.classList.remove('speaking');
             this.els.visualizer?.classList.remove('active');
             this.els.avatar?.classList.remove('speaking');
+            this.els.orbView?.classList.remove('speaking');
             this.setIdle();
         }
     }
@@ -734,14 +773,18 @@ class AdvancedHUD {
 
     // ================= פעולות מערכת =================
     async trainAI() {
+        const btn = this.$('btnTrainModel');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ מאמנת... שנייה בוס'; }
         this.addMessage('assistant', '🧠 מאמנת את AdielMind מחדש על כל השיחות והידע... שנייה, בוס');
         try {
             const data = await this.apiPost('/model/train');
             const s = data.stats || {};
-            this.addMessage('assistant', `✅ אימון הושלם! ${s.total_words?.toLocaleString?.() || s.total_words} מילים, אוצר ${(s.vocab_size || 0).toLocaleString()} מילים, ${s.intent_count || 0} כוונות. ${s.corpus_total ? `(${s.corpus_total} משפטים בקורפוס)` : ''}`);
+            this.addMessage('assistant', `✅ אימון הושלם! ${(s.total_words || 0).toLocaleString('he-IL')} מילים, אוצר ${(s.vocab_size || 0).toLocaleString('he-IL')} מילים, ${s.intent_count || 0} כוונות. ${s.corpus_total ? `(${s.corpus_total} משפטים בקורפוס)` : ''}`);
             this.loadModelStatus();
         } catch (e) {
             this.addMessage('assistant', `❌ האימון נכשל: ${e.message}`);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '🧠 אמן אותי מחדש על כל השיחות'; }
         }
     }
 
@@ -752,6 +795,14 @@ class AdvancedHUD {
                 const k = ((data.total_words || 0) / 1000).toFixed(1);
                 this.els.trueAIStatus.textContent = `🧠 AdielMind ${k}K מילים`;
             }
+            // טאב המודל החדש
+            const fmt = (n) => (n || 0).toLocaleString('he-IL');
+            if (this.els.modelWords) this.els.modelWords.textContent = fmt(data.total_words);
+            if (this.els.modelVocab) this.els.modelVocab.textContent = fmt(data.vocab_size);
+            if (this.els.modelIntents) this.els.modelIntents.textContent = fmt(data.intent_count || (data.intents || []).length);
+            if (this.els.memoryConvs) this.els.memoryConvs.textContent = fmt(data.memory_conversations);
+            if (this.els.nbIntents) this.els.nbIntents.textContent = fmt(data.nb_intents);
+            if (this.els.nbFeatures) this.els.nbFeatures.textContent = fmt(data.nb_features);
         } catch (e) {
             console.log('[HUD] Model status failed', e);
         }
@@ -770,7 +821,7 @@ class AdvancedHUD {
     clearConversation() {
         const inner = this.els.conversationInner;
         if (inner) {
-            inner.innerHTML = `<div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שיחה נוקתה, אבל אני זוכרת הכל! v2.1 עם AdielMind מוכנה.</div><div class="msg-time">עכשיו</div></div></div>`;
+            inner.innerHTML = `<div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שיחה נוקתה, אבל אני זוכרת הכל! v2.2 עם AdielMind מוכנה 🧠</div><div class="msg-time">עכשיו</div></div></div>`;
             this.updateMsgBadges();
         }
     }
@@ -797,5 +848,5 @@ class AdvancedHUD {
 
 document.addEventListener('DOMContentLoaded', () => {
     window.advancedHUD = new AdvancedHUD();
-    console.log('[Advanced HUD] v2.1 AdielMind initialized');
+    console.log('[Advanced HUD] v2.2 initialized - modes, model tab, port-safe backend');
 });

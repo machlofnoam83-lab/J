@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Quick fix for ENOENT package.json error
 REM תיקון מהיר לשגיאה שקיבלת
 

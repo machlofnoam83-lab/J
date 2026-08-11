@@ -9,6 +9,46 @@ Or: uvicorn main:app --host 0.0.0.0 --port 8765 --reload
 import os
 import sys
 
+# === תיקון קידוד קונסולה (Windows cp1255) - חייב להיות ראשון! ===
+# בלי זה כל print עם אימוג'י קורס עם UnicodeEncodeError ושובר מודולים שלמים
+# (STT, TTS, Brain, Frames, מילון...). ה-fix מכריח UTF-8 על stdout/stderr.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from core.console_fix import force_utf8_console, safe_print
+    force_utf8_console()
+except Exception:
+    def safe_print(*a, **k):
+        try:
+            print(*a, **k)
+        except Exception:
+            pass
+
+def _port_already_serving(port: int) -> bool:
+    """בדיקה אם כבר יש Backend חי על הפורט - מונע WinError 10048 וכפילות.
+    מחזיר True אם משהו מאזין על הפורט (כנראה אדיאל אחר שכבר רץ)."""
+    import socket
+    for host in ("127.0.0.1", "0.0.0.0"):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.6)
+                if s.connect_ex((host, port)) == 0:
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+# === יציאה מוקדמת ומהירה אם כבר יש Backend חי (לפני טעינת מודלים כבדים!) ===
+if __name__ == "__main__" and os.environ.get("ADIEL_SKIP_PORT_CHECK") != "1":
+    _early_port = int(os.getenv("PORT", "8765"))
+    if _port_already_serving(_early_port):
+        print("=" * 60)
+        print(f"  ⚡ אדיאל כבר רץ על פורט {_early_port} - לא מפעיל עותק שני!")
+        print("  ה-HUD יתחבר ל-Backend הקיים. אם רצית לאתחל:")
+        print("  סגור קודם את העותק הישן (או הרהג python של main.py).")
+        print("=" * 60)
+        sys.exit(0)
+
 # בדיקת תלויות קריטיות עם הודעה בעברית אם חסר
 try:
     import fastapi
@@ -39,7 +79,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Dict, Optional
 
-BACKEND_VERSION = "2.1.1"
+BACKEND_VERSION = "2.2.0"
 
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))
@@ -1487,6 +1527,14 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(os.path.dirname(__file__), "data", "screenshots"), exist_ok=True)
     os.makedirs(os.path.join(os.path.dirname(__file__), "data", "whisper_models"), exist_ok=True)
 
+    # הבדיקה המוקדמת כבר רצה בראש הקובץ; כאן רק כיסוי למרוץ-אחרון
     port = int(os.getenv("PORT", "8765"))
     print(f"Starting Adiel Junior Backend on port {port}")
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, log_level="info")
+    try:
+        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, log_level="info")
+    except OSError as e:
+        # כיסוי אחרון אם הפורט נתפס במירוץ בין הבדיקה להאזנה
+        if getattr(e, "winerror", None) == 10048 or getattr(e, "errno", None) in (98, 48):
+            print(f"[Startup] ⚡ פורט {port} נתפס בשנייה האחרונה - יוצא בשקט, ה-HUD יתחבר לעותק הקיים.")
+            sys.exit(0)
+        raise

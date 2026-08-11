@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Fix fastapi ModuleNotFoundError + audio
 
 set SCRIPT_DIR=%~dp0

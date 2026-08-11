@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Adiel Junior - Run with Auto-Fix
 REM מריץ עם מערכת תיקון אוטומטית - כמו פעם קודמת רק חכם יותר
 

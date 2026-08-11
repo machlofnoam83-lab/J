@@ -1,6 +1,6 @@
 {
   "name": "adiel-junior-hud",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "אדיאל ג'וניור - עוזרת AI אישית עם HUD עתידני",
   "main": "main.js",
   "scripts": {
@@ -10,7 +10,13 @@
     "build:dir": "electron-builder --dir --config build.config.json",
     "pack": "electron-builder --dir"
   },
-  "keywords": ["ai", "assistant", "hebrew", "jarvis", "hud"],
+  "keywords": [
+    "ai",
+    "assistant",
+    "hebrew",
+    "jarvis",
+    "hud"
+  ],
   "author": "Adiel Labs",
   "license": "MIT",
   "devDependencies": {
@@ -25,7 +31,10 @@
     "productName": "Adiel Junior",
     "copyright": "Copyright © 2026 Adiel Labs",
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "src/assets/icon.png",
       "requestedExecutionLevel": "asAdmin"
     },
@@ -42,12 +51,16 @@
       {
         "from": "../backend/dist/",
         "to": "backend",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "../backend/data/",
         "to": "backend/data",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "files": [

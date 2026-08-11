@@ -13,11 +13,23 @@
 - 🎵 **שליטה** — אפליקציות מקומיות ודפדפן בלבד; הוסרו spotipy / google-api / openai / elevenlabs
 - ✈️ **מצב אופליין מלא** — `ADIEL_OFFLINE=1` (ראה `.env.example`): שום בקשת רשת לא תצא, אפילו TTS חינמי
 
-![Version](https://img.shields.io/badge/version-2.1.1-00d2ff)
+![Version](https://img.shields.io/badge/version-2.2.0-00d2ff)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Electron](https://img.shields.io/badge/electron-43-00ffaa)
 ![FastAPI](https://img.shields.io/badge/fastapi-0.141-009688)
 ![Hebrew](https://img.shields.io/badge/language-Hebrew%20%2B%20English-ff8a00)
+
+---
+
+## 🛠️ v2.2 - תיקוני Windows קריטיים + HUD חדש (אוגוסט 2026)
+
+סיבוב שמתקן את הבעיות שדווחו מהרצה אמיתית על Windows 11 (Python 3.14):
+
+- 🪟 **UnicodeEncodeError נעלם** — הקונסולה של Windows רצה ב-cp1255 וכל `print` עם אימוג'י (✓ ⚡ 🚀 🧠) התפוצץ. הקריסה התרחשה באמצע `__init__` של מודולים, ולכן **STT (Whisper), מילון, Advanced Reader, Device Manager ו-AI Voice סומנו בטעות כ"לא זמינים"**, ותשובות TTS נפלו אחרי שהצליחו. נוסף `core/console_fix.py` שמכריח UTF-8 על stdout/stderr לפני כל import, + `PYTHONUTF8=1` לתהליך הבן מ-Electron
+- 🔌 **לא עוד WinError 10048** — כשה-backend כבר רץ (run.bat + Electron הפעילו שניים), Electron בודק `GET /health` לפני spawn ומשתמש בעותק הקיים; וה-backend עצמו בודק את הפורט ויוצא בחן עם הסבר במקום להתרסק
+- 🖥️ **HUD v2.2 נבנה מחדש** — החלון הקודם היה ברוחב 520px אבל הליאאוט דרש ~1100px (ולכן הכול נחתך ונדחס!). עכשיו: מרכז 1150×780 ניתן להגדלה, ליאאוט 3 עמודות עם צ'אט במרכז, קומפוזר בתוך הפאנל, **מצב צד נקי בעמודה אחת בלי חיתוכים**, **מצב כדור צף (orb) אמיתי**, ו**טאב "🧬 מודל"** חדש עם סטטיסטיקות AdielMind החיות וכפתור אימון
+- 🧹 **לוגים נקיים** — uvicorn כותב ל-stderr גם INFO; Electron לא מסמן את זה יותר כ-`[Backend ERR]` אלא שגיאות אמיתיות בלבד
+- ⌨️ **קבצי .bat** — `chcp 65001` בראש כל קובץ (לא עוד `╫₧╫ñ╫ó╫ש╫£` במקום עברית)
 
 ---
 

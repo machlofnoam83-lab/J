@@ -1,23 +1,46 @@
 /**
- * Adiel Junior - Electron Main Process
- * חלון שקוף ללא מסגרת בסגנון Iron Man HUD
+ * Adiel Junior - Electron Main Process v2.2
+ * חלון HUD בסגנון Iron Man - center / side / orb
+ *
+ * v2.2:
+ *  - בדיקת Backend חי לפני spawn - אין יותר שני Backendים שרבים על פורט 8765 (WinError 10048)
+ *  - PYTHONUTF8=1 לתהליך הבן - אין יותר UnicodeEncodeError באימוג'י של הלוגים
+ *  - גדלי חלון מתוקנים: center רחב ונשלף-גודל, side צר בלי חיתוכים, orb קטן
+ *  - לוג stderr של uvicorn (INFO) לא מסומן יותר כ־[Backend ERR] אלא אם זו שגיאה אמיתית
  */
 const { app, BrowserWindow, ipcMain, screen, globalShortcut, Tray, Menu } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const http = require('http');
 
 let mainWindow = null;
 let tray = null;
 let backendProcess = null;
+let backendExternal = false; // Backend רץ מבחוץ (run.bat) - לא להרוג אותו ביציאה
 let isDev = process.argv.includes('--dev');
 let currentMode = 'center'; // center / side / orb
 
+// v2.2: גדלים נכונים! center רחב ל־3 עמודות, side צר בלי חיתוך תוכן
 const WINDOW_MODES = {
-    center: { width: 520, height: 680, x: null, y: null, resizable: false },
-    side: { width: 400, height: 720, x: 'right', y: 'center' },
-    orb: { width: 140, height: 140, x: 'bottom-right', y: null }
+    center: { width: 1150, height: 780, minWidth: 1020, minHeight: 680, resizable: true },
+    side:   { width: 430,  height: 800, minWidth: 380,  minHeight: 560, resizable: true },
+    orb:    { width: 150,  height: 150, minWidth: 150,  minHeight: 150, resizable: false }
 };
+
+const BACKEND_PORT = 8765;
+
+/** בדיקה אם Backend חי כבר (run.bat / עותק קודם / תהליך ידני) */
+function isBackendAlive(timeoutMs = 1200) {
+    return new Promise((resolve) => {
+        const req = http.get({ host: '127.0.0.1', port: BACKEND_PORT, path: '/health', timeout: timeoutMs }, (res) => {
+            res.resume();
+            resolve(res.statusCode >= 200 && res.statusCode < 500);
+        });
+        req.on('timeout', () => { req.destroy(); resolve(false); });
+        req.on('error', () => resolve(false));
+    });
+}
 
 function getBackendPath() {
     // ב-production, backend.exe נמצא ב-resources
@@ -37,34 +60,62 @@ function getBackendPath() {
     return { type: 'python', path: path.join(__dirname, '..', 'backend', 'main.py') };
 }
 
-function startBackend() {
+/** סיווג שורות לוג של ה-Backend: stderr של uvicorn הוא INFO רגיל, לא שגיאה */
+function logBackendLine(chunk, isErr) {
+    const lines = String(chunk).split(/\r?\n/).filter(l => l.trim());
+    for (const line of lines) {
+        const realError = /error|traceback|exception|failed|critical/i.test(line) && !/error handler|0 error/i.test(line);
+        if (isErr && realError) console.error(`[Backend ERR] ${line}`);
+        else console.log(`[Backend] ${line}`);
+    }
+}
+
+async function startBackend() {
+    // v2.2: אל תפעיל עותק שני אם כבר יש Backend חי!
+    if (await isBackendAlive()) {
+        console.log(`[Main] Backend already alive on :${BACKEND_PORT} - reusing it (no double-start)`);
+        backendExternal = true;
+        if (mainWindow) mainWindow.webContents.send('backend-status', { running: true, external: true });
+        return;
+    }
+
     const backendInfo = getBackendPath();
     console.log('[Main] Backend path:', backendInfo);
+
+    // v2.2: UTF-8 לתהליך הבן - מונע UnicodeEncodeError באימוג'י הלוגים ב-Windows
+    const childEnv = {
+        ...process.env,
+        PORT: String(BACKEND_PORT),
+        PYTHONUTF8: '1',
+        PYTHONIOENCODING: 'utf-8'
+    };
 
     try {
         if (backendInfo.type === 'exe') {
             backendProcess = spawn(backendInfo.path, [], {
                 cwd: path.dirname(backendInfo.path),
                 detached: false,
-                stdio: 'pipe'
+                stdio: 'pipe',
+                env: childEnv
             });
         } else {
-            // Dev mode - python
-            const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+            // Dev mode - python (מעדיפים venv של הפרויקט אם קיים)
+            const venvPython = process.platform === 'win32'
+                ? path.join(__dirname, '..', 'venv', 'Scripts', 'python.exe')
+                : path.join(__dirname, '..', 'venv', 'bin', 'python');
+            const pythonCmd = fs.existsSync(venvPython)
+                ? venvPython
+                : (process.platform === 'win32' ? 'python' : 'python3');
             backendProcess = spawn(pythonCmd, [backendInfo.path], {
                 cwd: path.join(__dirname, '..', 'backend'),
                 detached: false,
                 stdio: 'pipe',
-                env: { ...process.env, PORT: '8765' }
+                env: childEnv
             });
         }
 
-        backendProcess.stdout?.on('data', (data) => {
-            console.log(`[Backend] ${data}`);
-        });
-        backendProcess.stderr?.on('data', (data) => {
-            console.error(`[Backend ERR] ${data}`);
-        });
+        backendProcess.stdout?.on('data', (d) => logBackendLine(d, false));
+        backendProcess.stderr?.on('data', (d) => logBackendLine(d, true));
         backendProcess.on('close', (code) => {
             console.log(`[Backend] Exited with code ${code}`);
             if (mainWindow) {
@@ -77,33 +128,36 @@ function startBackend() {
     }
 }
 
-function createWindow(mode = 'center') {
+function modeBounds(mode) {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-
-    const modeConfig = WINDOW_MODES[mode] || WINDOW_MODES.center;
-    let winX, winY;
+    const c = WINDOW_MODES[mode] || WINDOW_MODES.center;
 
     if (mode === 'center') {
-        winX = Math.round((screenWidth - modeConfig.width) / 2);
-        winY = Math.round((screenHeight - modeConfig.height) / 2);
-    } else if (mode === 'side') {
-        winX = screenWidth - modeConfig.width - 20;
-        winY = Math.round((screenHeight - modeConfig.height) / 2);
-    } else if (mode === 'orb') {
-        winX = screenWidth - modeConfig.width - 30;
-        winY = screenHeight - modeConfig.height - 60;
+        return { x: Math.round((screenWidth - c.width) / 2), y: Math.round((screenHeight - c.height) / 2), width: c.width, height: c.height };
     }
+    if (mode === 'side') {
+        return { x: screenWidth - c.width - 12, y: Math.round((screenHeight - c.height) / 2), width: c.width, height: c.height };
+    }
+    // orb - כדור קטן בפינה
+    return { x: screenWidth - c.width - 28, y: screenHeight - c.height - 64, width: c.width, height: c.height };
+}
+
+function createWindow(mode = 'center') {
+    const modeConfig = WINDOW_MODES[mode] || WINDOW_MODES.center;
+    const b = modeBounds(mode);
 
     mainWindow = new BrowserWindow({
-        width: modeConfig.width,
-        height: modeConfig.height,
-        x: winX,
-        y: winY,
+        width: b.width,
+        height: b.height,
+        x: b.x,
+        y: b.y,
         frame: false,
         transparent: true,
         alwaysOnTop: true,
-        resizable: modeConfig.resizable || false,
+        resizable: modeConfig.resizable !== false,
+        minWidth: modeConfig.minWidth,
+        minHeight: modeConfig.minHeight,
         hasShadow: false,
         skipTaskbar: false,
         webPreferences: {
@@ -129,7 +183,8 @@ function createWindow(mode = 'center') {
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
         mainWindow.setAlwaysOnTop(true, 'screen-saver');
-        console.log(`[Main] HUD shown in ${mode} mode at ${winX},${winY}`);
+        console.log(`[Main] HUD shown in ${mode} mode`);
+        mainWindow.webContents.send('hud-mode-changed', mode);
     });
 
     // DevTools ב-dev
@@ -137,40 +192,25 @@ function createWindow(mode = 'center') {
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
 
-    // אפשר לגרור את החלון ע"י האזור העליון
     mainWindow.setMovable(true);
-
     currentMode = mode;
 }
 
 function switchMode(newMode) {
     if (!mainWindow || currentMode === newMode) return;
 
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
     const config = WINDOW_MODES[newMode];
-
-    let newX, newY;
-    if (newMode === 'center') {
-        newX = Math.round((screenWidth - config.width) / 2);
-        newY = Math.round((screenHeight - config.height) / 2);
-    } else if (newMode === 'side') {
-        newX = screenWidth - config.width - 20;
-        newY = Math.round((screenHeight - config.height) / 2);
-    } else if (newMode === 'orb') {
-        newX = screenWidth - config.width - 30;
-        newY = screenHeight - config.height - 60;
-    }
+    if (!config) return;
+    const b = modeBounds(newMode);
 
     currentMode = newMode;
 
+    // min-size משתנה לפי מצב (orb קטן, center רחב)
+    mainWindow.setMinimumSize(config.minWidth || 150, config.minHeight || 150);
+    mainWindow.setResizable(config.resizable !== false);
+
     // אנימציה - שינוי גודל ומיקום
-    mainWindow.setBounds({
-        x: newX,
-        y: newY,
-        width: config.width,
-        height: config.height
-    }, true);
+    mainWindow.setBounds({ x: b.x, y: b.y, width: b.width, height: b.height }, true);
 
     mainWindow.webContents.send('hud-mode-changed', newMode);
     console.log(`[Main] Switched to ${newMode}`);
@@ -191,14 +231,11 @@ ipcMain.on('hud-close', () => {
     app.quit();
 });
 
-ipcMain.on('hud-drag-start', () => {
-    // Electron לא מאפשר drag programmaticaly בקלות, אבל נשאיר API
-});
-
 ipcMain.handle('get-current-mode', () => currentMode);
 
 ipcMain.handle('get-backend-status', async () => {
-    return { running: backendProcess && !backendProcess.killed };
+    if (backendExternal) return { running: true, external: true };
+    return { running: !!(backendProcess && !backendProcess.killed) };
 });
 
 ipcMain.on('simulate-wake', () => {
@@ -276,7 +313,8 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
     globalShortcut.unregisterAll();
-    if (backendProcess) {
+    // לא הורגים Backend חיצוני (run.bat) - רק כזה שאנחנו יצרנו
+    if (backendProcess && !backendExternal) {
         try {
             backendProcess.kill();
         } catch {}

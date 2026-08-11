@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Adiel Junior - Windows Setup Script v2.0 AUTO-FIX
 REM מתקין את כל התלויות עם מערכת תיקון אוטומטית
 
