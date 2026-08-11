@@ -35,8 +35,11 @@ import asyncio
 import json
 import base64
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Dict, Optional
+
+BACKEND_VERSION = "2.0.0"
 
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))
@@ -146,8 +149,15 @@ except Exception as e:
     HAS_AI_VOICE = False
     get_ai_voice = lambda: None
 
+# Lifespan - הדרך המודרנית (on_event הוצא משימוש ב-FastAPI החדש)
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await startup_event()
+    yield
+    await shutdown_event()
+
 # Init FastAPI
-app = FastAPI(title="Adiel Junior Backend", version="1.0.0")
+app = FastAPI(title="Adiel Junior Backend", version=BACKEND_VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -218,8 +228,7 @@ class AppState:
 
 app_state = AppState()
 
-# Startup
-@app.on_event("startup")
+# Startup (נקרא דרך lifespan)
 async def startup_event():
     global brain, stt_engine, tts_engine, vision_engine, system_tools, wake_detector
 
@@ -228,7 +237,7 @@ async def startup_event():
     print("="*60)
 
     # שמור main loop לתיקון wake word
-    app_state.main_loop = asyncio.get_event_loop()
+    app_state.main_loop = asyncio.get_running_loop()
     print(f"[Startup] Main loop saved")
 
     # בנה engines - lazy loading כדי לא להיתקע
@@ -245,6 +254,12 @@ async def startup_event():
     except Exception as e:
         print(f"[Startup] TTS failed: {e}")
 
+    def _make_regular_stt():
+        if HebrewSTT is None:
+            print("[Startup] Regular STT unavailable (faster-whisper not installed) - text chat works fine")
+            return None
+        return HebrewSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
+
     try:
         # נסה Fast STT קודם - לדיבור מהיר
         if HAS_FAST_STT:
@@ -254,11 +269,13 @@ async def startup_event():
                 print(f"[Startup] Fast STT OK (fast speech) - {stt_engine.model_size}")
             except Exception as e:
                 print(f"[Startup] Fast STT failed, falling back to regular: {e}")
-                stt_engine = HebrewSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
-                print("[Startup] STT OK (regular)")
+                stt_engine = _make_regular_stt()
+                if stt_engine:
+                    print("[Startup] STT OK (regular)")
         else:
-            stt_engine = HebrewSTT(model_size=os.getenv("WHISPER_MODEL", "small"))
-            print("[Startup] STT OK")
+            stt_engine = _make_regular_stt()
+            if stt_engine:
+                print("[Startup] STT OK")
     except Exception as e:
         print(f"[Startup] STT failed: {e}")
         import traceback; traceback.print_exc()
@@ -297,9 +314,12 @@ async def startup_event():
                 pass
 
     try:
-        wake_detector = WakeWordDetector(on_wake=on_wake_detected)
-        wake_detector.start()
-        print("[Startup] WakeWord detector started - listening for 'אדיאל ג'וניור'")
+        if WakeWordDetector is None:
+            print("[Startup] WakeWord unavailable (sounddevice/vosk not installed) - use the 🎤 button or text")
+        else:
+            wake_detector = WakeWordDetector(on_wake=on_wake_detected)
+            wake_detector.start()
+            print("[Startup] WakeWord detector started - listening for 'אדיאל ג'וניור'")
     except Exception as e:
         print(f"[Startup] WakeWord failed: {e}")
 
@@ -308,7 +328,7 @@ async def startup_event():
     print("  HTTP: http://localhost:8765/status")
     print("="*60)
 
-@app.on_event("shutdown")
+# Shutdown (נקרא דרך lifespan)
 async def shutdown_event():
     global wake_detector
     if wake_detector:
@@ -327,7 +347,20 @@ class TextInputRequest(BaseModel):
 # Routes
 @app.get("/")
 async def root():
-    return {"name": "Adiel Junior Backend", "status": "running", "version": "1.0", "hebrew": "אדיאל ג'וניור - עוזרת אישית"}
+    return {"name": "Adiel Junior Backend", "status": "running", "version": BACKEND_VERSION, "hebrew": "אדיאל ג'וניור - עוזרת אישית"}
+
+@app.get("/version")
+async def version_info():
+    """גרסאות של כל הרכיבים - לדיבוג ולבדיקת שדרוגים"""
+    versions = {"backend": BACKEND_VERSION, "python": sys.version.split()[0]}
+    for mod in ("fastapi", "uvicorn", "pydantic", "numpy", "PIL"):
+        try:
+            m = __import__(mod)
+            name = "pillow" if mod == "PIL" else mod
+            versions[name] = getattr(m, "__version__", "?")
+        except Exception:
+            pass
+    return versions
 
 @app.get("/status")
 async def status():
@@ -570,8 +603,10 @@ async def select_input_device(device_id: int):
             if wake_detector:
                 try:
                     wake_detector.stop()
+                    main_loop = app_state.main_loop
                     def on_wake(text):
-                        asyncio.run_coroutine_threadsafe(handle_wake_word(text), asyncio.get_event_loop())
+                        if main_loop and not main_loop.is_closed():
+                            asyncio.run_coroutine_threadsafe(handle_wake_word(text), main_loop)
                     
                     from audio.wake_word import WakeWordDetector
                     wake_detector = WakeWordDetector(on_wake=on_wake, device_id=device_id)
@@ -679,12 +714,41 @@ async def dictionary_add(request: Dict):
     except Exception as e:
         raise HTTPException(500, str(e))
 
+# === פריימים - 24 פריימים עם תמונה וטקסט ===
+
+@app.get("/frames")
+async def list_frames(type: Optional[str] = None):
+    """כל הפריימים עם נתונים חיים - ה-HUD קורא לזה"""
+    try:
+        from tools.frames import get_frames_manager
+        mgr = get_frames_manager()
+        frames = mgr.get_frames_by_type(type) if type and type != "all" else mgr.get_all_frames()
+        return {"frames": frames, "count": len(frames)}
+    except Exception as e:
+        print(f"[Frames] Error: {e}")
+        raise HTTPException(500, str(e))
+
+@app.get("/frames/{frame_id}")
+async def get_single_frame(frame_id: str):
+    """פריים ספציפי עם נתונים חיים"""
+    try:
+        from tools.frames import get_frames_manager
+        mgr = get_frames_manager()
+        frame = mgr.get_frame(frame_id)
+        if not frame:
+            raise HTTPException(404, f"Frame '{frame_id}' not found")
+        return frame
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 async def manager_broadcast_safe(msg: dict):
     """עוזר ל-broadcast בטוח"""
     try:
         await manager.broadcast(msg)
-    except:
-        pass
+    except Exception as e:
+        print(f"[WS] Broadcast failed: {e}")
 
 # === SUPER AGENT - ניהול משימות וגלישה, פרודוקטיביות, שליטה במחשב ===
 
@@ -896,32 +960,34 @@ async def chat_endpoint(req: TextInputRequest):
     return result
 
 @app.get("/screen")
-async def screen_endpoint():
+async def screen_endpoint(include_image: bool = True):
     """צילום מסך + context עם קריאת טקסט חכמה"""
     if not vision_engine:
         raise HTTPException(500, "Vision not available")
-    
+
     # נסה קריאה מתקדמת קודם
     if HAS_ADV_READER:
         try:
             adv_reader = get_advanced_reader()
             result = adv_reader.read_screen()
             if result["success"]:
-                b64 = vision_engine.get_base64_for_api(max_size=800) if vision_engine else None
+                b64 = vision_engine.get_base64_for_api(max_size=800) if include_image else None
+                print(f"[Screen] Advanced reader OK - {len(result.get('full_text',''))} chars, image: {bool(b64)}")
                 return {
                     "context": result["full_text"],
                     "advanced": result,
                     "understanding": adv_reader.understand_text(result["full_text"]),
-                    "image_base64": b64[:100] + "..." if b64 and len(b64)>100 else b64,
+                    "image_base64": b64,
                     "method": "advanced_reader"
                 }
         except Exception as e:
             print(f"[Screen] Advanced reader failed, fallback: {e}")
-    
+
     # Fallback ישן
     ctx = vision_engine.analyze_screen_context(include_ocr=True)
-    b64 = vision_engine.get_base64_for_api(max_size=800)
-    return {"context": ctx, "image_base64": b64[:100] + "..." if b64 and len(b64)>100 else b64, "method": "basic"}
+    b64 = vision_engine.get_base64_for_api(max_size=800) if include_image else None
+    print(f"[Screen] Basic capture - image: {bool(b64)}")
+    return {"context": ctx, "image_base64": b64, "method": "basic"}
 
 @app.post("/vision/read-text")
 async def read_text_endpoint(request: Dict):
@@ -1073,7 +1139,7 @@ async def listen_for_command():
 
     try:
         # הקלטה
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         user_text = await loop.run_in_executor(None, lambda: stt_engine.listen_and_transcribe(max_seconds=8))
         
         if not user_text or len(user_text.strip()) < 2:

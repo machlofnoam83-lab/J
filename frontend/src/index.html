@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>אדיאל ג'וניור • ULTIMATE • מילון מלא • קול AI • דיבור מהיר</title>
+<title>אדיאל ג'וניור • v2.0 ULTIMATE UPGRADE</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -21,12 +21,9 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .brand-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron';font-weight:900;font-size:12px;color:black;box-shadow:0 0 18px rgba(0,212,255,0.35)}
 .brand-title{font-family:'Orbitron';font-weight:800;font-size:13px;letter-spacing:1.8px}
 .brand-sub{font-size:9px;color:var(--dim);font-family:'JetBrains Mono'}
-.metrics{display:flex;gap:12px;font-family:'JetBrains Mono';font-size:10px}
-.bar{width:44px;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
-.fill{height:100%;background:var(--accent);transition:width 1s}
-.fill.ai{background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 8px var(--accent)}
-.pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);font-size:10px}
+.status-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);font-size:10px;font-family:'JetBrains Mono'}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.dot.listening{background:var(--orange);box-shadow:0 0 8px var(--orange)}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 .win-btn{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--dim);cursor:pointer;transition:all .2s}
 .win-btn:hover{background:rgba(0,212,255,0.12);border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
@@ -58,10 +55,16 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;font-family:'Orbitron';flex-shrink:0}
 .msg.user .avatar{background:linear-gradient(135deg,#ff7a00,#ff5500);color:white}
 .msg.assistant .avatar{background:linear-gradient(135deg,var(--accent),var(--accent2));color:black}
-.bubble{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 12px}
+.bubble{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 12px;min-width:0}
 .msg.user .bubble{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.18)}
-.msg-text{font-size:12.5px;line-height:1.5}
+.msg-text{font-size:12.5px;line-height:1.5;word-break:break-word}
 .msg-time{font-size:9px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono';opacity:.6}
+/* אינדיקטור "חושבת" */
+.thinking-dots{display:inline-flex;gap:4px;align-items:center;padding:4px 2px}
+.thinking-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:think 1.2s infinite}
+.thinking-dots span:nth-child(2){animation-delay:.2s}
+.thinking-dots span:nth-child(3){animation-delay:.4s}
+@keyframes think{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
 .reactor{height:190px;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(0,212,255,0.05) 0%,transparent 70%);border:1px solid var(--border);border-radius:18px;overflow:hidden}
 .reactor-wrap{position:relative;width:150px;height:150px}
 .ring{position:absolute;border-radius:50%;border:1px solid;top:50%;left:50%;transform:translate(-50%,-50%)}
@@ -70,6 +73,9 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .r3{width:92px;height:92px;border-color:var(--accent);border-width:1.2px;opacity:.22;animation:spin 10s linear infinite}
 .core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,var(--accent) 0%,rgba(0,212,255,0.55) 55%,transparent 76%);box-shadow:0 0 28px var(--accent),0 0 56px rgba(0,212,255,0.18);animation:corePulse 2s ease-in-out infinite}
 @keyframes corePulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+.avatar-core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid rgba(0,212,255,0.4);box-shadow:0 0 18px rgba(0,212,255,0.3);transition:box-shadow .3s,border-color .3s;z-index:2}
+.avatar-core.listening{border-color:var(--orange);box-shadow:0 0 22px rgba(255,122,0,0.6),0 0 44px rgba(255,122,0,0.25);animation:corePulse 1s ease-in-out infinite}
+.avatar-core.speaking{border-color:var(--accent2);box-shadow:0 0 22px rgba(0,255,170,0.6),0 0 44px rgba(0,255,170,0.25);animation:corePulse .8s ease-in-out infinite}
 .glow{position:absolute;width:68px;height:68px;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(0,212,255,0.14),transparent 70%);filter:blur(10px);animation:glowPulse 3s ease-in-out infinite}
 @keyframes glowPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.25)}}
 .data-point{position:absolute;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:8px;padding:3px 7px;font-family:'JetBrains Mono';font-size:8px;backdrop-filter:blur(8px)}
@@ -89,9 +95,11 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 @keyframes viz{0%,100%{height:4px}50%{height:22px}}
 .holo{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 .tabs{display:flex;background:rgba(0,0,0,0.22);border-bottom:1px solid rgba(255,255,255,0.05)}
-.tab{flex:1;padding:9px 6px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.tab{flex:1;padding:9px 6px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Heebo'}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,212,255,0.06)}
 .body{flex:1;overflow-y:auto;padding:12px}
+.body::-webkit-scrollbar{width:3px}
+.body::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:2px}
 .pane{display:none}
 .pane.active{display:flex;flex-direction:column;gap:10px}
 .screen-holo{position:relative;border-radius:12px;overflow:hidden;background:#000;border:1px solid var(--border)}
@@ -105,7 +113,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 .task-card small{font-size:10px;color:var(--dim)}
 .task-card span{font-size:17px}
 .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.quick-btn{padding:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s}
+.quick-btn{padding:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s;font-family:'Heebo'}
 .quick-btn:hover{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--text);transform:translateY(-1px)}
 .bottom{height:72px;display:flex;align-items:center;gap:12px;padding:0 18px;background:linear-gradient(90deg,rgba(0,0,0,0.5),rgba(10,16,32,0.85),rgba(0,0,0,0.5));border-top:1px solid var(--border);backdrop-filter:blur(18px)}
 .input-wrap{display:flex;gap:8px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:6px;transition:all .3s;flex:1}
@@ -113,52 +121,75 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
 #textInput{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Heebo';font-size:13px;padding:6px 10px}
 .send-btn{width:36px;height:36px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:black;font-weight:900;cursor:pointer;transition:all .2s}
 .send-btn:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(0,212,255,0.35)}
-.action-btn{padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s}
+.action-btn{padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s;font-family:'Heebo'}
 .action-btn:hover{background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--text)}
 .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1.5s infinite}
 .conn-dot.connected{background:var(--green)}
+.conn-dot.connecting{background:var(--orange)}
 .hidden{display:none!important}
 .proposal-card{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px;position:relative}
-.proposal-card::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--accent)}
+.proposal-card::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--accent);border-radius:2px}
 .proposal-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px}
 .proposal-description{font-size:10px;color:var(--dim);line-height:1.4;margin-bottom:6px}
-.proposal-actions{display:flex;gap:6px}
-.proposal-btn{flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer}
+.proposal-actions{display:flex;gap:6px;margin-top:6px}
+.proposal-btn{flex:1;padding:5px 8px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer;font-family:'Heebo'}
 .proposal-btn.approve{background:linear-gradient(135deg,var(--green),var(--accent2));color:black}
 .proposal-btn.reject{background:rgba(255,255,255,0.06);color:var(--dim);border:1px solid rgba(255,255,255,0.08)}
+.proposal-meta{display:flex;gap:6px;margin:4px 0}
+.proposal-tag{font-size:9px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.18);padding:1px 8px;border-radius:10px;color:var(--accent)}
+.proposal-tag.risk-medium{color:var(--orange);border-color:rgba(255,122,0,0.25);background:rgba(255,122,0,0.08)}
+.proposal-tag.risk-high{color:var(--red);border-color:rgba(255,51,85,0.25);background:rgba(255,51,85,0.08)}
+.proposal-explanation{font-size:10px;color:var(--dim);background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 8px;margin-top:4px;line-height:1.4}
+/* רשימות מערכת */
+.loading{text-align:center;color:var(--dim);font-size:11px;padding:10px}
+.mic-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:8px 10px;cursor:pointer;transition:all .2s}
+.mic-option:hover{border-color:var(--accent);background:rgba(0,212,255,0.06)}
+.mic-option.selected{border-color:var(--accent2);background:rgba(0,255,170,0.06)}
+.mic-name{font-size:11px;font-weight:700}
+.mic-details{font-size:9px;color:var(--dim);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.mic-tag{font-size:8px;background:rgba(0,212,255,0.12);color:var(--accent);padding:1px 6px;border-radius:8px}
+.mic-tag.default{color:var(--green);background:rgba(0,255,136,0.1)}
+.sys-metric{display:flex;justify-content:space-between;font-size:11px;padding:4px 2px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.sys-metric label{color:var(--dim)}
+.status-ok{color:var(--green)}
+.task-history-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px 8px;margin-bottom:6px}
+.task-history-text{font-size:11px;font-weight:600}
+.task-history-result{font-size:10px;color:var(--dim);margin-top:2px}
+.task-history-time{font-size:9px;color:var(--dim);font-family:'JetBrains Mono';margin-top:2px;opacity:.7}
+.placeholder-holo{text-align:center;opacity:.5;font-size:11px;padding:14px}
 </style>
 </head>
 <body>
 <div class="bg"><div class="grid"></div><div class="particles" id="particles"></div></div>
 <div class="hud">
     <header class="topbar">
-        <div class="brand"><div class="brand-icon">AJ</div><div><div class="brand-title">ADIEL JUNIOR • ULTIMATE</div><div class="brand-sub">6GB LLM • קול AI לכל שאלה • מילון מלא • דיבור מהיר</div></div><div class="status-pill"><div class="dot" id="mainDot"></div><span id="mainStatus">SYSTEMS NOMINAL</span></div></div>
+        <div class="brand"><div class="brand-icon">AJ</div><div><div class="brand-title">ADIEL JUNIOR • v2.0</div><div class="brand-sub">ULTIMATE UPGRADE • קול AI • מילון מלא • 24 פריימים</div></div><div class="status-pill"><div class="dot" id="mainDot"></div><span id="mainStatus">SYSTEMS NOMINAL</span></div></div>
         <div style="display:flex;align-items:center;gap:16px"><div id="timeDisplay" style="font-family:'Orbitron';font-size:14px;font-weight:700;letter-spacing:1px">00:00:00</div><div style="display:flex;gap:10px;font-family:'JetBrains Mono';font-size:10px"><span>AI <b id="aiVal" style="color:var(--accent)">96%</b></span><span>📚<b id="vocabCount">0</b></span><span>🧠<b id="memoryCount">0</b></span></div></div>
-        <div style="display:flex;align-items:center;gap:8px"><div class="win-btns"><button class="win-btn" id="btnSide">◧</button><button class="win-btn" id="btnCenter">◫</button><button class="win-btn" id="btnClose">✕</button></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><div class="win-btns"><button class="win-btn" id="btnSide" title="צד">◧</button><button class="win-btn" id="btnCenter" title="מרכז">◫</button><button class="win-btn" id="btnClose" title="סגור">✕</button></div></div>
     </header>
 
     <div class="center">
         <div class="col">
             <div class="panel memory">
-                <div class="head"><div>🧠 זיכרון + מילון עברי מלא (500+)</div><div class="badge" id="interactionsBadge">0</div></div>
-                <div class="memory-body"><div class="orb"></div><div style="flex:1"><div class="m-stats"><div class="m-stat"><b id="profileName">בוס</b><span>שם</span></div><div class="m-stat"><b id="projectsCount">0</b><span>פרויקטים</span></div><div class="m-stat"><b id="interactionsCount">0</b><span>שיחות</span></div></div><div class="m-text" id="memoryContext">טוען מילון עברי מלא + מוח 6GB...</div></div></div>
+                <div class="head"><div>🧠 זיכרון + מילון עברי מלא</div><div class="badge" id="interactionsBadge">0</div></div>
+                <div class="memory-body"><div class="orb"></div><div style="flex:1"><div class="m-stats"><div class="m-stat"><b id="profileName">בוס</b><span>שם</span></div><div class="m-stat"><b id="projectsCount">0</b><span>פרויקטים</span></div><div class="m-stat"><b id="interactionsCount">0</b><span>שיחות</span></div></div><div class="m-text" id="memoryContext">טוען זיכרון ומילון...</div></div></div>
             </div>
             <div class="panel conv">
-                <div class="head"><div>💬 שיחה אמיתית - קול AI לכל שאלה + דיבור מהיר</div><div class="badge" id="convBadge">0</div></div>
-                <div class="conv-body" id="conversationInner"><div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שלום בוס! אני אדיאל ULTIMATE - עם LLM 6GB, מבינה דיבור מהיר, קוראת טקסט עם EasyOCR, עם מילון עברי מלא 500+ מילים, ועונה תמיד עם קול AI אמיתי! תגיד "אדיאל ג'וניור"!</div><div class="msg-time">עכשיו</div></div></div></div>
+                <div class="head"><div>💬 שיחה אמיתית - קול AI לכל שאלה</div><div class="badge" id="convBadge">0</div></div>
+                <div class="conv-body" id="conversationInner"><div class="msg assistant"><div class="avatar">AJ</div><div class="bubble"><div class="msg-text">שלום בוס! אני אדיאל v2.0 - שודרגתי לגמרי 🚀 מבינה דיבור מהיר, קוראת טקסט RTL, מילון עברי מלא, ועונה תמיד עם קול AI אמיתי. תגיד "אדיאל ג'וניור" או כתוב לי למטה!</div><div class="msg-time">עכשיו</div></div></div></div>
             </div>
         </div>
 
         <div class="col center">
             <div class="reactor">
-                <div class="reactor-wrap"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="core"></div><div class="glow"></div><canvas id="reactorCanvas" width="150" height="150" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div>
-                <div class="data-point dp1"><span>VOICE</span><b>AI ALL Q</b></div><div class="data-point dp2"><span>STT</span><b>FAST HE</b></div><div class="data-point dp3"><span>LLM</span><b>6GB</b></div><div class="data-point dp4"><span>DICT</span><b id="dictCount">500+</b></div>
+                <div class="reactor-wrap"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="glow"></div><img id="avatarImg" class="avatar-core" src="./assets/adiel_avatar.png" onerror="this.style.display='none'"/><div class="core"></div><canvas id="reactorCanvas" width="150" height="150" style="position:absolute;inset:0;width:100%;height:100%"></canvas></div>
+                <div class="data-point dp1"><span>VOICE</span><b>AI ALL Q</b></div><div class="data-point dp2"><span>STT</span><b>FAST HE</b></div><div class="data-point dp3"><span>VER</span><b>2.0</b></div><div class="data-point dp4"><span>FRAMES</span><b id="dictCount">24</b></div>
             </div>
             <div class="status"><div class="status-main" id="statusLabel">מאזינה למילת הפעלה...</div><div class="wake-hint">אמור <span class="wake-word">״אדיאל ג׳וניור״</span> - מבינה גם דיבור מהיר!</div><div class="viz" id="visualizer"><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div><div class="viz-bar"></div></div></div>
             <div class="panel holo" style="flex:1">
-                <div class="tabs"><button class="tab active" data-tab="screen">🖥️ מסך + קריאת טקסט</button><button class="tab" data-tab="tasks">🚀 משימות</button><button class="tab" data-tab="dict">📚 מילון</button><button class="tab" data-tab="system">⚙️ מערכת</button></div>
+                <div class="tabs"><button class="tab active" data-tab="screen">🖥️ מסך</button><button class="tab" data-tab="tasks">🚀 משימות</button><button class="tab" data-tab="proposals">🧠 הצעות <span id="proposalsBadge" class="badge" style="font-size:8px;padding:1px 5px">0</span></button><button class="tab" data-tab="dict">📚 מילון</button><button class="tab" data-tab="system">⚙️ מערכת</button></div>
                 <div class="body">
-                    <div class="pane active" id="pane-screen"><div class="screen-holo hidden" id="screenPreview"><img id="previewImage"/><div class="scan"></div></div><div id="screenPlaceholder" style="text-align:center;padding:18px;color:var(--dim);font-size:12px"><div style="font-size:28px;margin-bottom:6px">🖥️</div>תגיד "מה את רואה?" - אקרא טקסט עם EasyOCR RTL!</div><div id="previewContext" style="margin-top:10px;font-size:11px;background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;max-height:70px;overflow:auto"></div></div>
+                    <div class="pane active" id="pane-screen"><div class="screen-holo hidden" id="screenPreview"><img id="previewImage" alt="screen"/><div class="scan"></div></div><div id="screenPlaceholder" style="text-align:center;padding:18px;color:var(--dim);font-size:12px"><div style="font-size:28px;margin-bottom:6px">🖥️</div>תגיד "מה את רואה?" - אקרא טקסט עם OCR בעברית!</div><div id="previewContext" style="margin-top:10px;font-size:11px;background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;max-height:70px;overflow:auto"></div></div>
                     <div class="pane" id="pane-tasks">
                         <div class="tasks-grid">
                             <div class="task-card" data-task="תקנה לי אוזניות הכי זול"><span>🛒</span><b>קנייה</b><small>זול</small></div>
@@ -169,125 +200,78 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);overf
                             <div class="task-card" data-task="תכין דוח"><span>📊</span><b>דוח</b><small>מנהלים</small></div>
                         </div>
                         <div style="margin-top:14px; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
-                            <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--accent)">🖼️ פריימים עם תמונה וטקסט - 24 דברים שימושיים (רק 3B! טופ מקסימום)</div>
+                            <div style="font-size:11px; font-weight:700; margin-bottom:8px; color:var(--accent)">🖼️ פריימים עם תמונה וטקסט - 24 דברים שימושיים</div>
                             <div id="framesGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:260px; overflow-y:auto;">
-                                <div style="text-align:center; opacity:0.5; font-size:11px; grid-column:span 2;">טוען 24 פריימים עם תמונה וטקסט...<br>♟️ שעון שחמט | 📅 לוח זמנים | 📧 מייל | 🕐 שעון ועוד 20</div>
+                                <div class="placeholder-holo" style="grid-column:span 2;">טוען 24 פריימים...<br>♟️ שעון שחמט | 📅 לוח זמנים | 📧 מייל | 🕐 שעון ועוד 20</div>
                             </div>
                         </div>
+                        <div id="tasksMiniList" style="margin-top:10px"></div>
                     </div>
-                    <div class="pane" id="pane-dict"><div style="display:flex;gap:8px;margin-bottom:10px"><input type="text" id="dictSearch" placeholder="חפש מילה במילון העברי המלא..." style="flex:1;background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;color:white;outline:none"><button class="action-btn" id="btnDictSearch">🔍</button></div><div id="dictResult" style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;min-height:110px;font-size:12px;line-height:1.5"><div style="text-align:center;opacity:.6">📚 מילון עברי מלא - 500+ מילים<br>הקלד או תגיד "מה זה פאנן?"</div></div></div>
+                    <div class="pane" id="pane-proposals"><div id="proposalsList" style="display:flex;flex-direction:column;gap:8px"><div class="placeholder-holo">אין הצעות ממתינות ✨<br>כשאלמד משהו חדש - תראה כאן ותאשר</div></div></div>
+                    <div class="pane" id="pane-dict"><div style="display:flex;gap:8px;margin-bottom:10px"><input type="text" id="dictSearch" placeholder="חפש מילה במילון העברי..." style="flex:1;background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;color:white;outline:none;font-family:'Heebo'"><button class="action-btn" id="btnDictSearch">🔍</button></div><div id="dictResult" style="background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;min-height:110px;font-size:12px;line-height:1.5"><div style="text-align:center;opacity:.6">📚 מילון עברי מלא<br>הקלד או תגיד "מה זה פאנן?"</div></div></div>
                     <div class="pane" id="pane-system"><div id="micList" style="display:flex;flex-direction:column;gap:6px">טוען מיקרופונים...</div><div id="healthInfo" style="margin-top:10px">טוען...</div></div>
                 </div>
             </div>
         </div>
 
         <div class="col right">
-            <div class="panel"><div class="head"><div>⚡ מהיר + קול AI</div></div><div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="quick-btn" id="btnWake">🎤 אדיאל</button><button class="quick-btn" id="btnScreen">🖥️ מסך</button><button class="quick-btn" id="btnTrain">🧠 אמן</button><button class="quick-btn" id="btnFix">🛠️ תקן</button></div></div>
-            <div class="panel" style="flex:1"><div class="head"><div>🧠 למידה • אישור</div><div class="badge" id="proposalsBadge">0</div></div><div style="padding:10px;overflow:auto;max-height:180px" id="proposalsList"><div style="text-align:center;opacity:.5;font-size:11px">אין הצעות</div></div></div>
-            <div class="panel"><div class="head"><div>📡 מערכת</div></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">Backend</span><span id="backendStatus" style="color:var(--green)">● מחובר</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">LLM 6GB</span><span id="trueAIStatus">🧠 6GB Ready</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">קול</span><span>✨ AI לכל שאלה</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">מהיר</span><span style="color:var(--accent)">⚡ פעיל</span></div></div></div>
+            <div class="panel"><div class="head"><div>⚡ פעולות מהירות</div></div><div style="padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><button class="quick-btn" id="btnWake">🎤 אדיאל</button><button class="quick-btn" id="btnScreen">🖥️ מסך</button><button class="quick-btn" id="btnTrain">🧠 אמן</button><button class="quick-btn" id="btnFix">🛠️ תקן</button></div></div>
+            <div class="panel" style="flex:1"><div class="head"><div>👤 פרופיל</div></div><div style="padding:10px;font-size:11px;line-height:1.8;overflow:auto" id="profileInfo"><div class="loading">טוען פרופיל...</div></div></div>
+            <div class="panel"><div class="head"><div>📡 סטטוס</div></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">Backend</span><span id="backendStatus" style="color:var(--green)">● מחובר</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">מוח</span><span id="trueAIStatus">🧠 מוכן</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">קול</span><span>✨ AI לכל שאלה</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--dim)">גרסה</span><span style="color:var(--accent)">v2.0 UPGRADED</span></div></div></div>
         </div>
     </div>
 
     <div class="bottom">
-        <div style="font-family:'Orbitron';font-weight:800;color:var(--accent);font-size:10px;letter-spacing:1px">ADIEL://</div>
+        <div style="font-family:'Orbitron';font-weight:800;color:var(--accent);font-size:10px;letter-spacing:1px">ADIEL://2.0</div>
         <div style="flex:1"><div class="input-wrap"><input type="text" id="textInput" placeholder="דבר עם אדיאל - מבינה דיבור מהיר, מילון מלא, קול AI!" autocomplete="off"/><button class="send-btn" id="btnSend">➤</button></div></div>
-        <div style="display:flex;align-items:center;gap:10px"><div class="conn-dot" id="connDot"></div><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim)" id="connText">מחובר</span><button class="action-btn" id="btnClear">🗑️</button></div>
+        <div style="display:flex;align-items:center;gap:10px"><div class="conn-dot" id="connDot"></div><span style="font-family:'JetBrains Mono';font-size:10px;color:var(--dim)" id="connText">מתחבר...</span><button class="action-btn" id="btnClear">🗑️</button></div>
     </div>
 </div>
 
 <script>
-// Particles
-const particlesEl = document.getElementById('particles');
-for(let i=0;i<40;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDelay=Math.random()*20+'s';p.style.animationDuration=(15+Math.random()*15)+'s';particlesEl.appendChild(p);}
-// Clock
-setInterval(()=>{const el=document.getElementById('timeDisplay');if(el)el.textContent=new Date().toLocaleTimeString('he-IL',{hour12:false});},1000);
-// Metrics
-setInterval(()=>{const cpu=document.getElementById('cpuFill');const mem=document.getElementById('memFill');if(cpu)cpu.style.width=(30+Math.random()*40)+'%';if(mem)mem.style.width=(60+Math.random()*20)+'%';},2000);
-// Tabs
-document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',e=>{const n=e.target.getAttribute('data-tab');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));e.target.classList.add('active');document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('pane-'+n)?.classList.add('active');});});
-// Dict search
-document.getElementById('btnDictSearch')?.addEventListener('click',async()=>{
-    const w=document.getElementById('dictSearch')?.value.trim();if(!w)return;
-    const resEl=document.getElementById('dictResult');if(!resEl)return;resEl.innerHTML='🔍 מחפש במילון...';
-    try{const backendUrl=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8765':`http://${location.hostname}:8765`;const r=await fetch(`${backendUrl}/dictionary/lookup?word=${encodeURIComponent(w)}`);const d=await r.json();if(d.found){resEl.innerHTML=`<b style="color:var(--accent);font-size:14px">${d.word}</b><br><br><b>פירוש:</b> ${d.meaning}<br><br><b>סוג:</b> ${d.type||''}<br><b>דוגמה:</b> ${d.example||''}`;}else{resEl.innerHTML=`לא נמצא "${w}". תגיד "תלמד את המילה ${w}"`;}}catch(e){resEl.innerHTML=`שגיאה: ${e.message}`;}
-});
-// Frames - 24 עם תמונה וטקסט - כמו שביקשת
-async function loadFrames(){
-    const grid=document.getElementById('framesGrid');
-    if(!grid) return;
-    try{
-        const backendUrl=location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8765':`http://${location.hostname}:8765`;
-        const r=await fetch(`${backendUrl}/frames`);
-        const data=await r.json();
-        const frames=data.frames||[];
-        grid.innerHTML='';
-        frames.slice(0,24).forEach(f=>{
-            const div=document.createElement('div');
-            div.className='task-card';
-            div.style.display='flex';
-            div.style.flexDirection='column';
-            div.style.alignItems='center';
-            div.style.textAlign='center';
-            div.style.padding='10px';
-            div.innerHTML=`<div style="font-size:24px; margin-bottom:4px;">${f.image||f.icon||'📦'}</div><b style="font-size:11px;">${f.title}</b><small style="font-size:9px; color:var(--dim); margin-top:2px;">${(f.description||'').substring(0,35)}</small><small style="font-size:8px; color:var(--accent); margin-top:4px; background:rgba(0,212,255,0.1); padding:2px 6px; border-radius:10px;">${f.data ? JSON.stringify(f.data).substring(0,35)+'...' : f.type}</small>`;
-            div.addEventListener('click',()=>{
-                const input=document.getElementById('textInput');
-                if(input){input.value=`תראה לי ${f.title}`; input.focus();}
-                // גם שולח כמשימה
-                if(window.advancedHUD && window.advancedHUD.executeTask){
-                    window.advancedHUD.executeTask(`תראה לי ${f.title}`);
-                }
-            });
-            grid.appendChild(div);
-        });
-        const dictEl=document.getElementById('dictCount');
-        if(dictEl) dictEl.textContent=frames.length+'+';
-        console.log(`Loaded ${frames.length} frames with image+text`);
-    }catch(e){
-        console.log('Frames load failed',e);
-        const fallback=[
-            {icon:'♟️',title:'שעון שחמט',desc:'טיימר לבן/שחור - אתה יכול לשחק איתי! אוכל איתו לוח זמנים',img:'♟️⏱️'},
-            {icon:'📅',title:'לוח זמנים',desc:'פגישות היום + חלונות פנויים - אוכל איתו',img:'📅'},
-            {icon:'📧',title:'מייל',desc:'5 לא נקראו, 2 דחופים - אוכל איתו',img:'📧'},
-            {icon:'🕐',title:'שעון',desc:'שעון עולם',img:'🕐'},
-            {icon:'🌤️',title:'מזג אוויר',desc:'תל אביב 27°',img:'🌤️'},
-            {icon:'📰',title:'חדשות',desc:'חדשות טק',img:'📰'},
-            {icon:'✅',title:'משימות',desc:'4 משימות',img:'✅'},
-            {icon:'📆',title:'יומן',desc:'3 פגישות',img:'📆'},
-            {icon:'🔢',title:'מחשבון',desc:'מהיר',img:'🔢'},
-            {icon:'⏲️',title:'טיימר',desc:'25 דק פומודורו',img:'⏲️'},
-            {icon:'⏱️',title:'סטופר',desc:'מדידה',img:'⏱️'},
-            {icon:'📝',title:'פתקים',desc:'מהירים',img:'📝'},
-            {icon:'📁',title:'קבצים',desc:'הורדות',img:'📁'},
-            {icon:'🎵',title:'מוזיקה',desc:'Spotify',img:'🎵'},
-            {icon:'▶️',title:'יוטיוב',desc:'סרטונים',img:'▶️'},
-            {icon:'💻',title:'קוד',desc:'VS Code',img:'💻'},
-            {icon:'🖥️',title:'טרמינל',desc:'פקודות',img:'🖥️'},
-            {icon:'🌐',title:'דפדפן',desc:'כרום',img:'🌐'},
-            {icon:'🗺️',title:'מפות',desc:'ניווט',img:'🗺️'},
-            {icon:'🌍',title:'תרגום',desc:'עברית↔אנגלית',img:'🌍'},
-            {icon:'📚',title:'מילון',desc:'800+ מילים',img:'📚'},
-            {icon:'🛒',title:'קניות',desc:'השוואת מחירים',img:'🛒'},
-            {icon:'✈️',title:'חופשות',desc:'דיל משתלם',img:'✈️'},
-            {icon:'🔬',title:'מחקר',desc:'סריקה',img:'🔬'},
-        ];
-        grid.innerHTML='';
-        fallback.forEach(f=>{
-            const div=document.createElement('div');
-            div.className='task-card';
-            div.style.textAlign='center';
-            div.innerHTML=`<div style="font-size:22px">${f.img}</div><b style="font-size:11px">${f.title}</b><small style="font-size:9px;display:block;color:var(--dim)">${f.desc}</small>`;
-            grid.appendChild(div);
-        });
+// === ויזואליה בלבד: חלקיקים + שעון + Reactor ===
+(function(){
+    const particlesEl = document.getElementById('particles');
+    if (particlesEl) {
+        for (let i = 0; i < 40; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 20 + 's';
+            p.style.animationDuration = (15 + Math.random() * 15) + 's';
+            particlesEl.appendChild(p);
+        }
     }
-}
-setTimeout(loadFrames, 1200);
-
-// Reactor
-const canvas=document.getElementById('reactorCanvas');
-const canvas=document.getElementById('reactorCanvas');
-if(canvas){const ctx=canvas.getContext('2d');let t=0;function draw(){t++;ctx.clearRect(0,0,150,150);const cx=75,cy=75;const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,50);grad.addColorStop(0,'rgba(0,212,255,0.18)');grad.addColorStop(1,'transparent');ctx.fillStyle=grad;ctx.fillRect(0,0,150,150);ctx.fillStyle='#00d4ff';ctx.shadowColor='#00d4ff';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(cx,cy,12+Math.sin(t*0.08)*2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;requestAnimationFrame(draw);}draw();}
-console.log('Adiel Ultimate - Single File - Hebrew Dict Full - Voice for Every Question - Fast Speech');
+    setInterval(() => {
+        const el = document.getElementById('timeDisplay');
+        if (el) el.textContent = new Date().toLocaleTimeString('he-IL', {hour12: false});
+    }, 1000);
+    const canvasEl = document.getElementById('reactorCanvas');
+    if (canvasEl) {
+        const ctx = canvasEl.getContext('2d');
+        let t = 0;
+        function draw() {
+            t++;
+            ctx.clearRect(0, 0, 150, 150);
+            const cx = 75, cy = 75;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 50);
+            grad.addColorStop(0, 'rgba(0,212,255,0.18)');
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 150, 150);
+            ctx.fillStyle = '#00d4ff';
+            ctx.shadowColor = '#00d4ff';
+            ctx.shadowBlur = 18;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12 + Math.sin(t * 0.08) * 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+    console.log('Adiel Junior v2.0 ULTIMATE UPGRADE - HUD ready');
+})();
 </script>
 <script src="./advanced_hud.js"></script>
 </body>

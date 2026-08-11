@@ -2,10 +2,25 @@
 
 > **עוזרת AI אישית למחשב בסגנון Jarvis / FRIDAY מאירון מן - בעברית מלאה, עם HUD עתידני שקוף, ראיית מסך חיה, ומוח פרטי שנבנה מאפס.**
 
-![Version](https://img.shields.io/badge/version-1.0.0-00d2ff)
+![Version](https://img.shields.io/badge/version-2.0.0-00d2ff)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Electron](https://img.shields.io/badge/electron-29-00ffaa)
+![Electron](https://img.shields.io/badge/electron-43-00ffaa)
+![FastAPI](https://img.shields.io/badge/fastapi-0.141-009688)
 ![Hebrew](https://img.shields.io/badge/language-Hebrew%20%2B%20English-ff8a00)
+
+---
+
+## 🚀 v2.0 - שדרוג מלא (אוגוסט 2026)
+
+סיבוב שדרוג מלא של כל המערכת:
+
+- 📦 **כל הספריות עודכנו** - Electron 43, FastAPI 0.141, Pydantic 2.13, edge-tts 7, NumPy 2, ועוד עשרות
+- 🐛 **תוקנו באגים קריטיים** - שגיאת Syntax ששברה את סקריפט ה-HUD, אנדפוינט `/frames` שהיה חסר, base64 קטוע ב-`/screen`, וקריסות JS בגלל אלמנטים חסרים ב-DOM
+- ⚡ **FastAPI מודרני** - מעבר מ-`on_event` (deprecated) ל-`lifespan`
+- 🖼️ **`/frames` חי** - 24 פריימים עם נתונים אמיתיים ישר ל-HUD (+ נתיב `/frames/{id}`)
+- 🎨 **HUD v2** - טאב "הצעות" חדש לאישורי למידה, אווטאר זוהר ב-Reactor (מקשיבה/מדברת), אינדיקטור "חושבת...", התחברות אוטומטית מחדש ל-WebSocket, ועיצוב מלוטש
+- 🔊 **הודעות שגיאה ידידותיות** - כשחסרה ספרייה אופציונלית המערכת מסבירה וממשיכה לעבוד
+- 🧪 **נבדק מקצה לקצה** - Backend + WebSocket + צ'אט + מילון (814 מילים) + פריימים
 
 ---
 

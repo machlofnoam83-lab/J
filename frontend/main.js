@@ -214,6 +214,11 @@ ipcMain.on('simulate-wake', () => {
 });
 
 app.whenReady().then(() => {
+    // Windows: AppUserModelId להתראות/אייקון נכון
+    if (process.platform === 'win32') {
+        app.setAppUserModelId('com.adiel.junior');
+    }
+
     createWindow('center');
     startBackend();
 

@@ -1,6 +1,6 @@
 {
   "name": "adiel-junior-hud",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "אדיאל ג'וניור - עוזרת AI אישית עם HUD עתידני",
   "main": "main.js",
   "scripts": {
@@ -14,11 +14,11 @@
   "author": "Adiel Labs",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^29.0.0",
-    "electron-builder": "^24.9.1"
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
-    "ws": "^8.16.0"
+    "ws": "^8.21.3"
   },
   "build": {
     "appId": "com.adiel.junior",
