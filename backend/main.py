@@ -79,7 +79,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Dict, Optional
 
-BACKEND_VERSION = "2.2.0"
+BACKEND_VERSION = "2.3.0"
 
 # הוסף נתיב
 sys.path.insert(0, os.path.dirname(__file__))
@@ -106,6 +106,7 @@ import uvicorn
 
 # Modules with auto-fix fallback
 from core.brain import AdielBrain
+from core.reasoner import ThoughtEngine
 try:
     from audio.wake_word import WakeWordDetector
 except Exception as e:
@@ -209,6 +210,8 @@ app.add_middleware(
 
 # Global engines
 brain: Optional[AdielBrain] = None
+thought_engine: Optional[ThoughtEngine] = None
+_thought_task: Optional[asyncio.Task] = None
 stt_engine: Optional[HebrewSTT] = None
 tts_engine: Optional[HebrewTTS] = None
 vision_engine = None
@@ -268,9 +271,27 @@ class AppState:
 
 app_state = AppState()
 
+async def _thought_loop():
+    """💭 לולאת המחשבות הספונטניות - אדיאל חושבת לעצמה כל כמה דקות (ADIEL_THOUGHT_MINUTES)"""
+    interval = max(2.0, float(os.getenv("ADIEL_THOUGHT_MINUTES", "7"))) * 60
+    await asyncio.sleep(90)  # מחשבה ראשונה אחרי דקה וחצי - מרגיש טבעי
+    while True:
+        try:
+            if brain and thought_engine:
+                th = thought_engine.reflect(brain)
+                if th:
+                    print(f"[Thoughts] 💭 {th['text'][:70]}")
+                    await manager_broadcast_safe({"type": "thought", **th})
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            print(f"[Thoughts] loop error: {e}")
+        await asyncio.sleep(interval)
+
+
 # Startup (נקרא דרך lifespan)
 async def startup_event():
-    global brain, stt_engine, tts_engine, vision_engine, system_tools, wake_detector
+    global brain, thought_engine, _thought_task, stt_engine, tts_engine, vision_engine, system_tools, wake_detector
 
     print("="*60)
     print("  אדיאל ג'וניור - Backend מתחיל...")
@@ -363,6 +384,14 @@ async def startup_event():
     except Exception as e:
         print(f"[Startup] WakeWord failed: {e}")
 
+    # 💭 מנוע המחשבות הספונטניות (v2.3) - חושבת לבד כל כמה דקות
+    try:
+        thought_engine = ThoughtEngine()
+        _thought_task = asyncio.create_task(_thought_loop())
+        print("[Startup] 💭 Thought Engine OK - אדיאל חושבת לבד!")
+    except Exception as e:
+        print(f"[Startup] Thought engine failed: {e}")
+
     print("="*60)
     print("  Backend מוכן! ws://localhost:8765/ws")
     print("  HTTP: http://localhost:8765/status")
@@ -370,7 +399,10 @@ async def startup_event():
 
 # Shutdown (נקרא דרך lifespan)
 async def shutdown_event():
-    global wake_detector
+    global wake_detector, _thought_task
+    if _thought_task:
+        _thought_task.cancel()
+        _thought_task = None
     if wake_detector:
         wake_detector.stop()
     print("[Shutdown] Adiel Junior closing...")
@@ -821,6 +853,20 @@ async def model_generate(text: str = "שלום בוס", intent: Optional[str] = 
     except Exception as e:
         raise HTTPException(500, str(e))
 
+# === 💭 מחשבות ספונטניות (v2.3) ===
+
+@app.post("/thought/now")
+async def thought_now():
+    """מבקש מאדיאל לחשוב מחשבה ספונטנית עכשיו - משודר לכל לקוחות ה-HUD"""
+    if not brain or not thought_engine:
+        raise HTTPException(500, "Brain/ThoughtEngine not initialized")
+    th = thought_engine.reflect(brain, force=True)
+    if not th:
+        raise HTTPException(503, "אין מספיק חומר למחשבה עדיין - דבר איתי קצת ואנסה שוב")
+    print(f"[Thoughts] 💭 (ידני) {th['text'][:70]}")
+    await manager_broadcast_safe({"type": "thought", **th})
+    return {"success": True, "thought": th}
+
 async def manager_broadcast_safe(msg: dict):
     """עוזר ל-broadcast בטוח"""
     try:
@@ -1267,9 +1313,30 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
             print(f"[Main] Screen context failed: {e}")
             screen_ctx = None
 
-    # עבד עם המוח הפרטי (עכשיו עם למידה) - תיקון באג shadowing
+    # עבד עם המוח הפרטי (עכשיו עם למידה + צעדי חשיבה חיים!) - תיקון באג shadowing
     try:
-        brain_result = await brain.process(user_text, screen_context=screen_ctx)
+        # 💭 סטרימינג של צעדי החשיבה - נאספים תוך כדי עיבוד ונשלחים בסדר מושלם
+        # לפני התשובה עצמה (אחרת צעדים היו מגיעים אחרי brain_response ומפנתים)
+        _pending_thoughts = []
+
+        async def _send_step(step):
+            try:
+                await manager.broadcast({"type": "thinking_step", "step": step})
+            except Exception:
+                pass
+
+        def _collect_thought(step):
+            # יורה משימה חיה (זורם תוך כדי עיבוד אם יש await) וגם שומר להשלמה מסודרת
+            _pending_thoughts.append(asyncio.get_running_loop().create_task(_send_step(step)))
+
+        brain.thought_callback = _collect_thought
+        try:
+            brain_result = await brain.process(user_text, screen_context=screen_ctx)
+        finally:
+            brain.thought_callback = None
+        # מחכים שכל שידורי הצעדים יושלמו - לפני שליחת התשובה (שמירת סדר מושלמת)
+        for t in _pending_thoughts:
+            await t
     except Exception as e:
         print(f"[Main] Brain process failed: {e}")
         import traceback; traceback.print_exc()
@@ -1311,6 +1378,8 @@ async def process_user_input(user_text: str, with_screen=True) -> Dict:
         "assistant_text": response_text,
         "intent": brain_result.get("intent"),
         "model_used": brain_result.get("model_used"),
+        # 💭 צעדי החשיבה המלאים (כבר שודרו חי, אבל נשמרים גם בתשובה)
+        "thoughts": brain_result.get("thoughts", []),
         "hud_command": hud_cmd,
         "system_action": sys_action,
         "screen_context": screen_ctx,

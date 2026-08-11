@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>אדיאל ג'וניור • v2.2 AdielMind • מודל ביתי</title>
+<title>אדיאל ג'וניור • v2.3 AdielMind • 💭 עם מחשבות</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -228,6 +228,18 @@ button{font-family:'Heebo',sans-serif}
 .train-btn:disabled{opacity:.6;cursor:wait;transform:none}
 .model-note{font-size:10px;color:var(--dim);line-height:1.55;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:9px;padding:8px 10px}
 
+/* מחשבות (v2.3) */
+.think-btn{width:100%;padding:11px;border-radius:11px;border:none;background:linear-gradient(135deg,#c084fc,var(--purple));color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(139,92,246,0.3)}
+.think-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(139,92,246,0.45)}
+.think-btn:disabled{opacity:.6;cursor:wait;transform:none}
+.thought-card{display:flex;gap:9px;background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.2);border-radius:11px;padding:10px 11px;animation:msgIn .3s ease}
+.thought-icon{font-size:18px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(139,92,246,0.6))}
+.thought-text{font-size:11.5px;line-height:1.55}
+.thought-time{font-size:9px;color:var(--dim);font-family:'JetBrains Mono';margin-top:4px;display:flex;gap:6px;align-items:center}
+.thought-kind{font-size:8px;background:rgba(139,92,246,0.18);border:1px solid rgba(139,92,246,0.3);padding:1px 7px;border-radius:9px;color:#c4b5fd}
+.tsteps{display:flex;flex-direction:column;gap:3px;margin-top:7px;border-top:1px dashed rgba(255,255,255,0.09);padding-top:6px}
+.tstep{font-size:10px;color:#c4b5fd;font-family:'Heebo';line-height:1.45;animation:msgIn .25s ease}
+
 /* מערכת */
 .mic-option{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius:10px;padding:9px 11px;cursor:pointer;transition:all .18s}
 .mic-option:hover{border-color:var(--accent);background:rgba(0,212,255,0.06)}
@@ -282,7 +294,7 @@ body.mode-orb .orb-view{display:flex;position:fixed;inset:0;z-index:5;align-item
         <div class="brand">
             <div class="brand-icon">AJ</div>
             <div>
-                <div class="brand-title">ADIEL JUNIOR • v2.2</div>
+                <div class="brand-title">ADIEL JUNIOR • v2.3</div>
                 <div class="brand-sub">AdielMind • מודל ביתי שלומד • בלי ענן</div>
             </div>
             <div class="pill"><div class="dot" id="mainDot"></div><span id="mainStatus">SYSTEMS NOMINAL</span></div>
@@ -380,7 +392,7 @@ body.mode-orb .orb-view{display:flex;position:fixed;inset:0;z-index:5;align-item
                 <div class="msg assistant">
                     <div class="avatar">AJ</div>
                     <div class="bubble">
-                        <div class="msg-text">שלום בוס! 👋 אני אדיאל v2.2 עם <b>AdielMind</b> — מודל שפה ביתי שלומד מכל שיחה, בלי ענן ובלי API keys. מבינה דיבור מהיר בעברית, יודעת מילון מלא, רואה את המסך ושולטת במחשב. תגיד "אדיאל ג'וניור" או כתוב לי כאן למטה!</div>
+                        <div class="msg-text">שלום בוס! 👋 אני אדיאל v2.3 עם <b>AdielMind</b> - ועכשיו גם <b>עם מחשבות משלי</b> 💭 — מודל שפה ביתי שלומד מכל שיחה, בלי ענן ובלי API keys. מבינה דיבור מהיר בעברית, יודעת מילון מלא, רואה את המסך ושולטת במחשב. תגיד "אדיאל ג'וניור" או כתוב לי כאן למטה - ובטאב 💭 מחשבות תראה מה עובר לי בראש!</div>
                         <div class="msg-time">עכשיו</div>
                     </div>
                 </div>
@@ -396,7 +408,7 @@ body.mode-orb .orb-view{display:flex;position:fixed;inset:0;z-index:5;align-item
                     <input type="text" id="textInput" placeholder="דבר איתי — מבינה דיבור מהיר, מילון מלא, קול AI..." autocomplete="off"/>
                     <button class="send-btn" id="btnSend" title="שלח">➤</button>
                 </div>
-                <div class="composer-hint">ADIEL://2.2 • Enter לשליחה • Ctrl+Shift+A להעיר אותי מכל מקום</div>
+                <div class="composer-hint">ADIEL://2.3 • Enter לשליחה • Ctrl+Shift+A להעיר • אני גם חושבת לבד 💭</div>
             </div>
         </div>
 
@@ -407,6 +419,7 @@ body.mode-orb .orb-view{display:flex;position:fixed;inset:0;z-index:5;align-item
                     <button class="tab active" data-tab="screen">🖥️ מסך</button>
                     <button class="tab" data-tab="tasks">🚀 משימות</button>
                     <button class="tab" data-tab="proposals">🧠 הצעות <span id="proposalsBadge" class="badge" style="font-size:8px;padding:1px 5px">0</span></button>
+                    <button class="tab" data-tab="thoughts">💭 מחשבות <span id="thoughtsBadge" class="badge" style="font-size:8px;padding:1px 5px;background:var(--purple)">0</span></button>
                     <button class="tab" data-tab="dict">📚 מילון</button>
                     <button class="tab" data-tab="model">🧬 מודל</button>
                     <button class="tab" data-tab="system">⚙️</button>
@@ -435,6 +448,12 @@ body.mode-orb .orb-view{display:flex;position:fixed;inset:0;z-index:5;align-item
                     <div class="pane" id="pane-proposals">
                         <div id="proposalsList" style="display:flex;flex-direction:column;gap:8px">
                             <div class="placeholder-holo"><span class="big">✨</span>אין הצעות ממתינות<br>כשאלמד משהו חדש — תראה כאן ותאשר</div>
+                        </div>
+                    </div>
+                    <div class="pane" id="pane-thoughts">
+                        <button class="think-btn" id="btnThinkNow">💭 תחשבי על משהו עכשיו</button>
+                        <div id="thoughtsList" style="display:flex;flex-direction:column;gap:8px">
+                            <div class="placeholder-holo"><span class="big">💭</span>אין מחשבות עדיין<br>אדיאל חושבת לבד כל כמה דקות —<br>וכשאתה כותב לה, רואים כאן איך היא חושבת</div>
                         </div>
                     </div>
                     <div class="pane" id="pane-dict">

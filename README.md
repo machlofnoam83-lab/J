@@ -13,11 +13,22 @@
 - 🎵 **שליטה** — אפליקציות מקומיות ודפדפן בלבד; הוסרו spotipy / google-api / openai / elevenlabs
 - ✈️ **מצב אופליין מלא** — `ADIEL_OFFLINE=1` (ראה `.env.example`): שום בקשת רשת לא תצא, אפילו TTS חינמי
 
-![Version](https://img.shields.io/badge/version-2.2.0-00d2ff)
+![Version](https://img.shields.io/badge/version-2.3.0-00d2ff)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Electron](https://img.shields.io/badge/electron-43-00ffaa)
 ![FastAPI](https://img.shields.io/badge/fastapi-0.141-009688)
 ![Hebrew](https://img.shields.io/badge/language-Hebrew%20%2B%20English-ff8a00)
+
+---
+
+## 💭 v2.3 - אדיאל חושבת: מחשבות אמיתיות, בלי ענן (אוגוסט 2026)
+
+שתי שכבות "חשיבה" גלויות, הכול מהמודל הביתי:
+
+- 🧠 **צעדי חשיבה חיים (Chain-of-Thought)** — בזמן שאדיאל עונה, רואים בסטרימינג איך היא חושבת: `👂 קולטת → 🎯 כוונה שזוהתה → 📚 זכרונות → 🤖 צוות JARVIS → ✅ תשובה מוכנה`. הכל **אמיתי** — כל צעד נאסף מהנתונים שה-pipeline באמת מייצר, משודר ב-WS בסדר מושלם לפני התשובה (`thinking_step`)
+- 💭 **מחשבות ספונטניות** (`core/reasoner.py`) — כל כמה דקות אדיאל חושבת לבד: **נושא חם** שחוזר בשיחות (ניתוח תדירות מהזיכרון), **אסוציאציה גנרטיבית** שה-LM הביתי ממציא מזרע-שיחה (עם בקרת איכות bigram), סטטיסטיקת למידה, מילה מגניבה מהמילון, או חשיבה לפי שעה ביום. משודר `thought` ומוצג ב**טאב "💭 מחשבות" החדש** + הודעה עדינה בצ'אט
+- 🔘 **כפתור "תחשבי עכשיו"** — `POST /thought/now` מכריח מחשבה מיידית
+- 🎚️ הגדרת תדירות: `ADIEL_THOUGHT_MINUTES` (ברירת מחדל 7)
 
 ---
 

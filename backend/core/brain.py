@@ -14,12 +14,14 @@ Adiel Junior - Brain Engine v6.0 "AdielMind" — 100% ביתי, מאפס, בלי
 import os
 import random
 import datetime
+import asyncio
 from collections import deque
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from .personality import ADIEL_SYSTEM_PROMPT, get_random_response, get_follow_up
 from .memory import AdielMemory
 from .intents import HebrewIntentClassifier
+from .reasoner import INTENT_LABELS, ENGINE_LABELS
 
 # למידה - חלק ממערכת מורכבת
 try:
@@ -170,6 +172,9 @@ class AdielBrain:
         self._recent_responses: deque = deque(maxlen=12)
         self._last_model_used = "local-rules"
         self._lm_save_counter = 0
+        # 💭 שכבת המחשבות (v2.3) - trace של צעדי החשיבה + שידור חי ל-HUD
+        self._trace: List[Dict] = []
+        self.thought_callback = None  # async callable - סטרימינג צעדים תוך כדי חשיבה
 
         # AdielMind - מודל שפה ביתי גנרטיבי (נטען מהדיסק או מאומן מאפס)
         self.mind = None
@@ -193,8 +198,25 @@ class AdielBrain:
 
         print("[Brain] אדיאל MIND v6.0 - מודל ביתי גנרטיבי + NB + BM25 - הכול מאפס, בלי שירותים חיצוניים!")
 
+    def _think(self, icon: str, text: str) -> None:
+        """💭 צעד חשיבה - נשמר ב-trace של הבקשה ומועבר ב-callback לשידור חי.
+        ה-callback סינכרוני (אוסף קורוטינות) או async - שני המצבים נתמכים."""
+        step = {"icon": icon, "text": text, "t": datetime.datetime.now().strftime("%H:%M:%S")}
+        self._trace.append(step)
+        cb = self.thought_callback
+        if cb:
+            try:
+                res = cb(step)
+                if asyncio.iscoroutine(res):
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(res)
+            except Exception:
+                pass
+
     async def process(self, user_text: str, screen_context: Optional[str] = None) -> Dict[str, Any]:
         self.conversation_turns += 1
+        self._trace = []
+        self._think("👂", f"קולטת: \"{user_text[:42]}\"")
 
         original_text = user_text
         if self.fast_processor:
@@ -203,11 +225,12 @@ class AdielBrain:
                 print(f"[Brain] Fast fix: '{original_text}' -> '{user_text}'")
 
         print(f"[Brain] מעבד (AdielMind v6): '{user_text}'")
-        
+
         intent_result = self.intent_classifier.classify(user_text)
         intent = intent_result["intent"]
         confidence = intent_result["confidence"]
         entities = intent_result["entities"]
+        self._think("🎯", f"כוונה שזוהתה: {INTENT_LABELS.get(intent, intent)} · ביטחון {confidence:.0%}")
 
         # שילוב המסווג הנלמד (NB) - כשכללי האצבע לא בטוחים, המודל הנלמד מצביע.
         # אזהרות: רק intents "בטוחים" ניתנים לעקיפה (לא פעולות כמו הזזת חלון!),
@@ -222,10 +245,17 @@ class AdielBrain:
                 print(f"[Brain] 🎯 NB override: {intent}({confidence:.2f}) → {nb_intent}({nb_prob:.2f})")
                 intent, confidence, nb_used = nb_intent, max(confidence, nb_prob), True
                 intent_result["intent"] = intent
+                self._think("🔬", f"המסווג הנלמד שלי שכנע אותי: זה בעצם {INTENT_LABELS.get(intent, intent)} ({nb_prob:.0%})")
 
         print(f"[Brain] Intent: {intent} ({confidence:.2f})")
 
         relevant_memories = self.memory.search_relevant_memories(user_text, top_k=2)
+        if relevant_memories:
+            top_mem = relevant_memories[0]
+            mem_snippet = (top_mem.get("user") or top_mem.get("assistant") or top_mem.get("text") or "")[:42]
+            self._think("📚", f"עלו לי {len(relevant_memories)} זכרונות קשורים: \"{mem_snippet}\"" if mem_snippet else f"עלו לי {len(relevant_memories)} זכרונות קשורים")
+        else:
+            self._think("📚", "אין בזיכרון התייחסות לזה - רושמת לי משהו חדש")
         
         smart_context = ""
         user_profile_summary = {}
@@ -246,6 +276,8 @@ class AdielBrain:
             try:
                 jarvis_result = await self.jarvis.process_with_team(user_text, context={"screen": screen_context, "profile": user_profile_summary})
                 print(f"[Brain] JARVIS: {jarvis_result.get('teamwork')}")
+                if jarvis_result:
+                    self._think("🤖", f"מגייסת את צוות JARVIS ({jarvis_result.get('teamwork', 'סוכנים')})")
             except:
                 pass
 
@@ -270,6 +302,7 @@ class AdielBrain:
             system_action = action_result.get("system_action")
 
         model_used = self._last_model_used
+        self._think("✅", f"תשובה מוכנה · מנוע: {ENGINE_LABELS.get(model_used, model_used)}")
         self.memory.add_conversation(user_text, response_text)
 
         # 🧠 למידה אונליין של AdielMind - כל שיחה מגדילה את הקורפוס (הכול ביתי!)
@@ -331,6 +364,7 @@ class AdielBrain:
             "model": "AdielMind v6 - ביתי, מאפס, בלי ענן",
             "model_used": model_used,
             "nb_intent_override": nb_used,
+            "thoughts": list(self._trace),
             "jarvis_team": jarvis_result.get("agents_used") if jarvis_result else [],
             "prediction": prediction,
             "params": f"AdielMind {self.mind.global_model.total_words:,} מילים" if self.mind else "AdielMind",
@@ -584,6 +618,8 @@ class AdielBrain:
         elif intent == "goodbye":
             if self.learning_engine:
                 count = self.learning_engine.get_user_profile_summary().get("interaction_count", 0)
+                if not count:  # fallback - המונה של הזיכרון ארוך-הטווח אמין יותר
+                    count = len(self.memory.long_term.get("conversations", []))
                 return {"handled_locally": True, "response": f"יאללה ביי בוס, דיברנו {count} פעמים. {self._mind_stats_str()} - והוא זוכר הכל לפעם הבאה!"}
             return {"handled_locally": True, "response": "יאללה ביי בוס, אני כאן אם צריך."}
 

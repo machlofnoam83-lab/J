@@ -99,7 +99,11 @@ class AdvancedHUD {
             memoryConvs: this.$('memoryConvs'),
             nbIntents: this.$('nbIntents'),
             nbFeatures: this.$('nbFeatures'),
+            thoughtsList: this.$('thoughtsList'),
+            thoughtsBadge: this.$('thoughtsBadge'),
         };
+        this.thoughts = [];
+        this._seenThoughts = new Set();
     }
 
     bindEvents() {
@@ -127,6 +131,7 @@ class AdvancedHUD {
         this.$('btnFrames')?.addEventListener('click', () => this.switchTab('tasks'));
         this.$('btnCenter2')?.addEventListener('click', () => this.switchMode('center'));
         this.$('btnTrainModel')?.addEventListener('click', () => this.trainAI());
+        this.$('btnThinkNow')?.addEventListener('click', () => this.thinkNow());
 
         // Orb - לחיצה מחזירה למרכז ומעירה
         this.els.orbView?.addEventListener('click', () => {
@@ -200,7 +205,7 @@ class AdvancedHUD {
                 this.connected = true;
                 this.reconnectAttempts = 0;
                 this.updateConn('connected');
-                this.addMessage('assistant', '🚀 v2.2 מחובר! AdielMind — מודל שפה ביתי שלומד מכל שיחה, מסווג כוונות נלמד, וזיכרון BM25. הכול מאפס, בלי ענן ובלי API keys. איך אני, בוס?');
+                this.addMessage('assistant', '🚀 v2.3 מחובר! עכשיו גם רואים איך אני חושבת: צעדי החשיבה זורמים חיים בזמן שאני עונה, ובטאב "💭 מחשבות" תמצא מחשבות שאני מעלה לעצמי כל כמה דקות — הכול מהמודל הביתי, בלי ענן ובלי API keys.');
                 this.loadMics();
                 this.loadProfile();
                 this.loadHealth();
@@ -261,12 +266,24 @@ class AdvancedHUD {
             case 'brain_response':
                 this.hideThinking();
                 if (msg.assistant_text) {
-                    this.addMessage('assistant', msg.assistant_text, this.modelLabel(msg.model_used));
+                    let meta = this.modelLabel(msg.model_used);
+                    if (Array.isArray(msg.thoughts) && msg.thoughts.length > 1) {
+                        meta += ` · 💭 ${msg.thoughts.length} צעדי חשיבה`;
+                    }
+                    this.addMessage('assistant', msg.assistant_text, meta);
                     if (msg.screen_image) this.showScreen(msg.screen_image, msg.screen_context);
                     if (msg.proposals) msg.proposals.forEach(p => this.addProposal(p));
                     if (msg.self_updates) msg.self_updates.forEach(p => this.addProposal(p));
                     if (msg.user_profile) this.updateProfileUI(msg.user_profile);
                 }
+                break;
+            case 'thinking_step':
+                // 💭 צעד חשיבה חי מהמוח - זורם לתוך בועת "חושבת..."
+                this.addThinkingStep(msg.step);
+                break;
+            case 'thought':
+                // 💭 מחשבה ספונטנית - אדיאל חושבת לבד!
+                this.addThought(msg);
                 break;
             case 'model_trained':
                 this.addMessage('assistant', `🧠 ${msg.message || 'המודל אומן מחדש!'}`);
@@ -412,10 +429,69 @@ class AdvancedHUD {
         const div = document.createElement('div');
         div.className = 'msg assistant';
         div.id = 'thinkingBubble';
-        div.innerHTML = `<div class="avatar">AJ</div><div class="bubble"><div class="thinking-dots"><span></span><span></span><span></span></div></div>`;
+        div.innerHTML = `<div class="avatar">AJ</div><div class="bubble"><div class="thinking-dots"><span></span><span></span><span></span></div><div class="tsteps" id="liveThoughtSteps"></div></div>`;
         inner.appendChild(div);
         inner.scrollTop = inner.scrollHeight;
         this._thinkingEl = div;
+    }
+
+    /** 💭 צעדי חשיבה זורמים - מתווספים לתוך בועת "חושבת..." בזמן אמת */
+    addThinkingStep(step) {
+        if (!step || !step.text) return;
+        if (!this._thinkingEl) return; // הגנה: צעדים מאוחרים לא מחזירים בועה שכבר נסגרה
+        const stepsEl = this.$('liveThoughtSteps');
+        if (!stepsEl) return;
+        const div = document.createElement('div');
+        div.className = 'tstep';
+        div.textContent = `${step.icon || '💭'} ${step.text}`;
+        stepsEl.appendChild(div);
+        const inner = this.els.conversationInner;
+        if (inner) inner.scrollTop = inner.scrollHeight;
+    }
+
+    /** 💭 מחשבה ספונטנית - נכנסת לטאב מחשבות + הודעה עדינה בצ'אט */
+    addThought(msg) {
+        const text = msg.text || '';
+        if (!text) return;
+        if (msg.id && this._seenThoughts.has(msg.id)) return;
+        if (msg.id) this._seenThoughts.add(msg.id);
+
+        const kindLabels = {
+            topic: '🔁 נושא חם', association: '🧬 אסוציאציה מהמודל', learning: '📈 למידה',
+            dictionary: '📚 מילון', time: '🕐 שעה ביום'
+        };
+        const time = msg.time || new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+        // 1. כרטיס בטאב "מחשבות"
+        const list = this.els.thoughtsList;
+        if (list) {
+            const ph = list.querySelector('.placeholder-holo');
+            if (ph) list.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'thought-card';
+            card.innerHTML = `<div class="thought-icon">💭</div><div style="min-width:0"><div class="thought-text">${this.escapeHtml(text)}</div><div class="thought-time"><span>${this.escapeHtml(time)}</span><span class="thought-kind">${kindLabels[msg.kind] || '💭 מחשבה'}</span></div></div>`;
+            list.prepend(card);
+            while (list.children.length > 40) list.removeChild(list.lastChild);
+        }
+        this.thoughts.push(msg);
+        if (this.els.thoughtsBadge) this.els.thoughtsBadge.textContent = this.thoughts.length;
+
+        // 2. הודעה עדינה בצ'אט - מרגיש חי
+        this.addMessage('assistant', `💭 ${text}`, '💭 מחשבה ספונטנית · הומצאה לבד ע"י AdielMind');
+    }
+
+    /** כפתור "תחשבי עכשיו" - מבקש מחשבה מהשרת */
+    async thinkNow() {
+        const btn = this.$('btnThinkNow');
+        if (btn) { btn.disabled = true; btn.textContent = '💭 חושבת...'; }
+        try {
+            const data = await this.apiPost('/thought/now');
+            if (data?.thought) this.addThought(data.thought);
+        } catch (e) {
+            this.addMessage('assistant', `💭 המחשבה נתקעה בדרך: ${e.message}`);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '💭 תחשבי על משהו עכשיו'; }
+        }
     }
 
     hideThinking() {
