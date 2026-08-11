@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 >nul
-title Adiel Junior - Auto Runner v2.2.3
+title Adiel Junior - Auto Runner v2.3.0
 REM ============================================================
-REM  Adiel Junior - Auto Runner (v2.2.3)
+REM  Adiel Junior - Auto Runner (v2.3.0)
 REM  עדכון אוטומטי (git או ZIP) + תיקון תלויות + הרצה נקייה
 REM ============================================================
 
@@ -16,6 +16,11 @@ exit /b %ERRORLEVEL%
 
 :main
 setlocal EnableExtensions EnableDelayedExpansion
+REM --- Clean broken git env vars (GIT_DIR can point to a foreign path) ---
+set "GIT_DIR="
+set "GIT_WORK_TREE="
+set "GIT_INDEX_FILE="
+set "GIT_CEILING_DIRECTORIES="
 if defined ADIEL_ROOT (
     set PROJECT_ROOT=%ADIEL_ROOT%
 ) else (
@@ -43,7 +48,7 @@ set REPO_ZIP_URL=https://codeload.github.com/machlofnoam83-lab/J/zip/refs/heads/
 set DID_UPDATE=
 
 echo ============================================================
-echo   Adiel Junior - Auto Runner v2.2.3
+echo   Adiel Junior - Auto Runner v2.3.0
 echo   עדכון אוטומטי + תיקון שגיאות + הרצה בלי Backend כפול
 echo ============================================================
 echo.
@@ -67,7 +72,8 @@ if errorlevel 1 (
 )
 git pull --ff-only origin arena/019ff012-j > "%TEMP%\adiel_pull.txt" 2>&1
 if errorlevel 1 (
-    echo   [WARN] pull לא הצליח - ממשיך עם הגירסה המקומית
+    echo   [WARN] pull נכשל - מנסה עדכון דרך ZIP במקום...
+    goto :update_zip
 ) else (
     set /p PULL_OUT=<"%TEMP%\adiel_pull.txt"
     echo   !PULL_OUT! | findstr /i "Already" >nul

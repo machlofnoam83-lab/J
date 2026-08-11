@@ -131,17 +131,20 @@ class AdielMemory:
     def add_conversation(self, user_text: str, assistant_text: str, save_important: bool = False):
         self.add_short_term("user", user_text)
         self.add_short_term("assistant", assistant_text)
-        
-        # אם חשוב - שמור לטווח ארוך
-        if save_important or self._is_important(user_text):
-            self.long_term["conversations"].append({
-                "user": user_text,
-                "assistant": assistant_text,
-                "timestamp": datetime.now().isoformat()
-            })
-            # שמור רק 200 אחרונות
-            if len(self.long_term["conversations"]) > 200:
-                self.long_term["conversations"] = self.long_term["conversations"][-200:]
+
+        # v2.3: כל שיחה נשמרת לטווח ארוך - "זוכרת הכל" באמת, לא רק "חשוב".
+        # בלי זה חיפוש ה-BM25 היה תמיד ריק ומונה ה-"דיברנו N פעמים" היה 0 לנצח.
+        self.long_term["conversations"].append({
+            "user": user_text,
+            "assistant": assistant_text,
+            "timestamp": datetime.now().isoformat()
+        })
+        # שמור רק 200 אחרונות
+        if len(self.long_term["conversations"]) > 200:
+            self.long_term["conversations"] = self.long_term["conversations"][-200:]
+        important = save_important or self._is_important(user_text)
+        # כל מספר שיחות: שמור לדיסק + בנה אינדקס BM25 מחדש (זול - עד 200 רשומות)
+        if important or len(self.long_term["conversations"]) % 3 == 0:
             self._rebuild_embeddings()
             self._save_long_term()
 
