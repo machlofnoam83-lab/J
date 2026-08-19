@@ -1,0 +1,29 @@
+# Safe starting point for an RTX 4060 with 8 GB VRAM.
+model_name: Qwen/Qwen2.5-3B-Instruct
+output_dir: outputs/jai-3b-he
+train_file: data/train.jsonl
+eval_file: data/eval.jsonl
+
+# assistant_only = supervised chat tuning; all_tokens = continued pretraining.
+training_mode: assistant_only
+max_length: 512
+max_steps: 500
+num_train_epochs: 1.0
+per_device_train_batch_size: 1
+per_device_eval_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 0.0001
+warmup_ratio: 0.03
+weight_decay: 0.01
+logging_steps: 5
+save_steps: 100
+eval_steps: 100
+seed: 42
+
+# QLoRA: only a compact adapter is trained, making 3B practical on 8 GB.
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+load_in_4bit: true
+gradient_checkpointing: true
+use_flash_attention: false

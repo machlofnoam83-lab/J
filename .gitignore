@@ -1,0 +1,11 @@
+# Models, datasets generated locally, and caches
+outputs/
+data/train.jsonl
+data/eval.jsonl
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+.env
