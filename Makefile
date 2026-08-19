@@ -1,7 +1,11 @@
-.PHONY: install prepare train evaluate chat serve test
+.PHONY: install download prepare train evaluate chat serve test
 
 install:
 	python -m pip install -e ".[dev]"
+	jai-download
+
+download:
+	jai-download
 
 prepare:
 	jai-prepare data/sample_train.jsonl data/sample_eval.jsonl

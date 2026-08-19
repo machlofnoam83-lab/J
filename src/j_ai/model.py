@@ -1,7 +1,43 @@
 from __future__ import annotations
 
+import os
+from functools import cache
 from pathlib import Path
 from typing import Any
+
+
+@cache
+def ensure_model_downloaded(model_name: str) -> str:
+    """Download a Hub model once, with progress and an offline-cache fallback."""
+    path = Path(model_name).expanduser()
+    if path.exists():
+        return str(path)
+
+    from huggingface_hub import snapshot_download
+
+    print(f"בודק את קבצי המודל {model_name}...")
+    patterns = [
+        "*.json", "*.safetensors", "*.model", "*.tiktoken",
+        "merges.txt", "vocab.*", "tokenizer.*",
+    ]
+    try:
+        snapshot = snapshot_download(
+            repo_id=model_name,
+            allow_patterns=patterns,
+            local_files_only=os.environ.get("JAI_OFFLINE", "0") == "1",
+        )
+    except Exception as error:  # noqa: BLE001 - Hub/network libraries raise varied errors
+        # A cached model remains usable when the internet is temporarily unavailable.
+        try:
+            snapshot = snapshot_download(
+                repo_id=model_name, allow_patterns=patterns, local_files_only=True
+            )
+        except Exception:  # noqa: BLE001 - replace varied errors with an actionable message
+            raise RuntimeError(
+                f"לא ניתן להוריד את {model_name}. בדוק חיבור לאינטרנט ומקום פנוי בדיסק."
+            ) from error
+    print(f"המודל מוכן: {snapshot}")
+    return snapshot
 
 
 def compute_dtype():
@@ -15,6 +51,7 @@ def compute_dtype():
 def load_tokenizer(model_name: str):
     from transformers import AutoTokenizer
 
+    ensure_model_downloaded(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=False)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -34,6 +71,7 @@ def load_base_model(
 
     if not torch.cuda.is_available() and load_in_4bit:
         raise RuntimeError("4-bit loading requires a CUDA GPU. Set load_in_4bit: false for CPU.")
+    ensure_model_downloaded(model_name)
     kwargs: dict[str, Any] = {
         "device_map": "auto",
         "torch_dtype": compute_dtype(),
