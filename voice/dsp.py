@@ -221,39 +221,131 @@ def f0_autocorr(x: np.ndarray, sr: int, fmin: float = 65.0, fmax: float = 380.0,
 
 # ---------------------------------------------------------- time/pitch edit --
 def pitch_shift(x: np.ndarray, sr: int, semitones: float, frame_ms: float = 40.0) -> np.ndarray:
-    """Cheap resample-and-restore pitch shift (good enough for unit TTS)."""
-    if abs(semitones) < 0.01:
-        return to_mono(x).astype(np.float32)
-    factor = 2 ** (semitones / 12.0)
-    n_out = int(len(x) / factor)
-    if n_out < 8:
-        return to_mono(x).astype(np.float32)
-    shifted = resample(to_mono(x), sr, int(sr / factor))
-    return resample(shifted, int(sr / factor), sr).astype(np.float32)
+    """Shift pitch by ``semitones`` and keep the duration.
+
+    Resampling moves pitch and duration together, so the shift is done in two
+    steps: resample to move the pitch, then WSOLA the result back to the length
+    it started at.
+
+    The previous version resampled down and then resampled back up with
+    ``resample`` both times. That second call is the exact inverse of the first —
+    same ratio, opposite direction — so the two cancelled and the function
+    returned the input it was given, only band-limited twice by interpolation.
+    Measured: a request for -1.07 semitones came back with the original length
+    and the original pitch. The declination contour in ``concat._prosody`` was
+    therefore dead code for every unit in every sentence, and restoring it needs
+    a duration-preserving second stage, which is what ``time_stretch`` provides.
+    """
+    x = to_mono(x).astype(np.float32)
+    if x.size == 0 or abs(semitones) < 0.01:
+        return x
+    factor = 2.0 ** (float(semitones) / 12.0)
+    target_sr = int(round(sr / factor))
+    if target_sr < 8:
+        return x
+    # Step 1 — pitch moves by ``factor``, duration moves with it.
+    shifted = resample(x, sr, target_sr)
+    if shifted.size < 8:
+        return x
+    # Step 2 — put the duration back without touching the pitch we just set.
+    out = time_stretch(shifted, sr, x.size / float(shifted.size))
+    if out.size == 0:
+        return shifted.astype(np.float32)
+    if out.size < x.size:
+        out = np.pad(out, (0, x.size - out.size))
+    return out[:x.size].astype(np.float32)
 
 
 def time_stretch(x: np.ndarray, sr: int, factor: float, win_ms: float = 25.0) -> np.ndarray:
-    """WSOLA-ish overlap-add time stretch that preserves pitch."""
+    """WSOLA time stretch: output length is ``len(x) * factor``, pitch preserved.
+
+    Two defects made the old overlap-add unusable on a phoneme bank:
+
+    * The output was sized ``len(x) * factor + win``. A phoneme unit is 40-150 ms
+      and the window is 25 ms, so that trailing window dominated the arithmetic
+      and short units came back *longer* than they went in. Measured on a real
+      sentence: a 40 ms phone asked to compress to 0.877 returned 60 ms — a 1.5x
+      stretch in the opposite direction — and a 50 ms one grew to 69 ms. Every
+      short phone in the utterance was inflated, which is what scrambled the
+      rhythm.
+    * The input hop was fixed, so each window landed wherever the arithmetic put
+      it, with no regard for the phase already written. Summing mismatched phases
+      smears the spectral envelope, and a smeared envelope is a vowel that is no
+      longer that vowel. Intelligible Hebrew went in and something that sounded
+      like a foreign language came out.
+
+    The output length is now exactly ``len(x) * factor``, and every window is
+    placed by cross-correlating its first half against the half already
+    synthesised, within a +/-5 ms tolerance — the similarity search that makes
+    this WSOLA rather than OLA. Windows overlap by half on the *output* side, so
+    the Hann sum is unity and there is no gain ripple.
+    """
+    x = to_mono(x).astype(np.float32)
+    if x.size == 0:
+        return x
+    try:
+        factor = float(factor)
+    except (TypeError, ValueError):
+        return x
+    if not np.isfinite(factor) or factor <= 0:
+        return x
+    factor = min(10.0, max(0.1, factor))
     if abs(factor - 1.0) < 0.01:
-        return to_mono(x).astype(np.float32)
-    x = to_mono(x)
-    win = max(64, int(sr * win_ms / 1000))
-    hop_in = win // 2
-    hop_out = int(hop_in * factor)
-    if hop_out < 1:
-        return x.astype(np.float32)
-    n_out = int(len(x) * factor) + win
-    out = np.zeros(n_out)
-    wsum = np.zeros(n_out)
-    w = np.hanning(win)
-    pos_in, pos_out = 0, 0
-    while pos_in + win <= len(x) and pos_out + win <= n_out:
-        out[pos_out:pos_out + win] += x[pos_in:pos_in + win] * w
-        wsum[pos_out:pos_out + win] += w
-        pos_in += hop_in
-        pos_out += hop_out
-    out = np.divide(out, np.maximum(wsum, 1e-6))
-    return out.astype(np.float32)
+        return x
+
+    win = max(64, int(sr * win_ms / 1000.0))
+    if win % 2:
+        win += 1
+    half = win // 2
+    n_out = int(round(x.size * factor))
+
+    # Shorter than one window there is nothing to overlap: hand it back as it is
+    # rather than inventing structure the signal does not contain.
+    if x.size <= win or n_out < half:
+        return x
+
+    hop_in = half / factor
+    tol = max(2, int(sr * 0.005))
+    out = np.zeros(n_out + win, dtype=np.float64)
+    wsum = np.zeros(n_out + win, dtype=np.float64)
+    w = np.hanning(win).astype(np.float64)
+    xd = x.astype(np.float64)
+
+    try:
+        windows = np.lib.stride_tricks.sliding_window_view(xd, win)
+        n_win = windows.shape[0]
+    except Exception:                       # numpy < 1.20 has no such helper
+        windows, n_win = None, max(0, xd.size - win + 1)
+
+    tail = np.zeros(half, dtype=np.float64)
+    in_pos, out_pos = 0.0, 0
+    while out_pos < n_out and n_win > 0:
+        nominal = int(round(in_pos))
+        if nominal > n_win - 1:
+            nominal = n_win - 1               # input exhausted — hold the last window
+        best = nominal
+        if windows is not None:
+            lo = max(0, nominal - tol)
+            hi = min(n_win - 1, nominal + tol)
+            if hi > lo:
+                scores = windows[lo:hi + 1, :half] @ tail
+                best = lo + int(np.argmax(scores))
+        seg = xd[best:best + win]
+        if seg.size < win:
+            break
+        out[out_pos:out_pos + win] += seg * w
+        wsum[out_pos:out_pos + win] += w
+        tail = seg[half:]
+        out_pos += half                       # ``out_pos`` always advances, so this ends
+        in_pos = best + hop_in
+
+    filled = wsum > 1e-9
+    out[filled] /= wsum[filled]
+    # Trim to exactly the requested length. The final window overshoots ``n_out``
+    # by up to half a window, and returning that overshoot quantised every short
+    # unit up to the next 12.5 ms step — a 40 ms phone asked to compress to 0.55
+    # came back at 0.625 instead of 0.55.
+    return out[:n_out].astype(np.float32)
 
 
 # --------------------------------------------------------------------- VAD --

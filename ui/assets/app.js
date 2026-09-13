@@ -1075,8 +1075,20 @@
       } catch (_) { /* one lost chunk must not end a conversation */ }
     }
 
+    // Guard against a second start while one is still awaiting the microphone.
+    // F5 can arrive twice for one press (the global hotkey and the renderer's own
+    // keydown), and `on` only flips at the very end of the session setup — so two
+    // overlapping starts used to both get through, leaving a second stream and
+    // ScriptProcessor attached, or toggling the session straight back off.
+    let starting = false;
     async function start() {
       if (on) return stop();
+      if (starting) return false;
+      starting = true;
+      try { return await beginSession(); } finally { starting = false; }
+    }
+
+    async function beginSession() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         toast('אין גישה למיקרופון בסביבה זו', 'err'); return false;
       }
@@ -1492,15 +1504,42 @@
     $('#btn-kill-revive').onclick = () => send({ type: 'revive' });
     $('#btn-clear-events').onclick = () => { $('#event-stream').innerHTML = ''; };
 
-    // F5 — bring the conversation to him: focus the composer and open the
-    // microphone, so talking to JARVIS never requires standing up. Electron sends
-    // this as a global hotkey too, so it works while the HUD is in the background.
-    function summonChat() {
+    // F5 — the microphone, not the keyboard. Electron sends this as a global
+    // hotkey too, so it works while the HUD is in the background.
+    //
+    // This used to focus the text composer *first* and then fire Talk.start()
+    // without awaiting it. The visible result was always chat mode: the caret
+    // landed in the input box, and when the microphone failed — permission never
+    // granted, device unplugged, no mediaDevices in the shell — nothing said so,
+    // because the promise was dropped on the floor. Speech now comes first, the
+    // attempt is awaited, and the composer is a last resort that explains itself.
+    let summoning = false;
+    async function summonSpeech() {
+      if (summoning) return false;
+      summoning = true;
+      try { return await doSummon(); } finally { summoning = false; }
+    }
+
+    async function doSummon() {
       try { window.focus(); } catch (_) {}
+      if (Talk.on) { toast('כבר מקשיב — פשוט דבר', 'good', 2600); return true; }
+      if (Rec.recording) { toast('כבר מקליט — דבר', 'good', 2600); return true; }
+
+      if (Talk.available) {
+        let ok = false;
+        try { ok = await Talk.start(); } catch (_) { ok = false; }
+        if (ok) return true;
+      }
+      // Continuous conversation refused the microphone; try one push-to-talk take
+      // before giving up on speech entirely.
+      let rec = false;
+      try { rec = await Rec.start(); } catch (_) { rec = false; }
+      if (rec) return true;
+
       const el = document.getElementById('input');
       if (el) { el.focus(); if (el.select) el.select(); }
-      if (Talk.on || Rec.recording) return;
-      if (Talk.available) Talk.start(); else Rec.start();
+      toast('המיקרופון לא נפתח — אפשר לכתוב כאן במקום', 'warn', 6000);
+      return false;
     }
 
     Mic.init();
@@ -1509,7 +1548,7 @@
     // hotkeys from Electron main
     if (win && win.onHotkey) win.onHotkey(h => {
       if (h.name === 'push-to-talk') { Rec.recording ? Rec.stop() : Rec.start(); }
-      if (h.name === 'summon-chat') summonChat();
+      if (h.name === 'summon-chat') summonSpeech();
       if (h.name === 'kill-switch') doKill('KILL SWITCH — מקש קיצור');
     });
     if (win && win.onBrainState) win.onBrainState(s => {
@@ -1518,7 +1557,7 @@
 
     document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Escape') { e.preventDefault(); doKill('KILL SWITCH'); }
-      if (e.key === 'F5' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); summonChat(); }
+      if (e.key === 'F5' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); summonSpeech(); }
       if (e.key === 'Escape' && Rec.recording) Rec.stop();
       if (e.key === 'Escape') { const tp = $('#train-panel'); if (tp && !tp.classList.contains('hidden')) Train.close(); }
     });

@@ -51,6 +51,30 @@ HOP_MS = 20.0           # 20ms frames: half the DTW cost of 10ms, no loss for co
 MAX_FRAMES = 220
 BANK_DIR = ROOT / "voice" / "stt" / "bank"
 
+# Used only when a bank carries no measurement of its own. Every bank built here
+# measures the gap between correct and incorrect recognitions and stores the
+# midpoint, so this constant is a floor for an uncalibrated bank, not a policy.
+DEFAULT_MIN_CONFIDENCE = 0.30
+
+# Phrases nobody enrolled, spoken in JARVIS's own voice. These are the negatives
+# the acceptance threshold is measured against: if one of them is accepted, the
+# threshold is too low and JARVIS acts on something nobody said.
+#
+# Deliberately conversational rather than random. "מה נשמע אצלך" scored 0.512
+# against a threshold of 0.469 and was taken as `memory` ("מה זכרת") — a near-miss
+# on ordinary Hebrew speech, which is exactly the population that has to stay
+# rejected. Bare "שלום" is here too: `hello` is enrolled as "שלום ג'רוויס", so a
+# greeting on its own must not fire a command.
+#
+# Every phrase here was checked against the vocabulary before being included.
+# "תודה רבה לך" was removed because `thanks` is enrolled as "תודה"/"תודה רבה" and
+# matched it at 1.000 — that is a correct recognition, and leaving it in pinned
+# the threshold to its 0.90 ceiling and rejected real commands.
+NEGATIVE_PHRASES = ("בלה בלה בלה בלה", "לא שמעתי כלום", "קפה ותה בבקשה",
+                    "היום יש גשם בחוץ", "אני צריך לקנות חלב",
+                    "מה נשמע אצלך", "אחד שניים שלוש", "שלום",
+                    "אין לי מושג מה זה", "הכל בסדר גמור", "למה זה קורה לי")
+
 
 def default_bank_dir() -> Path:
     """Where the template bank lives, overridable with ``JARVIS_STT_BANK``.
@@ -227,12 +251,16 @@ class SttEngine:
     """Template-bank command recogniser with a wake word."""
 
     def __init__(self, bank_dir: Optional[Path | str] = None, sr: int = SR,
-                 min_confidence: float = 0.30, band: int = 14,
+                 min_confidence: Optional[float] = None, band: int = 14,
                  coarse_step: int = 3, coarse_band: int = 6,
                  refine_labels: int = 5, refine_per_label: int = 2) -> None:
         self.bank_dir = Path(bank_dir) if bank_dir else default_bank_dir()
         self.sr = int(sr)
-        self.min_confidence = float(min_confidence)
+        # None means "whatever this bank measured for itself" — see load(). An
+        # explicit number always wins, which is how the tests pin a known point.
+        self._min_conf_override = None if min_confidence is None else float(min_confidence)
+        self.min_confidence = self._min_conf_override if self._min_conf_override is not None \
+            else DEFAULT_MIN_CONFIDENCE
         self.band = int(band)
         self.coarse_step = int(coarse_step)
         self.coarse_band = int(coarse_band)
@@ -268,6 +296,21 @@ class SttEngine:
             self.calib = manifest.get("calibration", {})
             self.enrolled = manifest.get("enrolled", [])
             self.labels = sorted(set(self._labels_arr.tolist()))
+            if self._min_conf_override is not None:
+                self.min_confidence = self._min_conf_override
+            else:
+                # Take the point this bank measured for itself. The ramp between
+                # self_mean and cross_mean moves whenever the voice or the
+                # augmentation moves, so a threshold written down once goes stale:
+                # 0.30 was calibrated against a bank whose pitch variants were
+                # byte-identical copies, and after `pitch_shift` was fixed it sat
+                # *below* the worst false accept (0.337), letting "בלה בלה בלה בלה"
+                # through as volume_up.
+                try:
+                    measured = float(self.calib.get("min_confidence", 0) or 0)
+                except (TypeError, ValueError):
+                    measured = 0.0
+                self.min_confidence = measured if 0.05 <= measured <= 0.95 else DEFAULT_MIN_CONFIDENCE
             return True
         except Exception as exc:
             BUS.emit(T.ERROR, {"where": "stt.load", "error": str(exc)}, source="stt")
@@ -373,15 +416,30 @@ class SttEngine:
     def _confidence(self, dist: float, second: Optional[float] = None) -> float:
         """Two factors, each in [0,1], averaged:
 
-        * absolute — where the distance sits between a known-good match
-          (``self_ref``) and a known-wrong one (``cross_ref``);
+        * absolute — where the distance sits between the typical cost of a
+          correct match (``self_mean``) and the typical cost of a wrong one
+          (``cross_mean``);
         * margin — how much better the winner is than the runner-up. A tight race
           between two commands is not a confident recognition, even if both
           distances look small.
+
+        The ramp used to run from ``p90(self)`` to ``p25(cross)``. Those are the
+        two tails that face each other, so as soon as the populations overlap at
+        all the ramp collapses: measured on a bank whose pitch augmentation
+        genuinely varied, they sat 0.168 apart. Confidence then became a cliff —
+        a correct match scored 1.0, and anything landing in that 0.168-wide band
+        scored 0.5-0.6 and sailed over a 0.3 threshold. 20.8% of known-wrong
+        pairs were accepted. Anchoring on the two means keeps the ramp wide
+        (2.28 measured) and drops that to 4.2%.
         """
-        lo = float(self.calib.get("self_ref", 1.6))
-        hi = float(self.calib.get("cross_ref", lo + 4.0))
-        if hi <= lo or not np.isfinite(dist):
+        lo = float(self.calib.get("self_mean") or self.calib.get("self_ref", 1.6))
+        hi = float(self.calib.get("cross_mean") or self.calib.get("cross_ref", lo + 4.0))
+        if hi - lo < 0.25:
+            # A bank too small or too uniform to measure a real spread: widen the
+            # ramp around what we have rather than dividing by nearly zero.
+            mid = 0.5 * (hi + lo)
+            lo, hi = mid - 0.625, mid + 0.625
+        if not np.isfinite(dist):
             return 0.0
         absolute = max(0.0, min(1.0, (hi - dist) / (hi - lo)))
         if second is None or not np.isfinite(second):
@@ -540,7 +598,7 @@ def _add_noise(x: np.ndarray, sr: int, snr_db: float, seed: int = 0) -> np.ndarr
 def build_bank(bank_dir: Optional[Path | str] = None,
                rates: Sequence[float] = (0.94, 1.06),
                engines: Sequence[str] = ("concat",),
-               pitches: Sequence[float] = (-3.0, 0.0, 3.0),
+               pitches: Sequence[float] = (-1.5, 0.0, 1.5),
                noises: Sequence[Optional[float]] = (None, 20.0),
                verbose: bool = False) -> Dict[str, Any]:
     """Synthesise every command with our own TTS and store its MFCC trajectory.
@@ -554,10 +612,16 @@ def build_bank(bank_dir: Optional[Path | str] = None,
     pitch shifts stand in for different speakers' vocal ranges and noise levels
     stand in for a real room.
 
-    Measured effect on the wake word (bank rebuilt, held-out cases marked *):
-        clean 1.00  |  +3/-3 st 1.00  |  *+7/-6 st 1.00  |  SNR12 0.67
-        *SNR5 0.00  |  *a different timbre 0.00  |  negatives 0.00
-    So pitch and level variation are handled; a genuinely different voice is not.
+    The pitch range is +/-1.5 semitones because that is the range the voice
+    actually produces. Measured over a real sentence, the declination contour in
+    `concat._prosody` spans -1.44 to +0.57 semitones. The range used to be +/-3,
+    but that measurement — and the "held-out +7/-6 st scores 1.00" line that used
+    to sit here — was taken while `dsp.pitch_shift` was silently a no-op, so
+    every "pitch variant" in the bank was a byte-identical copy and the numbers
+    described nothing. Once the shift really works, +/-3 moves the formants of a
+    one-syllable command far enough to blur `שלום` into `נגן`: it scored 0.394
+    and was recognised as `play`. Covering prosody the voice never produces buys
+    nothing and costs the short commands.
 
     Do NOT add the formant engine to the bank: its timbre is so far from the
     recorded voice that within-label distance (10.1) exceeds between-label
@@ -641,10 +705,108 @@ def build_bank(bank_dir: Optional[Path | str] = None,
     }
     (bank_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
                                            encoding="utf-8")
+
+    # The manifest has to exist before the threshold can be measured, because the
+    # recogniser reads its command texts and calibration from it.
+    thresh = derive_threshold(bank_dir)
+    if thresh:
+        calib.update(thresh)
+        manifest["calibration"] = calib
+        manifest["build_seconds"] = round(time.perf_counter() - t0, 2)
+        (bank_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
+                                               encoding="utf-8")
+
     BUS.emit("stt.bank.built", {"templates": len(labels), "commands": len(per_command),
                                 "seconds": manifest["build_seconds"], "calibration": calib},
              source="stt")
     return manifest
+
+
+def derive_threshold(bank_dir: Optional[Path | str] = None, n_true: Optional[int] = None,
+                     seed: int = 7) -> Dict[str, Any]:
+    """Measure where correct and incorrect recognitions actually land, then put
+    the acceptance threshold in the gap between them.
+
+    ``calibrate`` measures template-to-template distances, which says how the bank
+    is shaped but not what a recogniser does with real speech — the confidence
+    also carries a margin term that template distances never see. So this speaks
+    the enrolled phrases back through the recogniser, speaks phrases nobody
+    enrolled, and records both confidence distributions.
+
+    ``n_true=None`` speaks *every* enrolled phrase, which is the point. A 14-phrase
+    sample measured a true minimum of 0.939 and set the threshold at 0.638; the
+    full vocabulary contains `דבר`, a one-syllable command that scores 0.600, so
+    the threshold derived from the sample rejected a command the bank knows. The
+    hardest phrase is the one that decides where the threshold may sit, and a
+    sample usually misses it. Costs about thirteen seconds of a ~45 s build.
+
+    Where the two populations overlap there is no threshold that is right, and
+    the tie is broken towards silence: JARVIS controls a computer, so missing a
+    command is recoverable and acting on one nobody said is not.
+    """
+    bank_dir = Path(bank_dir) if bank_dir else default_bank_dir()
+    if not (bank_dir / "manifest.json").exists():
+        return {}
+    try:
+        manifest = json.loads((bank_dir / "manifest.json").read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    eng = SttEngine(bank_dir=bank_dir)
+    if not eng.available:
+        return {}
+
+    from voice.tts import get_voice
+    voice = get_voice()
+
+    def pcm(text: str) -> np.ndarray:
+        res = voice.synthesize(text)
+        x = resample(np.asarray(res.samples, dtype=np.float32), res.sample_rate, SR)
+        return np.clip(x, -1.0, 1.0).astype(np.float32)
+
+    phrases: List[Tuple[str, str]] = []
+    for cmd in manifest.get("commands", []):
+        for said in (cmd.get("say") or [cmd.get("text", "")]):
+            if said:
+                phrases.append((cmd["label"], said))
+    if not phrases:
+        return {}
+
+    rng = np.random.default_rng(seed)
+    if n_true is not None and len(phrases) > int(n_true):
+        take = sorted(int(i) for i in rng.choice(len(phrases), size=int(n_true), replace=False))
+        phrases = [phrases[i] for i in take]
+
+    true_conf: List[float] = []
+    mislabelled = 0
+    for label, text in phrases:
+        r = eng.recognize(pcm(text), sr=SR)
+        if r.label == label:
+            true_conf.append(float(r.confidence))
+        else:
+            mislabelled += 1
+            true_conf.append(0.0)
+    false_conf = [float(eng.recognize(pcm(t), sr=SR).confidence) for t in NEGATIVE_PHRASES]
+    if not true_conf or not false_conf:
+        return {}
+
+    t_min = min(true_conf)
+    f_max = max(false_conf)
+    if t_min > f_max:
+        thr = 0.5 * (t_min + f_max)
+    else:
+        thr = f_max + 0.02                    # overlap: reject the negatives first
+    thr = float(min(0.90, max(0.35, thr)))
+    out: Dict[str, Any] = {
+        "min_confidence": round(thr, 3),
+        "true_min": round(t_min, 3),
+        "false_max": round(f_max, 3),
+        "true_samples": len(true_conf),
+        "true_mislabelled": mislabelled,
+        "false_samples": len(false_conf),
+    }
+    BUS.emit("stt.threshold.measured", out, source="stt")
+    return out
 
 
 # ══════════════════════════════ wake-word listener ══════════════════════════

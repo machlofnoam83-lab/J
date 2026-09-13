@@ -177,9 +177,29 @@ def main() -> int:
     cal = manifest["calibration"]
     check("calibration measured both populations",
           cal["samples"]["self"] > 10 and cal["samples"]["cross"] > 50, str(cal["samples"]))
-    check("same-phrase distance is well below different-phrase distance",
-          cal["self_ref"] < cal["cross_ref"] * 0.75,
-          f"(self {cal['self_ref']:.2f} < cross {cal['cross_ref']:.2f})")
+    # The typical same-phrase distance must sit well below the typical
+    # different-phrase distance. This used to compare self_ref against cross_ref,
+    # i.e. p90(self) against p25(cross) — the two tails that face each other. Once
+    # `dsp.pitch_shift` stopped being a no-op the bank's pitch variants became
+    # genuinely different recordings instead of identical copies, those tails
+    # overlapped, and the check failed on a bank that recognises every command it
+    # knows. The means are what the confidence ramp is built from, and they are
+    # the quantity that predicts recognition.
+    check("typical same-phrase distance is well below different-phrase distance",
+          cal["self_mean"] < cal["cross_mean"] * 0.75,
+          f"(self_mean {cal['self_mean']:.2f} < cross_mean {cal['cross_mean']:.2f})")
+    check("the facing tails are at least ordered",
+          cal["self_ref"] < cal["cross_ref"],
+          f"(p90 self {cal['self_ref']:.2f} < p25 cross {cal['cross_ref']:.2f})")
+    # The operational guarantee, and the stronger of the two: the threshold is
+    # derived from real synthesised speech, so this asserts that every enrolled
+    # phrase clears it and no unenrolled phrase does.
+    check("the measured threshold separates real recognitions from real negatives",
+          cal["true_min"] > cal["min_confidence"] > cal["false_max"],
+          f"(true_min {cal['true_min']:.3f} > {cal['min_confidence']:.3f} > false_max {cal['false_max']:.3f}"
+          f" over {cal['true_samples']} phrases / {cal['false_samples']} negatives)")
+    check("no enrolled phrase was recognised as a different command",
+          cal["true_mislabelled"] == 0, f"({cal['true_mislabelled']} mislabelled)")
     check("calibration values are finite",
           all(np.isfinite(v) for k, v in cal.items() if isinstance(v, (int, float))))
     eng = SttEngine()
