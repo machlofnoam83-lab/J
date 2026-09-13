@@ -26,6 +26,7 @@ ORDER = [
     "test_orchestrator.py",
     "test_voice.py",
     "test_server.py",
+    "test_voice_session.py",
 ]
 
 
@@ -41,7 +42,8 @@ def main() -> int:
     ap.add_argument("--only", default="", help="comma separated file names")
     args = ap.parse_args()
 
-    skip = {"test_orchestrator.py", "test_server.py"} if args.quick else set()
+    skip = ({"test_orchestrator.py", "test_server.py", "test_voice_session.py"}
+            if args.quick else set())
     only = {s.strip() for s in args.only.split(",") if s.strip()}
     files = [f for f in discover() if f.name not in skip and (not only or f.name in only)]
 

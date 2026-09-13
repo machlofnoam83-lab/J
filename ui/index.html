@@ -102,6 +102,11 @@
       </div>
     </div>
 
+    <div id="transcript-head">
+      <span class="th-title">שיחה</span>
+      <span class="th-sub" id="th-count">—</span>
+      <button id="btn-clear-chat" class="mini" title="מחק את היסטוריית השיחה">נקה</button>
+    </div>
     <div id="transcript" aria-live="polite"></div>
 
     <div id="composer">
@@ -111,8 +116,15 @@
         <button class="mode" data-mode="math">מתמטיקה</button>
         <button class="mode" data-mode="system">מערכת</button>
       </div>
+      <div id="talk-bar">
+        <span id="talk-dot"></span>
+        <span id="talk-state">שיחה חופשית כבויה</span>
+        <div id="talk-level"><i></i></div>
+        <span id="talk-hint">אמור <b>ג׳רוויס</b> ואחר כך דבר — הוא עונה בקול וממשיך להקשיב</span>
+      </div>
       <div id="composer-row">
-        <button id="btn-mic" title="דיבור (Ctrl+Shift+Space)">🎙</button>
+        <button id="btn-talk" title="שיחה חופשית: מיקרופון פתוח, מילת השכמה, תשובות בקול (Ctrl+Shift+V)">🗣 שיחה</button>
+        <button id="btn-mic" title="דיבור בלחיצה (Ctrl+Shift+Space)">🎙</button>
         <input id="input" type="text" autocomplete="off" spellcheck="false"
                placeholder="דבר אליי, אדוני… (Enter לשליחה · Shift+Enter לשורה חדשה)">
         <label class="toggle" title="הפעל קול"><input type="checkbox" id="chk-speak" checked><span>קול</span></label>
@@ -121,6 +133,7 @@
       <div id="composer-foot">
         <span class="kbd">Enter</span> שליחה
         <span class="kbd">Ctrl+Shift+Space</span> דיבור
+        <span class="kbd">Ctrl+Shift+V</span> שיחה חופשית
         <span class="kbd">Ctrl+Shift+J</span> נעיצה
         <span class="kbd">Ctrl+Shift+Esc</span> <b class="danger">KILL SWITCH</b>
       </div>

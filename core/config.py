@@ -82,6 +82,8 @@ class MemoryConfig:
     decay_half_life_days: float = 21.0
     max_episodes: int = 50_000
     auto_summarize: bool = True
+    # the visible conversation, persisted so a restart does not wipe the chat
+    transcript_path: str = str(DATA / "transcript.jsonl")
 
 
 @dataclass

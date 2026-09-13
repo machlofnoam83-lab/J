@@ -302,6 +302,13 @@
     return out.join('\n');
   }
 
+  function countTurns(n) {
+    const el = $('#th-count');
+    if (!el) return;
+    if (n === undefined) n = $$('#transcript .msg.bot, #transcript .msg.err').length;
+    el.textContent = n ? `${n} תשובות · נשמר גם אחרי אתחול` : 'ריק';
+  }
+
   function renderTurn(turn) {
     if (!turn) return;
     const a = turn.answer || {};
@@ -313,8 +320,9 @@
     if (a.risk && a.risk !== 'SAFE') chips.push({ t: 'סיכון ' + a.risk, k: 'tool' });
     if (a.confidence != null) chips.push({ t: 'ביטחון ' + Math.round(a.confidence * 100) + '%' });
     chips.push({ t: (turn.ms != null ? turn.ms : a.ms || 0).toFixed(0) + 'ms' });
-    addMsg(a.grounded ? 'bot' : 'err', esc(a.text || '…'), 'JARVIS',
+    addMsg(a.grounded ? 'bot' : 'err', esc(a.text || '…'), turn.voice ? 'JARVIS · 🗣' : 'JARVIS',
            { chips, trace: traceHtml(a.trace) });
+    countTurns();
   }
 
   // ───────────────────────── permissions ─────────────────────────
@@ -492,6 +500,25 @@
 
       case 'telemetry': renderTelemetry(msg.data); break;
 
+      case 'voice.state':
+        Talk.setState(msg.state, msg.reason);
+        if (msg.reason === 'idle timeout') toast('השיחה נסגרה — שקט מדי זמן רב', 'warn', 3000);
+        break;
+
+      case 'voice.level':
+        Talk.setLevel(msg.db, msg.rms);
+        break;
+
+      case 'voice.heard':
+        addMsg('user', esc(msg.text),
+               `🗣 ${esc(msg.label || 'זיהוי')} · ${Math.round((msg.confidence || 0) * 100)}% · ${Math.round(msg.ms || 0)}ms`);
+        break;
+
+      case 'voice.unheard':
+        if (msg.error) addMsg('err', esc(msg.error), '🗣 STT');
+        else toast('שמעתי משהו אבל לא זיהיתי פקודה', 'warn', 2200);
+        break;
+
       case 'audio':
         if (msg.wav_b64) {
           busy.speaking = Date.now();
@@ -629,6 +656,152 @@
     return { start, stop, get recording() { return recording; } };
   })();
 
+  // ══════════════ hands-free conversation (streaming microphone) ══════════════
+  // Push-to-talk records, stops, uploads. This keeps the microphone open and lets
+  // the server do the turn-taking: wake word -> listen -> answer aloud -> listen.
+  const Talk = (() => {
+    const TARGET = 16000;                    // the STT templates live at 16 kHz
+    const ACK = 'כן, אדוני?';
+    const LABELS = { off: 'שיחה חופשית כבויה', idle: 'ממתין להשכמה — אמור "ג׳רוויס"',
+                     listening: 'מקשיב…', thinking: 'מזהה…', speaking: 'מדבר' };
+    const sid = 'hud-' + Math.random().toString(36).slice(2, 10);
+    let on = false, ac = null, stream = null, proc = null, src = null, state = 'off';
+
+    function resample(f32, srIn) {
+      if (srIn === TARGET) return f32;
+      const ratio = TARGET / srIn, n = Math.floor(f32.length * ratio);
+      const out = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const p = i / ratio, i0 = Math.floor(p), i1 = Math.min(i0 + 1, f32.length - 1), t = p - i0;
+        out[i] = f32[i0] * (1 - t) + f32[i1] * t;
+      }
+      return out;
+    }
+
+    function toInt16(f32) {
+      const b = new Int16Array(f32.length);
+      for (let i = 0; i < f32.length; i++) {
+        const v = Math.max(-1, Math.min(1, f32[i]));
+        b[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+      }
+      return b;
+    }
+
+    async function restVoice(body) {
+      const r = await fetch(HTTP + '/api/voice', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ sid }, body))
+      });
+      const res = await r.json();
+      (res.events || []).forEach(handle);
+      return res;
+    }
+
+    async function ship(bytes) {
+      if (ws && ws.readyState === 1) { ws.send(bytes); return; }
+      // REST twin: the session queues its events server-side and this response
+      // carries them back, together with any speech the answer produced.
+      try {
+        const r = await fetch(HTTP + '/api/audio?sid=' + encodeURIComponent(sid), {
+          method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: bytes
+        });
+        const res = await r.json();
+        (res.events || []).forEach(handle);
+        (res.audio || []).forEach(fr => {
+          if (fr && fr.wav_b64) { busy.speaking = Date.now(); markBusy('vox', 4000); Voice.playB64(fr.wav_b64); }
+        });
+        if (res.state) setState(res.state);
+      } catch (_) { /* one lost chunk must not end a conversation */ }
+    }
+
+    async function start() {
+      if (on) return stop();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast('אין גישה למיקרופון בסביבה זו', 'err'); return false;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: {
+          channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      } catch (e) { toast('המיקרופון נדחה: ' + e.message, 'err'); return false; }
+
+      // Asking the browser for 16 kHz outright avoids resampling altogether; if it
+      // refuses we interpolate down ourselves.
+      const AC = window.AudioContext || window.webkitAudioContext;
+      try { ac = new AC({ sampleRate: TARGET }); } catch (_) { ac = new AC(); }
+      if (ac.state === 'suspended') { try { await ac.resume(); } catch (_) {} }
+
+      try {
+        if (ws && ws.readyState === 1) send({ type: 'voice_start', ack: ACK, idle_timeout: 25 });
+        else await restVoice({ action: 'start', ack: ACK, idle_timeout: 25 });
+      } catch (e) { toast('השרת סירב לפתוח שיחה: ' + e.message, 'err'); }
+
+      src = ac.createMediaStreamSource(stream);
+      proc = ac.createScriptProcessor(4096, 1, 1);
+      proc.onaudioprocess = e => {
+        if (!on) return;
+        const x = resample(new Float32Array(e.inputBuffer.getChannelData(0)), ac.sampleRate);
+        ship(toInt16(x).buffer);
+      };
+      src.connect(proc); proc.connect(ac.destination);
+      on = true;
+      setState('idle', 'microphone open');
+      paint();
+      pushEvent({ topic: 'voice.session.start', data: { sid, sr: ac.sampleRate }, ts: Date.now() / 1000 });
+      toast('שיחה חופשית פעילה — אמור "ג׳רוויס"', 'good', 4200);
+      return true;
+    }
+
+    async function stop() {
+      if (!on) return false;
+      on = false;
+      try { proc.disconnect(); } catch (_) {}
+      try { src.disconnect(); } catch (_) {}
+      try { stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      try { ac.close(); } catch (_) {}
+      proc = src = stream = ac = null;
+      try {
+        if (ws && ws.readyState === 1) send({ type: 'voice_stop' });
+        else await restVoice({ action: 'stop' });
+      } catch (_) {}
+      setState('off', 'stopped by user');
+      paint();
+      pushEvent({ topic: 'voice.session.stop', data: { sid }, ts: Date.now() / 1000 });
+      return true;
+    }
+
+    function paint() {
+      const b = $('#btn-talk');
+      if (!b) return;
+      b.classList.toggle('live', on);
+      b.textContent = on ? '🗣 שיחה פעילה' : '🗣 שיחה';
+      document.body.classList.toggle('talking', on);
+    }
+
+    function setState(next, reason) {
+      state = next || 'off';
+      const el = $('#talk-state'), dot = $('#talk-dot');
+      if (el) el.textContent = LABELS[state] || state;
+      if (el && reason) el.title = String(reason);
+      if (dot) dot.className = 'st-' + state;
+      const reactor = $('#reactor-state');
+      if (reactor && state !== 'off') {
+        reactor.textContent = state === 'listening' ? 'מקשיב'
+          : state === 'thinking' ? 'מזהה' : state === 'speaking' ? 'מדבר' : 'ממתין';
+      }
+    }
+
+    function setLevel(db, rms) {
+      const bar = $('#talk-level i');
+      if (!bar) return;
+      const norm = Math.max(0, Math.min(1, (Number(db) + 55) / 55));
+      bar.style.width = (norm * 100).toFixed(1) + '%';
+      bar.classList.toggle('hot', norm > 0.55);
+    }
+
+    return { start, stop, setState, setLevel, paint,
+             get on() { return on; }, get sid() { return sid; } };
+  })();
+
   // ══════════════════════════ interactions ══════════════════════════
   function bindUI() {
     const input = $('#input');
@@ -651,8 +824,21 @@
     // composer
     $('#btn-send').onclick = submit;
     $('#btn-mic').onclick = () => Rec.recording ? Rec.stop() : Rec.start();
+    if ($('#btn-talk')) $('#btn-talk').onclick = () => Talk.on ? Talk.stop() : Talk.start();
+    if ($('#btn-clear-chat')) $('#btn-clear-chat').onclick = () => {
+      send({ type: 'clear_chat' });
+      $('#transcript').innerHTML = '';
+      countTurns(0);
+      toast('היסטוריית השיחה נמחקה', 'warn');
+    };
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.key === 'v' || e.key === 'ו')) {
+        e.preventDefault();
+        Talk.on ? Talk.stop() : Talk.start();
+      }
     });
     input.addEventListener('input', () => { input.style.opacity = '1'; });
 
@@ -787,7 +973,7 @@
     }
     await runBoot();
     try {
-      const h = await api('/api/history?n=12');
+      const h = await api('/api/history?n=60');
       (h.turns || []).forEach(t => {
         addMsg('user', esc(t.user), 'אדוני');
         renderTurn(t);

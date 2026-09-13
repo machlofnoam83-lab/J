@@ -16,6 +16,7 @@ prompts to the UI.
 from __future__ import annotations
 
 import itertools
+import json
 import sys
 import threading
 import time
@@ -34,7 +35,7 @@ from brain.knowledge import KnowledgeStore  # noqa: E402
 from brain.memory import MemoryPalace  # noqa: E402
 from brain.reasoning import Answer, ReasoningEngine  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
-from core.config import CONFIG  # noqa: E402
+from core.config import CONFIG, DATA  # noqa: E402
 from security.permissions import FIREWALL, PermissionFirewall  # noqa: E402
 from skills.registry import REGISTRY  # noqa: E402
 from voice.tts import VoiceEngine, get_voice  # noqa: E402
@@ -80,6 +81,13 @@ class JarvisAgent:
         self.t0 = time.perf_counter()
         self.speak_out = speak_out
         self.turns: List[Turn] = []
+        # Chat history is a record of a conversation, not a cache: it is written to
+        # data/transcript.jsonl as it happens and read back on start-up, so the HUD
+        # shows yesterday's talk instead of an empty room.
+        self.transcript_path = Path(getattr(CONFIG.memory, "transcript_path",
+                                            str(DATA / "transcript.jsonl")))
+        self._log: List[Dict[str, Any]] = []
+        self._load_transcript()
 
         skills_pkg.load_all()
         self.firewall: PermissionFirewall = FIREWALL
@@ -214,6 +222,7 @@ class JarvisAgent:
         self.turns.append(turn)
         if len(self.turns) > 200:
             self.turns = self.turns[-200:]
+        self._persist_turn(turn.to_dict())
         BUS.emit(T.BRAIN_ANSWER, {"text": answer.text[:400], "grounded": answer.grounded,
                                   "intent": answer.intent, "ms": round(turn.ms, 1)}, source=self.name)
         return turn.to_dict()
@@ -363,7 +372,43 @@ class JarvisAgent:
         }
 
     def history(self, n: int = 20) -> List[Dict[str, Any]]:
-        return [t.to_dict() for t in self.turns[-n:]]
+        """Persisted turns from earlier runs, then this run's live turns."""
+        merged = self._log + [t.to_dict() for t in self.turns]
+        return merged[-n:]
+
+    def _load_transcript(self, limit: int = 200) -> None:
+        try:
+            if not self.transcript_path.exists():
+                return
+            rows = [json.loads(line) for line in
+                    self.transcript_path.read_text(encoding="utf-8").splitlines()[-limit:]
+                    if line.strip()]
+            self._log = [r for r in rows if isinstance(r, dict) and r.get("user") is not None]
+        except Exception:
+            self._log = []
+
+    def _persist_turn(self, turn: Dict[str, Any]) -> None:
+        try:
+            self.transcript_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.transcript_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(turn, ensure_ascii=False, default=str) + "\n")
+        except Exception:
+            pass                      # a full disk must never break a conversation
+
+    def clear_transcript(self) -> Dict[str, Any]:
+        """Forget the visible conversation. The memory palace is left alone —
+        this clears the chat log, not what JARVIS learned about you."""
+        n = len(self._log) + len(self.turns)
+        self._log = []
+        self.turns = []
+        try:
+            self.transcript_path.unlink()
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            return {"ok": False, "cleared": n, "error": str(exc)}
+        BUS.emit("chat.cleared", {"turns": n}, source=self.name)
+        return {"ok": True, "cleared": n}
 
     def events(self, n: int = 120) -> List[Dict[str, Any]]:
         return self.bus_history[-n:]

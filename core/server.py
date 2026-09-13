@@ -23,6 +23,7 @@ import os
 import sys
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -34,6 +35,8 @@ UI_DIR = ROOT / "ui"
 from aiohttp import WSMsgType, web  # noqa: E402
 
 from core.bus import BUS, T  # noqa: E402
+from core.voice_session import (active_sessions, get_session, start_session,  # noqa: E402
+                                stop_session)
 from core.config import CONFIG  # noqa: E402
 
 EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="jarvis-worker")
@@ -52,13 +55,14 @@ class Client:
     frames originate from several threads (bus callbacks, worker threads, tasks).
     """
 
-    __slots__ = ("ws", "loop", "lock", "tasks")
+    __slots__ = ("ws", "loop", "lock", "tasks", "sid")
 
     def __init__(self, ws: web.WebSocketResponse, loop: asyncio.AbstractEventLoop) -> None:
         self.ws = ws
         self.loop = loop
         self.lock = asyncio.Lock()
         self.tasks: set = set()
+        self.sid = uuid.uuid4().hex[:12]      # identifies this HUD's voice session
 
     async def send(self, payload: Dict[str, Any]) -> None:
         text = json.dumps(payload, ensure_ascii=False, default=str)
@@ -95,6 +99,36 @@ class Client:
 CLIENTS: List[Client] = []
 _AGENT_LOCK = threading.Lock()
 _CAPTURE = threading.local()          # per-call audio capture for the REST path
+_REST_VOICE: Dict[str, List[Dict[str, Any]]] = {}   # pending events per REST sid
+_REST_VOICE_LOCK = threading.Lock()
+
+
+def _rest_emit(sid: str):
+    """A session created over REST has no socket to push through, so its events
+    queue up here and the next /api/audio call carries them back."""
+    def emit(payload: Dict[str, Any]) -> None:
+        with _REST_VOICE_LOCK:
+            _REST_VOICE.setdefault(sid, []).append(payload)
+    return emit
+
+
+def _rest_drain(sid: str) -> List[Dict[str, Any]]:
+    with _REST_VOICE_LOCK:
+        return _REST_VOICE.pop(sid, [])
+
+
+def _voice_opts(data: Dict[str, Any]) -> Dict[str, Any]:
+    opts: Dict[str, Any] = {}
+    if "ack" in data:
+        opts["ack"] = str(data.get("ack") or "")
+    for key in ("idle_timeout", "min_speech_ms", "end_silence_ms",
+                "max_utterance_s", "wake_threshold"):
+        if data.get(key) is not None:
+            try:
+                opts[key] = float(data[key])
+            except (TypeError, ValueError):
+                pass
+    return opts
 
 
 def _broadcast(payload: Dict[str, Any]) -> None:
@@ -208,6 +242,77 @@ async def api_listen(request: web.Request) -> web.Response:
     return _json(res)
 
 
+async def api_voice(request: web.Request) -> web.Response:
+    """POST /api/voice — the REST twin of the socket's voice_start/voice_stop.
+
+    Body: {"action": "start"|"stop"|"state", "sid": "...", ...tuning}
+    A REST client has no socket to push events through, so anything the session
+    emits comes back on the next /api/audio response (and on "state").
+    """
+    loop = asyncio.get_event_loop()
+    agent = await loop.run_in_executor(EXECUTOR, get_agent)
+    try:
+        data = json.loads((await request.read()).decode("utf-8", "replace") or "{}")
+    except Exception:
+        return _json({"type": "error", "message": "invalid JSON body"})
+    action = str(data.get("action", "state")).lower()
+    sid = str(data.get("sid") or request.query.get("sid") or "rest-default")[:40]
+
+    if action == "start":
+        session = await loop.run_in_executor(
+            EXECUTOR, lambda: start_session(sid, agent, _rest_emit(sid), **_voice_opts(data)))
+        return _json({"type": "control", "action": "voice_start", "sid": sid,
+                      **session.snapshot(), "events": _rest_drain(sid)})
+    if action == "stop":
+        stopped = await loop.run_in_executor(EXECUTOR, stop_session, sid)
+        return _json({"type": "control", "action": "voice_stop", "ok": stopped,
+                      "events": _rest_drain(sid)})
+    session = get_session(sid)
+    return _json({"type": "voice.state", "sid": sid,
+                  **(session.snapshot() if session else {"state": "off"}),
+                  "sessions": active_sessions(), "events": _rest_drain(sid)})
+
+
+async def api_audio(request: web.Request) -> web.Response:
+    """POST /api/audio — stream one microphone chunk (raw Int16 LE mono PCM).
+
+    The response carries everything the session emitted while chewing on it, plus
+    any speech the answer produced, inline as base64 WAV frames — the same deal
+    the REST command transport offers.
+    """
+    loop = asyncio.get_event_loop()
+    sid = str(request.query.get("sid") or "rest-default")[:40]
+    session = get_session(sid)
+    if session is None:
+        return web.json_response(
+            {"type": "error", "state": "off",
+             "message": "no voice session for this sid — POST /api/voice first"}, status=404)
+    payload = await request.read()
+    if not payload:
+        return _json({"type": "voice.events", "events": _rest_drain(sid), "audio": [],
+                      "message": "empty audio body"})
+
+    # _CAPTURE is thread-local and the session runs in a worker thread, so the
+    # buffer has to be opened *there* — setting it in this coroutine would leave
+    # the audio sink writing to nothing and the spoken reply would be dropped.
+    def work() -> List[Dict[str, Any]]:
+        frames: List[Dict[str, Any]] = []
+        _CAPTURE.buf = frames
+        try:
+            session.feed(payload)
+        finally:
+            _CAPTURE.buf = None
+        return frames
+
+    try:
+        frames = await loop.run_in_executor(EXECUTOR, work)
+    except Exception as exc:
+        return _json({"type": "error", "message": f"{type(exc).__name__}: {exc}",
+                      "events": _rest_drain(sid), "audio": []})
+    return _json({"type": "voice.events", "state": session.state,
+                  "events": _rest_drain(sid), "audio": frames})
+
+
 # ------------------------------------------------------------- commands ----
 def dispatch_command(agent, data: Dict[str, Any], capture_audio: bool = False) -> Dict[str, Any]:
     """Execute one HUD command. WebSocket and REST share this single code path,
@@ -244,6 +349,9 @@ def _dispatch_inner(agent, data: Dict[str, Any]) -> Dict[str, Any]:
 
     if kind == "speak":
         return {"type": "speak_result", **agent.speak_text(str(data.get("text", "")))}
+
+    if kind == "clear_chat":
+        return {"type": "control", "action": "clear_chat", **agent.clear_transcript()}
 
     if kind == "boot":
         return {"type": "boot", "report": agent.boot()}
@@ -339,6 +447,17 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
         async for msg in ws:
             if msg.type == WSMsgType.ERROR:
                 break
+
+            # ---- streaming microphone audio (hands-free conversation) ----
+            if msg.type == WSMsgType.BINARY:
+                session = get_session(client.sid)
+                if session is None:
+                    await client.send({"type": "error",
+                                       "message": "no voice session — send voice_start first"})
+                    continue
+                await call(session.feed, msg.data)
+                continue
+
             if msg.type != WSMsgType.TEXT:
                 continue
             try:
@@ -351,10 +470,23 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
             if kind == "ping":
                 await client.send({"type": "pong", "ts": time.time()})
             elif kind in ("user_text", "invoke", "speak", "boot", "kill", "revive",
-                          "set_level", "set_dry_run", "set_theme", "permission"):
+                          "set_level", "set_dry_run", "set_theme", "permission",
+                          "clear_chat"):
                 client.spawn(run_command(data))
             elif kind == "status":
                 await client.send({"type": "hello", "status": await call(agent.status)})
+            elif kind == "voice_start":
+                session = await call(start_session, client.sid, agent, client.push,
+                                     **_voice_opts(data))
+                await client.send({"type": "control", "action": "voice_start",
+                                   "sid": client.sid, **session.snapshot()})
+            elif kind == "voice_stop":
+                stopped = await call(stop_session, client.sid)
+                await client.send({"type": "control", "action": "voice_stop", "ok": stopped})
+            elif kind == "voice_state":
+                session = get_session(client.sid)
+                await client.send({"type": "voice.state",
+                                   **(session.snapshot() if session else {"state": "off"})})
             else:
                 await client.send({"type": "error", "message": f"unknown type {kind!r}"})
     except Exception as exc:
@@ -365,6 +497,7 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
     finally:
         for t in list(client.tasks):
             t.cancel()
+        stop_session(client.sid)          # never leave a microphone open behind
         if client in CLIENTS:
             CLIENTS.remove(client)
     return ws
@@ -458,6 +591,8 @@ def build_app() -> web.Application:
     app.router.add_get("/api/permissions", api_permissions)
     app.router.add_get("/api/stt", api_stt)
     app.router.add_post("/api/listen", api_listen)
+    app.router.add_post("/api/voice", api_voice)
+    app.router.add_post("/api/audio", api_audio)
     app.router.add_post("/api/command", api_command)
     # Unknown /api/* must answer as JSON for every method. Registered before the
     # UI catch-all below (aiohttp resolves resources in registration order), so
