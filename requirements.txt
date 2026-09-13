@@ -1,0 +1,26 @@
+# JARVIS — all dependencies are free/open. No API keys. No cloud services.
+# Core numerics (required)
+numpy>=1.26
+scipy>=1.11
+
+# Neural core (required for training; inference can fall back to pure-numpy)
+torch>=2.1
+
+# Audio (required for voice engine)
+soundfile>=0.12
+
+# System operations
+psutil>=5.9
+
+# Optional — fast ONNX inference runtime for the trained model
+onnxruntime>=1.16
+
+# Optional — JIT acceleration for DSP paths
+numba>=0.59
+
+# --- Windows-only (installed automatically by tools/setup_windows.bat) ---
+# pywin32        -> Win32 API (windows, input, clipboard)
+# mss            -> screenshots
+# pyautogui      -> mouse/keyboard automation
+# pyperclip      -> clipboard
+# sounddevice    -> WASAPI audio I/O
