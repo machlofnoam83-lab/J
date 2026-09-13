@@ -493,3 +493,105 @@ body.talking #reactor-wrap { filter: saturate(1.15); }
 body.talking #composer { border-color: rgba(82,255,154,.28); }
 
 @media (max-width: 1100px) { #talk-hint { display: none; } }
+
+
+/* ══════════ voice enrolment + wake-score readout ══════════ */
+#talk-wake {
+  font: 600 10px/1 ui-monospace, "Consolas", monospace;
+  letter-spacing: .04em; padding: 3px 7px; border-radius: 999px;
+  border: 1px solid rgba(120, 200, 255, .18); background: rgba(8, 18, 28, .6);
+  white-space: nowrap; opacity: .95;
+}
+#talk-wake:empty { display: none; }
+#talk-wake.w-ok  { color: #7dffb2; border-color: rgba(90, 255, 160, .45); box-shadow: 0 0 12px rgba(70,255,150,.18) inset; }
+#talk-wake.w-mid { color: #ffd479; border-color: rgba(255, 205, 90, .38); }
+#talk-wake.w-low { color: #ff8f8f; border-color: rgba(255, 110, 110, .32); }
+
+#btn-train {
+  margin-inline-start: auto; flex: 0 0 auto;
+  font: 700 11px/1 "Heebo", system-ui, sans-serif; letter-spacing: .02em;
+  color: #bfe9ff; background: linear-gradient(180deg, rgba(30, 70, 100, .55), rgba(12, 30, 46, .55));
+  border: 1px solid rgba(120, 200, 255, .3); border-radius: 8px;
+  padding: 6px 10px; cursor: pointer; transition: .18s ease;
+}
+#btn-train:hover { color: #eaf9ff; border-color: rgba(150, 220, 255, .6); box-shadow: 0 0 14px rgba(80, 190, 255, .25); }
+
+#train-panel {
+  margin: 8px 0 0; padding: 10px 12px 12px;
+  border: 1px solid rgba(120, 200, 255, .22); border-radius: 12px;
+  background: linear-gradient(180deg, rgba(10, 26, 40, .92), rgba(6, 16, 26, .92));
+  box-shadow: 0 0 26px rgba(40, 140, 210, .12), 0 0 60px rgba(20, 80, 140, .08) inset;
+}
+#train-panel.hidden { display: none; }
+#train-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+#train-head b { font: 800 13px/1.2 "Heebo", system-ui, sans-serif; color: #d7f2ff; letter-spacing: .03em; }
+#train-head span { flex: 1 1 220px; font-size: 11px; line-height: 1.5; color: #9fc3d8; }
+#train-close {
+  background: none; border: 1px solid rgba(120, 200, 255, .25); color: #9fc3d8;
+  border-radius: 7px; width: 24px; height: 24px; cursor: pointer; font-size: 11px;
+}
+#train-close:hover { color: #fff; border-color: rgba(255, 120, 120, .6); }
+
+#train-list { display: grid; gap: 5px; }
+.train-row {
+  display: grid; grid-template-columns: minmax(120px, 1fr) auto minmax(150px, 1.4fr);
+  align-items: center; gap: 8px; padding: 5px 8px; border-radius: 9px;
+  background: rgba(255, 255, 255, .028); border: 1px solid rgba(120, 200, 255, .1);
+}
+.train-row:hover { border-color: rgba(120, 200, 255, .28); }
+.tr-text { font: 600 12.5px/1.3 "Heebo", system-ui, sans-serif; color: #e6f6ff; }
+.tr-rec {
+  font: 700 11px/1 "Heebo", system-ui, sans-serif; color: #cdeeff; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px; white-space: nowrap;
+  background: linear-gradient(180deg, rgba(35, 80, 115, .7), rgba(14, 34, 52, .7));
+  border: 1px solid rgba(130, 205, 255, .34); transition: .16s ease;
+}
+.tr-rec:hover { border-color: rgba(160, 225, 255, .7); box-shadow: 0 0 12px rgba(80, 190, 255, .3); }
+.tr-state { font-size: 11px; color: #8fb2c6; text-align: start; }
+.tr-state.rec  { color: #ff9d9d; font-weight: 700; }
+.tr-state.wait { color: #ffd479; }
+.tr-state.good { color: #7dffb2; font-weight: 700; }
+.tr-state.bad  { color: #ff8f8f; }
+
+#train-foot { display: flex; align-items: center; gap: 10px; margin-top: 9px; flex-wrap: wrap; }
+#train-all {
+  font: 700 11.5px/1 "Heebo", system-ui, sans-serif; color: #06121c; cursor: pointer;
+  padding: 8px 13px; border-radius: 9px; border: 1px solid rgba(160, 235, 255, .7);
+  background: linear-gradient(180deg, #9fe6ff, #46b6e8);
+  box-shadow: 0 0 18px rgba(90, 200, 255, .3);
+}
+#train-all:disabled { opacity: .55; cursor: progress; }
+#train-note { flex: 1 1 200px; font-size: 11px; color: #9fc3d8; line-height: 1.5; }
+
+/* ══════════ teach-back: "what did you say?" ══════════ */
+.teach { line-height: 1.9; }
+.teach-q { color: #ffd479; font-weight: 700; }
+.teach-sel {
+  font: 600 12px/1.4 "Heebo", system-ui, sans-serif; color: #e6f6ff;
+  background: rgba(10, 26, 40, .9); border: 1px solid rgba(120, 200, 255, .32);
+  border-radius: 8px; padding: 5px 8px; margin: 0 6px; max-width: 220px;
+}
+.teach-go {
+  font: 700 11.5px/1 "Heebo", system-ui, sans-serif; color: #06121c; cursor: pointer;
+  padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(160, 235, 255, .7);
+  background: linear-gradient(180deg, #9fe6ff, #46b6e8);
+  box-shadow: 0 0 14px rgba(90, 200, 255, .28); transition: .16s ease;
+}
+.teach-go:hover:not(:disabled) { box-shadow: 0 0 22px rgba(90, 200, 255, .5); }
+.teach-go:disabled { opacity: .6; cursor: progress; }
+
+
+/* ══════════ download the whole project ══════════ */
+#btn-download {
+  align-self: center; flex: 0 0 auto; text-decoration: none;
+  font: 700 11px/1 "Heebo", system-ui, sans-serif; letter-spacing: .02em;
+  color: #cdf0ff; padding: 7px 11px; border-radius: 9px; cursor: pointer;
+  border: 1px solid rgba(120, 200, 255, .34);
+  background: linear-gradient(180deg, rgba(32, 74, 106, .6), rgba(12, 30, 46, .6));
+  transition: .18s ease; white-space: nowrap;
+}
+#btn-download:hover {
+  color: #f2fcff; border-color: rgba(160, 225, 255, .7);
+  box-shadow: 0 0 16px rgba(80, 190, 255, .3);
+}
+#btn-download.busy { opacity: .55; pointer-events: none; }

@@ -503,10 +503,12 @@
       case 'voice.state':
         Talk.setState(msg.state, msg.reason);
         if (msg.reason === 'idle timeout') toast('השיחה נסגרה — שקט מדי זמן רב', 'warn', 3000);
+        if (msg.reason === 'still listening') Talk.hint('עדיין מקשיב — פשוט דבר');
+        if (msg.wake_required === true) Talk.hint('אמור <b>ג׳רוויס</b> ואחר כך דבר');
         break;
 
       case 'voice.level':
-        Talk.setLevel(msg.db, msg.rms);
+        Talk.setLevel(msg.db, msg.rms, msg.wake, msg.wake_threshold);
         break;
 
       case 'voice.heard':
@@ -514,8 +516,18 @@
                `🗣 ${esc(msg.label || 'זיהוי')} · ${Math.round((msg.confidence || 0) * 100)}% · ${Math.round(msg.ms || 0)}ms`);
         break;
 
+      case 'voice.muted':
+        Talk.setState('speaking', 'JARVIS is talking — microphone muted');
+        Talk.hint('🔇 הוא מדבר עכשיו — המיקרופון ייפתח מיד כשיסיים');
+        break;
+
+      case 'voice.unmuted':
+        Talk.hint('המיקרופון פתוח — <b>פשוט דבר</b>');
+        break;
+
       case 'voice.unheard':
         if (msg.error) addMsg('err', esc(msg.error), '🗣 STT');
+        else if (msg.wav_b64 && msg.teachable) Train.offerTeach(msg);
         else toast('שמעתי משהו אבל לא זיהיתי פקודה', 'warn', 2200);
         break;
 
@@ -653,12 +665,15 @@
       return true;
     }
 
-    return { start, stop, get recording() { return recording; } };
+    return { start, stop, encodeWav, get recording() { return recording; } };
   })();
 
   // ══════════════ hands-free conversation (streaming microphone) ══════════════
   // Push-to-talk records, stops, uploads. This keeps the microphone open and lets
   // the server do the turn-taking: wake word -> listen -> answer aloud -> listen.
+  let lastLoud = 0, quietRun = 0, deadWarned = false, lowWakeRun = 0, trainNudged = false;
+  let gated = 0, unmuteSent = false;
+
   const Talk = (() => {
     const TARGET = 16000;                    // the STT templates live at 16 kHz
     const ACK = 'כן, אדוני?';
@@ -698,6 +713,12 @@
     }
 
     async function ship(bytes) {
+      // The server mutes the microphone for as long as it *thinks* playback will
+      // take, but the HUD is the thing actually making the sound and it knows
+      // better: if the estimate expires early, JARVIS hears his own answer and
+      // replies to himself. Gating here closes that loop, and the counter feeds
+      // the hint line so the deafness is visible rather than mysterious.
+      if (window.Voice && (Voice.speaking || Voice.pending > 0)) { gated++; return; }
       if (ws && ws.readyState === 1) { ws.send(bytes); return; }
       // REST twin: the session queues its events server-side and this response
       // carries them back, together with any speech the answer produced.
@@ -744,10 +765,15 @@
       };
       src.connect(proc); proc.connect(ac.destination);
       on = true;
-      setState('idle', 'microphone open');
+      quietRun = 0; deadWarned = false; lowWakeRun = 0; trainNudged = false;
+      // The session opens straight into LISTENING (arm_on_start) — the wake word
+      // is a bonus path, not a gate, because it only matches voices that have
+      // templates in the bank.
+      setState('listening', 'microphone open — just speak');
+      hint('המיקרופון פתוח — <b>פשוט דבר</b>. מילת השכמה? לחץ 🎯 אימון קול');
       paint();
       pushEvent({ topic: 'voice.session.start', data: { sid, sr: ac.sampleRate }, ts: Date.now() / 1000 });
-      toast('שיחה חופשית פעילה — אמור "ג׳רוויס"', 'good', 4200);
+      toast('המיקרופון פתוח ומקשיב — פשוט דבר', 'good', 4200);
       return true;
     }
 
@@ -790,16 +816,276 @@
       }
     }
 
-    function setLevel(db, rms) {
+    function hint(html) {
+      const el = $('#talk-hint');
+      if (el && html) el.innerHTML = html;
+    }
+
+    function setLevel(db, rms, wake, wakeThreshold) {
       const bar = $('#talk-level i');
       if (!bar) return;
       const norm = Math.max(0, Math.min(1, (Number(db) + 55) / 55));
       bar.style.width = (norm * 100).toFixed(1) + '%';
       bar.classList.toggle('hot', norm > 0.55);
+
+      // "He isn't listening" has three possible causes and they look identical
+      // from the outside. This readout tells them apart: no signal at all is a
+      // microphone problem, signal with a low wake score is a voice-match
+      // problem, and both are worth saying out loud instead of leaving the user
+      // to guess.
+      const loud = Number(rms) > 0.0008;
+      if (loud) { lastLoud = Date.now(); quietRun = 0; deadWarned = false; }
+      else if (on) { quietRun++; }
+      const w = $('#talk-wake');
+      if (w && wake !== undefined && wake !== null) {
+        const thr = Number(wakeThreshold || 0.55);
+        w.textContent = 'זיהוי קול ' + Number(wake).toFixed(2) + '/' + thr.toFixed(2);
+        w.className = Number(wake) >= thr ? 'w-ok' : (Number(wake) >= thr * 0.5 ? 'w-mid' : 'w-low');
+        w.title = 'כמה קרוב הקול שלך להפעלת מילת ההשכמה. נמוך? לחץ 🎯 אימון קול.';
+      }
+      if (on && !deadWarned && quietRun > 34) {          // ~4 s at 8 Hz of nothing
+        deadWarned = true;
+        toast('המיקרופון לא שולח קול — בדוק הרשאות או התקן קלט', 'err', 6000);
+        hint('🔇 אין קול מהמיקרופון — בדוק הרשאות במערכת');
+      }
+      if (on && !trainNudged && loud && wake !== undefined && Number(wake) < 0.25) {
+        lowWakeRun++;
+        if (lowWakeRun > 24) {                            // ~3 s of speech, no match
+          trainNudged = true;
+          toast('שומע אותך, אבל הקול שלך לא תואם את בנק הדגימות — לחץ 🎯 אימון קול', 'warn', 7000);
+        }
+      } else if (!loud) { lowWakeRun = 0; }
     }
 
-    return { start, stop, setState, setLevel, paint,
+    return { start, stop, setState, setLevel, hint, paint, ship, resample, toInt16,
              get on() { return on; }, get sid() { return sid; } };
+  })();
+
+  // ══════════ voice enrolment — teach JARVIS the voice in the room ══════════
+  // The shipped template bank is synthesised from our own TTS. Measured: the same
+  // words in a different timbre score 0.000 against it, while two recordings of
+  // the listener lift an *unseen* take to ~1.000 and a spoken command from 0.08 to
+  // 0.77 confidence. This panel is therefore not a refinement — it is what makes
+  // the wake word answer to a human being at all.
+  const Train = (() => {
+    let script = [], busy = false, stopFn = null, pendingDone = null;
+
+    function note(t) { const n = $('#train-note'); if (n) n.textContent = t; }
+
+    async function load() {
+      try {
+        const res = await (await fetch(HTTP + '/api/enroll')).json();
+        script = res.script || [];
+        render();
+        const n = res.enrolled_total || 0;
+        note(n < 1 ? 'אין עדיין דגימות שלך — מילת ההשכמה מכווננת כרגע לקול המסונתז בלבד.'
+           : n < 3 ? `יש ${n} דגימות. כדאי לפחות 3-4 משפטים — דגימה בודדת יכולה למשוך גם משפטים אחרים אליה.`
+                   : `יש כבר ${n} דגימות שלך בבנק (${res.templates} תבניות). אפשר להוסיף עוד.`);
+      } catch (e) { note('לא הצלחתי לקרוא את רשימת האימון: ' + e.message); }
+    }
+
+    function render() {
+      const list = $('#train-list');
+      if (!list) return;
+      list.innerHTML = '';
+      script.forEach(ph => {
+        const row = document.createElement('div');
+        row.className = 'train-row';
+        row.dataset.label = ph.label;
+        row.innerHTML = '<span class="tr-text">“' + esc(ph.text) + '”</span>' +
+                        '<button class="tr-rec">🎙 הקלט</button>' +
+                        '<span class="tr-state">' + (ph.enrolled ? '✓ ' + ph.enrolled + ' דגימות' : '—') + '</span>';
+        row.querySelector('.tr-rec').onclick = () => stopFn ? stopFn() : capture(ph.label, ph.text, row);
+        list.appendChild(row);
+      });
+    }
+
+    function paintResult(st, res) {
+      if (!res || !res.ok) {
+        st.className = 'tr-state bad';
+        st.textContent = '✗ ' + ((res && res.error) || 'ההעלאה נכשלה');
+      } else {
+        const pct = Math.round((res.score || 0) * 100);
+        st.className = 'tr-state ' + (res.heard ? 'good' : 'bad');
+        st.textContent = (res.heard ? '✓ ' : '⚠ ') + pct + '% — ' +
+          (res.heard ? 'הוא מכיר את הקול שלך' : 'נמוך מדי, נסה שוב') +
+          ' · ' + (res.frames || 0) + ' פריימים · ' + (res.bank || 0) + ' תבניות';
+      }
+      const d = pendingDone; pendingDone = null; if (d) d();
+    }
+
+    async function upload(label, wav) {
+      try {
+        const r = await fetch(HTTP + '/api/enroll?label=' + encodeURIComponent(label), {
+          method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: wav
+        });
+        return await r.json();
+      } catch (e) { return { ok: false, error: String(e.message || e) }; }
+    }
+
+    async function capture(label, text, row) {
+      if (stopFn) return;
+      const st = row.querySelector('.tr-state'), btn = row.querySelector('.tr-rec');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        st.className = 'tr-state bad'; st.textContent = 'אין גישה למיקרופון';
+        const d = pendingDone; pendingDone = null; if (d) d(); return;
+      }
+      let stream, ac, proc, src, chunks = [], sr = 16000, stopped = false;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: {
+          channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      } catch (e) {
+        st.className = 'tr-state bad'; st.textContent = 'המיקרופון נדחה';
+        const d = pendingDone; pendingDone = null; if (d) d(); return;
+      }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ac = new AC();
+      if (ac.state === 'suspended') { try { await ac.resume(); } catch (_) {} }
+      sr = ac.sampleRate;
+      src = ac.createMediaStreamSource(stream);
+      proc = ac.createScriptProcessor(4096, 1, 1);
+      proc.onaudioprocess = e => { if (!stopped) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+      src.connect(proc); proc.connect(ac.destination);
+
+      const LIMIT = 3000, t0 = Date.now();
+      btn.textContent = '⏹ עצור'; st.className = 'tr-state rec';
+      const tick = setInterval(() => {
+        const left = Math.max(0, (LIMIT - (Date.now() - t0)) / 1000);
+        st.textContent = '🔴 אמור “' + text + '” · ' + left.toFixed(1) + 's';
+        if (left <= 0) finish();
+      }, 100);
+
+      async function finish() {
+        if (stopped) return;
+        stopped = true; stopFn = null; clearInterval(tick);
+        btn.textContent = '🎙 הקלט';
+        try { proc.disconnect(); src.disconnect(); } catch (_) {}
+        try { stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+        try { ac.close(); } catch (_) {}
+        const total = chunks.reduce((a, c) => a + c.length, 0);
+        const pcm = new Float32Array(total); let o = 0;
+        chunks.forEach(c => { pcm.set(c, o); o += c.length; });
+        if (total / sr < 0.45) {
+          st.className = 'tr-state bad'; st.textContent = 'קצר מדי — נסה שוב';
+          const d = pendingDone; pendingDone = null; if (d) d(); return;
+        }
+        st.className = 'tr-state wait'; st.textContent = 'שומר דגימה…';
+        paintResult(st, await upload(label, Rec.encodeWav(pcm, sr)));
+        load();                                  // refresh counts + totals
+      }
+      stopFn = finish;
+    }
+
+    async function all() {
+      if (busy) return;
+      busy = true;
+      const btn = $('#train-all');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ מאמן…'; }
+      for (const ph of script) {
+        const row = document.querySelector('#train-list .train-row[data-label="' + ph.label + '"]');
+        if (!row) continue;
+        note('עכשיו: אמור “' + ph.text + '” בקול רגיל');
+        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => { pendingDone = r; capture(ph.label, ph.text, row); });
+        await new Promise(r => setTimeout(r, 350));
+      }
+      busy = false;
+      if (btn) { btn.disabled = false; btn.textContent = '🎯 אמן הכול ברצף'; }
+      note('האימון הושלם. ההשפעה מיידית — גם על שיחה שכבר פתוחה.');
+      toast('אימון הקול הושלם — נסה לומר "ג׳רוויס"', 'good', 5000);
+    }
+
+    // ── teach-back: turn "he didn't understand me" into one click ──────────
+    // The session ships the audio it failed on. Enrol it under the phrase the
+    // listener meant, then replay it through the live session so the command
+    // actually runs — the correction and the proof in the same breath.
+    let vocab = null;
+    async function getVocab() {
+      if (vocab) return vocab;
+      try {
+        const res = await (await fetch(HTTP + '/api/enroll')).json();
+        vocab = res.vocabulary || [];
+      } catch (_) { vocab = []; }
+      return vocab;
+    }
+
+    function b64ToBytes(b64) {
+      const bin = atob(b64), out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    async function offerTeach(msg) {
+      const list = await getVocab();
+      if (!list.length) return;
+      let best = (msg.top && msg.top[0]) || null;
+      if (best && !(best.confidence > 0)) best = null;   // a 0% guess is no guess
+      const guess = best ? `${best.label} · ${Math.round(best.confidence * 100)}%` : '';
+      const opts = list.map(v =>
+        `<option value="${esc(v.label)}"${best && best.label === v.label ? ' selected' : ''}>${esc(v.text)}</option>`).join('');
+      const el = addMsg('err',
+        `<div class="teach">לא הבנתי אותך${msg.confidence ? ` (הקרוב ביותר: ${esc(guess)}, ` +
+          `${Math.round((msg.confidence || 0) * 100)}%)` : ''}.<br>` +
+        `<span class="teach-q">מה אמרת?</span> <select class="teach-sel">${opts}</select>` +
+        `<button class="teach-go">🎯 למד אותי והפעל</button></div>`,
+        '🗣 זיהוי קול');
+      if (!el) return;
+      const go = el.querySelector('.teach-go'), sel = el.querySelector('.teach-sel');
+      if (go) go.onclick = async () => {
+        go.disabled = true; go.textContent = '⏳ לומד…';
+        const r = await teach(sel.value, msg.wav_b64, el);
+        go.textContent = r ? '✓ נלמד — מבצע שוב' : '✗ לא הצלחתי ללמוד';
+        if (!r) go.disabled = false;
+      };
+    }
+
+    async function teach(label, b64, el) {
+      try {
+        const bytes = b64ToBytes(b64);
+        const res = await upload(label, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+        if (!res || !res.ok) { toast('האימון נכשל: ' + ((res && res.error) || 'שגיאה'), 'err'); return false; }
+        toast(res.advise && res.score >= 0.55 ? res.advise
+              : `נלמד “${label}” — ציון ${Math.round((res.score || 0) * 100)}%`,
+              res.advise && res.score >= 0.55 ? 'warn' : 'good', 4200);
+        // replay it through the open session so the command runs right away
+        const dec = window.Voice ? Voice.decodeWav(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)) : null;
+        if (dec && Talk.on) {
+          // JARVIS spoke the "didn't catch that" cue a moment ago, so the echo
+          // guard may still be up — lift it explicitly before replaying.
+          try {
+            if (ws && ws.readyState === 1) send({ type: 'voice_unmute' });
+            else await fetch(HTTP + '/api/voice', { method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ action: 'unmute', sid: Talk.sid }) });
+          } catch (_) {}
+          const x = Talk.resample(new Float32Array(dec.samples), dec.sampleRate);
+          const tail = Math.round(16000 * 1.2);
+          const all = new Float32Array(x.length + tail);
+          all.set(x, 0);
+          const pcm = Talk.toInt16(all).buffer;
+          for (let i = 0; i < pcm.byteLength; i += 3200) {
+            await Talk.ship(pcm.slice(i, i + 3200));
+          }
+        } else if (!Talk.on) {
+          toast('פתח 🗣 שיחה כדי שהפקודה תרוץ מיד', 'warn', 4000);
+        }
+        load();
+        return true;
+      } catch (e) { toast('שגיאה באימון: ' + e.message, 'err'); return false; }
+    }
+
+    function open() {
+      const el = $('#train-panel');
+      if (el) el.classList.remove('hidden');
+      load();
+    }
+    function close() {
+      const el = $('#train-panel');
+      if (el) el.classList.add('hidden');
+      if (stopFn) stopFn();
+    }
+
+    return { open, close, load, all, offerTeach, teach, get busy() { return busy; } };
   })();
 
   // ══════════════════════════ interactions ══════════════════════════
@@ -825,6 +1111,9 @@
     $('#btn-send').onclick = submit;
     $('#btn-mic').onclick = () => Rec.recording ? Rec.stop() : Rec.start();
     if ($('#btn-talk')) $('#btn-talk').onclick = () => Talk.on ? Talk.stop() : Talk.start();
+    if ($('#btn-train')) $('#btn-train').onclick = () => Train.open();
+    if ($('#train-close')) $('#train-close').onclick = () => Train.close();
+    if ($('#train-all')) $('#train-all').onclick = () => Train.all();
     if ($('#btn-clear-chat')) $('#btn-clear-chat').onclick = () => {
       send({ type: 'clear_chat' });
       $('#transcript').innerHTML = '';
@@ -876,6 +1165,7 @@
     document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Escape') { e.preventDefault(); doKill('KILL SWITCH'); }
       if (e.key === 'Escape' && Rec.recording) Rec.stop();
+      if (e.key === 'Escape') { const tp = $('#train-panel'); if (tp && !tp.classList.contains('hidden')) Train.close(); }
     });
 
     // unlock audio on first gesture (browser autoplay policy)
@@ -947,8 +1237,19 @@
     Voice.startMeter();
     Voice.onState(on => {
       busy.speaking = on ? Date.now() : 0;
-      if (!on) recomputeState();
-      else { recomputeState(); }
+      recomputeState();
+      if (on) { unmuteSent = false; }
+      else if (!unmuteSent && Talk.on) {
+        // Playback is over for real — lift the server-side echo mute now instead
+        // of waiting out its wall-clock guess.
+        unmuteSent = true;
+        try {
+          if (ws && ws.readyState === 1) send({ type: 'voice_unmute' });
+          else fetch(HTTP + '/api/voice', { method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ action: 'unmute', sid: Talk.sid }) }).catch(() => {});
+        } catch (_) {}
+      }
     });
     bindUI();
     renderAgents();
@@ -961,6 +1262,18 @@
     }
     if (!HTTP) HTTP = (location.protocol === 'file:') ? 'http://127.0.0.1:8756' : location.origin;
     WS = HTTP.replace(/^http/, 'ws') + '/ws';
+
+    // The bundle lives next to the brain, not next to the page: in Electron the
+    // HUD is loaded from disk, where a relative link would point nowhere.
+    const dl = $('#btn-download');
+    if (dl) {
+      dl.href = HTTP + '/ui/JARVIS-full.zip';
+      dl.onclick = () => {
+        dl.classList.add('busy');
+        toast('מוריד את JARVIS-full.zip (~32MB)…', 'good', 4000);
+        setTimeout(() => dl.classList.remove('busy'), 2500);
+      };
+    }
 
     startClocks();
     recomputeState();

@@ -44,6 +44,9 @@
     <div id="clock-date">—</div>
   </div>
 
+  <a id="btn-download" href="#" download="JARVIS-full.zip"
+     title="הורדת הפרויקט המלא (ZIP): קוד, מודלים, בנק הקול וה־HUD — בלי שום דבר חיצוני">⬇ הורדה</a>
+
   <div class="win-controls">
     <button id="btn-always-top" class="wc" title="נעץ למעלה (Ctrl+Shift+J)">📌</button>
     <button id="btn-fullscreen" class="wc" title="מסך מלא">⛶</button>
@@ -120,7 +123,22 @@
         <span id="talk-dot"></span>
         <span id="talk-state">שיחה חופשית כבויה</span>
         <div id="talk-level"><i></i></div>
-        <span id="talk-hint">אמור <b>ג׳רוויס</b> ואחר כך דבר — הוא עונה בקול וממשיך להקשיב</span>
+        <span id="talk-wake" class="w-low" title="כמה קרוב הקול שלך להפעלת מילת ההשכמה"></span>
+        <span id="talk-hint">לחץ <b>🗣 שיחה</b> והמיקרופון נפתח <b>כבר מקשיב</b> — פשוט דבר</span>
+        <button id="btn-train" title="למד את JARVIS להכיר את הקול שלך">🎯 אימון קול</button>
+      </div>
+      <div id="train-panel" class="hidden">
+        <div id="train-head">
+          <b>אימון קול</b>
+          <span>בנק הדגימות נבנה מהקול המסונתז של JARVIS עצמו. קול אנושי אחר נשמע לו
+            אחרת לגמרי — לכן כדאי להקליט את עצמך. שתי דגימות מספיקות.</span>
+          <button id="train-close" title="סגור">✕</button>
+        </div>
+        <div id="train-list"></div>
+        <div id="train-foot">
+          <button id="train-all">🎯 אמן הכול ברצף</button>
+          <span id="train-note">לחץ 🎙 ליד משפט, אמור אותו, וההקלטה נעצרת לבד אחרי 3 שניות.</span>
+        </div>
       </div>
       <div id="composer-row">
         <button id="btn-talk" title="שיחה חופשית: מיקרופון פתוח, מילת השכמה, תשובות בקול (Ctrl+Shift+V)">🗣 שיחה</button>

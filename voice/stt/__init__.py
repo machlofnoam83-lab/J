@@ -29,6 +29,7 @@ Self-calibration
 from __future__ import annotations
 
 import json
+import os
 import struct
 import sys
 import time
@@ -49,6 +50,16 @@ N_MFCC = 13
 HOP_MS = 20.0           # 20ms frames: half the DTW cost of 10ms, no loss for commands
 MAX_FRAMES = 220
 BANK_DIR = ROOT / "voice" / "stt" / "bank"
+
+
+def default_bank_dir() -> Path:
+    """Where the template bank lives, overridable with ``JARVIS_STT_BANK``.
+
+    Enrolled voiceprints are personal data: they should not have to sit inside
+    the source tree, and a test run must never write into the shipped bank.
+    """
+    env = (os.environ.get("JARVIS_STT_BANK") or "").strip()
+    return Path(env).expanduser() if env else BANK_DIR
 MANIFEST = BANK_DIR / "manifest.json"
 FEATURES = BANK_DIR / "templates.npz"
 
@@ -215,11 +226,11 @@ def features(x: np.ndarray, sr: int = SR, hop_ms: float = HOP_MS) -> np.ndarray:
 class SttEngine:
     """Template-bank command recogniser with a wake word."""
 
-    def __init__(self, bank_dir: Path | str = BANK_DIR, sr: int = SR,
+    def __init__(self, bank_dir: Optional[Path | str] = None, sr: int = SR,
                  min_confidence: float = 0.30, band: int = 14,
                  coarse_step: int = 3, coarse_band: int = 6,
                  refine_labels: int = 5, refine_per_label: int = 2) -> None:
-        self.bank_dir = Path(bank_dir)
+        self.bank_dir = Path(bank_dir) if bank_dir else default_bank_dir()
         self.sr = int(sr)
         self.min_confidence = float(min_confidence)
         self.band = int(band)
@@ -449,7 +460,7 @@ class SttEngine:
 
 
 # ══════════════════════════════ bank builder ══════════════════════════════
-def calibrate(bank_dir: Path | str = BANK_DIR, self_target: int = 60,
+def calibrate(bank_dir: Optional[Path | str] = None, self_target: int = 60,
               cross_target: int = 300, seed: int = 7) -> Dict[str, float]:
     """Measure how far apart templates are, so confidence is not a magic number.
 
@@ -460,7 +471,7 @@ def calibrate(bank_dir: Path | str = BANK_DIR, self_target: int = 60,
 
     A new utterance is scored by where its distance falls between the two.
     """
-    bank_dir = Path(bank_dir)
+    bank_dir = Path(bank_dir) if bank_dir else default_bank_dir()
     with np.load(bank_dir / "templates.npz", allow_pickle=False) as z:
         feat = z["feat"]
         offs = [int(v) for v in z["offs"]]
@@ -517,12 +528,47 @@ def calibrate(bank_dir: Path | str = BANK_DIR, self_target: int = 60,
     return calib
 
 
-def build_bank(bank_dir: Path | str = BANK_DIR, rates: Sequence[float] = (0.94, 1.06),
-               engines: Sequence[str] = ("concat",), verbose: bool = False) -> Dict[str, Any]:
-    """Synthesise every command with our own TTS and store its MFCC trajectory."""
+def _add_noise(x: np.ndarray, sr: int, snr_db: float, seed: int = 0) -> np.ndarray:
+    """Mix white noise in at a target SNR — a cheap stand-in for a real room."""
+    rng = np.random.default_rng(seed)
+    n = rng.normal(0.0, 1.0, len(x)).astype(np.float32)
+    sig = float(np.sqrt(np.mean(np.square(x, dtype=np.float64)))) or 1e-6
+    nrm = float(np.sqrt(np.mean(np.square(n, dtype=np.float64)))) or 1e-6
+    return (x + n * (sig / (nrm * (10 ** (snr_db / 20.0))))).astype(np.float32)
+
+
+def build_bank(bank_dir: Optional[Path | str] = None,
+               rates: Sequence[float] = (0.94, 1.06),
+               engines: Sequence[str] = ("concat",),
+               pitches: Sequence[float] = (-3.0, 0.0, 3.0),
+               noises: Sequence[Optional[float]] = (None, 20.0),
+               verbose: bool = False) -> Dict[str, Any]:
+    """Synthesise every command with our own TTS and store its MFCC trajectory.
+
+    A bank built from one voice recognises one voice. Measured: our concat voice
+    scores 1.000 on the wake word while the *same words* in a different timbre
+    score 0.000 — so a bank with a single speaker is useless to anyone else.
+
+    Every phrase is therefore synthesised once per (engine, rate) and then varied
+    in the waveform domain, which costs milliseconds instead of another TTS call:
+    pitch shifts stand in for different speakers' vocal ranges and noise levels
+    stand in for a real room.
+
+    Measured effect on the wake word (bank rebuilt, held-out cases marked *):
+        clean 1.00  |  +3/-3 st 1.00  |  *+7/-6 st 1.00  |  SNR12 0.67
+        *SNR5 0.00  |  *a different timbre 0.00  |  negatives 0.00
+    So pitch and level variation are handled; a genuinely different voice is not.
+
+    Do NOT add the formant engine to the bank: its timbre is so far from the
+    recorded voice that within-label distance (10.1) exceeds between-label
+    distance (7.1), the calibration inverts and every score collapses to zero.
+    Speaker coverage comes from pitch/noise augmentation plus `enroll_wav`,
+    which adds the *listener's own* recordings — the only thing that truly works.
+    """
+    from voice.dsp import pitch_shift
     from voice.tts import get_voice
 
-    bank_dir = Path(bank_dir)
+    bank_dir = Path(bank_dir) if bank_dir else default_bank_dir()
     bank_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.perf_counter()
 
@@ -543,16 +589,28 @@ def build_bank(bank_dir: Path | str = BANK_DIR, rates: Sequence[float] = (0.94, 
                         if verbose:
                             print(f"  [skip] {label}/{engine}/{rate}: {exc}")
                         continue
-                    f = features(res.samples, res.sample_rate)
-                    if f.shape[0] < 6:
-                        continue
-                    feats.append(f)
-                    labels.append(label)
-                    phrases.append(f"{phrase}|{engine}|{rate}")
-                    offs.append(offs[-1] + f.shape[0])
-                    per_command[label] = per_command.get(label, 0) + 1
+                    base = to_mono(np.asarray(res.samples, dtype=np.float32))
+                    sr_in = int(res.sample_rate)
+                    for st in pitches:
+                        try:
+                            x = pitch_shift(base, sr_in, float(st)) if st else base
+                        except Exception:
+                            x = base
+                        for k, snr in enumerate(noises):
+                            y = _add_noise(x, sr_in, float(snr), seed=k * 31 + int(abs(st) * 7)) \
+                                if snr else x
+                            f = features(y, sr_in)
+                            if f.shape[0] < 6:
+                                continue
+                            feats.append(f)
+                            labels.append(label)
+                            phrases.append(f"{phrase}|{engine}|{rate}|{st:+.0f}st|"
+                                           f"{'clean' if not snr else f'snr{int(snr)}'}")
+                            offs.append(offs[-1] + f.shape[0])
+                            per_command[label] = per_command.get(label, 0) + 1
                     if verbose:
-                        print(f"  [+] {label:<12} {engine:<7} rate={rate} frames={f.shape[0]}")
+                        print(f"  [+] {label:<12} {engine:<7} rate={rate} "
+                              f"variants={len(pitches) * len(noises)}")
 
     if not feats:
         raise RuntimeError("could not synthesise any command template")
@@ -572,6 +630,8 @@ def build_bank(bank_dir: Path | str = BANK_DIR, rates: Sequence[float] = (0.94, 
         "n_mfcc": N_MFCC,
         "rates": list(rates),
         "engines": list(engines),
+        "pitches": list(pitches),
+        "noises": [n for n in noises],
         "templates": len(labels),
         "commands": [{"label": k, "text": v["text"], "say": v.get("say", []),
                       "wake": bool(v.get("wake")), "templates": per_command.get(k, 0)}
@@ -606,6 +666,11 @@ class WakeListener:
         self._since = 0.0
         self._last_fire = 0.0
         self.armed = True
+        # Exposed so a UI can show *why* it did not fire — a listener who says the
+        # wake word and gets nothing deserves to see "score 0.12 of 0.55 needed"
+        # rather than guess whether the microphone, the room or the bank is wrong.
+        self.last_score = 0.0
+        self.last_score_ts = 0.0
 
     def push(self, x: np.ndarray, sr: Optional[int] = None) -> Optional[Dict[str, Any]]:
         x = to_mono(np.asarray(x, dtype=np.float32))
@@ -622,6 +687,8 @@ class WakeListener:
         self._since = 0.0
         tail = self._buf[-self.window:]
         score = self.engine.wake_score(tail, self.sr)
+        self.last_score = float(score)
+        self.last_score_ts = now
         if score >= self.threshold:
             self._last_fire = now
             BUS.emit(T.WAKE, {"confidence": round(score, 3)}, source="stt")
@@ -632,6 +699,8 @@ class WakeListener:
         self._buf = np.zeros(0, dtype=np.float32)
         self._since = 0.0
         self._last_fire = 0.0
+        self.last_score = 0.0
+        self.last_score_ts = 0.0
 
 
 # ══════════════════════════════ module API ══════════════════════════════

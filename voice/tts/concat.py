@@ -103,7 +103,28 @@ class ConcatEngine:
         # second-line trim: never let a unit carry dead air into the sentence
         segs = VAD(self.sr, hangover=4, threshold_scale=2.6).segments(x, min_ms=40.0, pad_ms=10.0)
         if segs:
-            x = x[segs[0][0]: segs[-1][1]]
+            gap = int(self.sr * 0.025)
+            if len(segs) > 1:
+                # The recordings are isolated phones, so a take often contains a
+                # breath or a hesitation *between* two voiced stretches. Keeping
+                # first-to-last (the old behaviour) drags that dead air into every
+                # sentence: measured, 381 units held 51.9 s of audio for 44.4 s of
+                # sound, and one phone ran 0.77 s with 0.30 s voiced. Stitch the
+                # voiced stretches together instead, keeping gaps only up to 25 ms
+                # so real co-articulation is not damaged.
+                pieces = [x[segs[0][0]:segs[0][1]]]
+                for (a0, a1), (b0, b1) in zip(segs, segs[1:]):
+                    if b0 - a1 > gap:
+                        pieces.append(x[b0:b1])
+                    else:
+                        pieces[-1] = x[a0:b1]
+                out = np.zeros(0, dtype=np.float32)
+                for piece in pieces:
+                    out = piece if not out.size else crossfade(out, piece, int(self.sr * 0.004))
+                if out.size > int(self.sr * 0.02):
+                    x = out
+            else:
+                x = x[segs[0][0]: segs[-1][1]]
         self._cache[filename] = x
         return x
 
@@ -146,7 +167,39 @@ class ConcatEngine:
             stats.from_formant += 1
         total = max(1, stats.units)
         stats.coverage = round((stats.from_word + stats.from_phone_ctx + stats.from_phone_any) / total, 3)
+
+        # Isolated-phone concatenation is inherently slower than fluent speech:
+        # every unit keeps the careful length it was recorded with. A 91-character
+        # answer came out at 21.5 s — over four characters a second, which is a
+        # slow-motion tape, and it also held the microphone muted that whole time.
+        # Unit-level caps and pause trimming got it to 16.1 s; this last guard aims
+        # at the delivery a butler actually uses (~9 characters a second) and
+        # compresses with pitch preserved, never past the point of intelligibility.
+        out = self._pace(out, text, rate)
         return fade_in_out(normalize(out, 0.94), self.sr, ms=6), stats
+
+    #: how many characters of text one second of speech should carry
+    CHARS_PER_SECOND = 9.0
+    #: never compress below this factor — past it WSOLA starts to sound synthetic
+    MIN_PACE_FACTOR = 0.62
+
+    def _pace(self, out: np.ndarray, text: str, rate: float) -> np.ndarray:
+        """Bring the utterance to a natural speaking pace, pitch preserved."""
+        if out.size < int(self.sr * 0.4):
+            return out
+        spoken = len(re.sub(r"\s+", "", text or ""))
+        if spoken < 8:
+            return out                       # a short reply is already brisk
+        target = (spoken / self.CHARS_PER_SECOND) / max(0.5, float(rate or 1.0))
+        dur = len(out) / float(self.sr)
+        if dur <= target * 1.12:
+            return out                       # already at pace or faster
+        factor = max(self.MIN_PACE_FACTOR, target / dur)
+        try:
+            paced = time_stretch(out, self.sr, factor)
+        except Exception:
+            return out
+        return paced if paced.size > int(self.sr * 0.2) else out
 
     def _render_phones(self, phones: Sequence[Phoneme], rate: float, pitch: float
                        ) -> Tuple[np.ndarray, ConcatStats]:
@@ -176,9 +229,18 @@ class ConcatEngine:
             stats.units += 1
             chunk = self._prosody(chunk, i / max(1, len(phones)), rate, pitch,
                                   stressed=ph.stressed)
-            pad = ph.pause
+            # An isolated phone recording is naturally longer than the same phone
+            # inside fluent speech. Left alone they stack up: 148 phones rendered
+            # as 18.0 s of sound (122 ms each) where natural speech needs ~65 ms.
+            # Compress with pitch preserved, and let a stressed phone run longer.
+            chunk = self._cap_duration(chunk, max_s=0.24 if ph.stressed else 0.17,
+                                       rate=rate)
+            # G2P pauses were measured at 2.05 s across a 16-word sentence — an
+            # average of 89 ms between words, where fluent speech uses 30-50 ms.
+            # Halve them and keep a real break only where the text has one.
+            pad = ph.pause * 0.5
             if pad > 0.01:
-                out = self._join(out, silence(min(pad, 0.6), self.sr))
+                out = self._join(out, silence(min(pad, 0.32), self.sr))
             out = self._join(out, chunk)
         return out, stats
 
@@ -190,7 +252,7 @@ class ConcatEngine:
         dur = len(chunk) / self.sr
         if dur <= limit or dur <= 0.05:
             return chunk
-        factor = max(0.62, limit / dur)
+        factor = max(0.55, limit / dur)
         return time_stretch(chunk, self.sr, factor)
 
     def _prosody(self, chunk: np.ndarray, pos: float, rate: float, pitch: float,

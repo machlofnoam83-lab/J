@@ -37,7 +37,7 @@ from aiohttp import WSMsgType, web  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
 from core.voice_session import (active_sessions, get_session, start_session,  # noqa: E402
                                 stop_session)
-from core.config import CONFIG  # noqa: E402
+from core.config import CONFIG, DATA as CONFIG_DATA  # noqa: E402
 
 EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="jarvis-worker")
 AGENT = None            # built lazily in a worker thread (loading the core is heavy)
@@ -128,6 +128,8 @@ def _voice_opts(data: Dict[str, Any]) -> Dict[str, Any]:
                 opts[key] = float(data[key])
             except (TypeError, ValueError):
                 pass
+    if data.get("arm_on_start") is not None:
+        opts["arm_on_start"] = str(data["arm_on_start"]).lower() not in ("0", "false", "no")
     return opts
 
 
@@ -219,6 +221,91 @@ async def api_stt(request: web.Request) -> web.Response:
     return _json(agent._stt_stats())
 
 
+ENROLL_DIR = CONFIG_DATA / "enroll"
+#: what the HUD asks the user to say when training their own voice
+ENROLL_SCRIPT = ["wake", "time", "status", "help", "stop", "joke"]
+
+
+async def api_enroll(request: web.Request) -> web.Response:
+    """/api/enroll — teach JARVIS the voice that is actually in the room.
+
+    GET returns the training script; POST a WAV of one phrase and its MFCC
+    trajectory is appended to the template bank. This is not a nicety: the bank
+    ships synthesised from our own TTS, and a voice with a different timbre
+    scores 0.000 on it. Recording the listener is the only thing that makes the
+    wake word and the commands answer to *them*.
+    """
+    from voice.stt import COMMANDS, get_engine, read_wav_bytes
+
+    loop = asyncio.get_event_loop()
+    engine = await loop.run_in_executor(EXECUTOR, get_engine)
+    if not engine.available:
+        return web.json_response({"ok": False, "error": "template bank unavailable"}, status=503)
+
+    if request.method == "GET":
+        counts: Dict[str, int] = {}
+        for e in engine.enrolled:
+            counts[str(e.get("label"))] = counts.get(str(e.get("label")), 0) + 1
+        return _json({
+            "ok": True,
+            "script": [{"label": lab, "text": COMMANDS[lab]["text"],
+                        "say": COMMANDS[lab].get("say", []), "enrolled": counts.get(lab, 0)}
+                       for lab in ENROLL_SCRIPT if lab in COMMANDS],
+            "vocabulary": [{"label": v["label"], "text": v["text"]} for v in engine.vocabulary()],
+            "enrolled_total": len(engine.enrolled),
+            "templates": engine.stats().get("templates", 0),
+            "threshold": getattr(engine, "min_confidence", 0.5),
+        })
+
+    label = str(request.query.get("label") or "wake")[:32]
+    if label not in COMMANDS:
+        return web.json_response({"ok": False, "error": f"unknown label {label!r}",
+                                  "known": sorted(COMMANDS)}, status=404)
+    payload = await request.read()
+    if len(payload) < 1024:
+        return _json({"ok": False, "label": label, "error": "recording is empty or too short"})
+
+    def work() -> Dict[str, Any]:
+        ENROLL_DIR.mkdir(parents=True, exist_ok=True)
+        path = ENROLL_DIR / f"{label}-{int(time.time() * 1000)}.wav"
+        path.write_bytes(payload)
+        try:
+            res = engine.enroll_wav(label, path, source="hud")
+        except Exception as exc:
+            return {"ok": False, "label": label, "error": f"{type(exc).__name__}: {exc}"}
+        # Score the very clip they just handed us — instant proof either way.
+        try:
+            x, sr = read_wav_bytes(payload)
+            if label == "wake":
+                score = float(engine.wake_score(x, sr))
+            else:
+                v = engine.recognize(x, sr)
+                score = float(getattr(v, "confidence", 0.0) or 0.0)
+                res["matched"] = getattr(v, "label", None)
+        except Exception as exc:
+            score, res["score_error"] = 0.0, str(exc)
+        distinct = len({str(e.get("label")) for e in engine.enrolled})
+        res.update({"text": COMMANDS[label]["text"], "score": round(score, 3),
+                    "heard": score >= 0.55, "seconds": round(len(payload) / 32000.0, 2),
+                    "enrolled_labels": distinct})
+        if distinct < 3:
+            # Measured: with a single enrolled phrase, that phrase's template
+            # becomes an attractor for the rest of the speaker's foreign speech
+            # (timbre dominates content in MFCC+DTW). Training 4 phrases restored
+            # clean discrimination — every trained command at 0.92-1.00 and an
+            # untrained one still rejected. So say so instead of letting one
+            # sample look like a finished training.
+            res["advise"] = ("כדאי לאמן לפחות 3-4 משפטים: דגימה בודדת יכולה למשוך "
+                             "גם משפטים אחרים אל התווית שלה")
+        return res
+
+    out = await loop.run_in_executor(EXECUTOR, work)
+    BUS.emit("stt.enrolled", {"label": label, "ok": bool(out.get("ok")),
+                              "score": out.get("score"), "bank": out.get("bank")},
+             source="server")
+    return _json(out)
+
+
 async def api_history(request: web.Request) -> web.Response:
     agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
     return _json({"turns": agent.history(int(request.query.get("n", 20)))})
@@ -263,6 +350,14 @@ async def api_voice(request: web.Request) -> web.Response:
             EXECUTOR, lambda: start_session(sid, agent, _rest_emit(sid), **_voice_opts(data)))
         return _json({"type": "control", "action": "voice_start", "sid": sid,
                       **session.snapshot(), "events": _rest_drain(sid)})
+    if action == "unmute":
+        session = get_session(sid)
+        if session is None:
+            return web.json_response({"type": "error", "state": "off",
+                                      "message": "no voice session for this sid"}, status=404)
+        await loop.run_in_executor(EXECUTOR, session.unmute)
+        return _json({"type": "control", "action": "voice_unmute", "ok": True,
+                      "state": session.state, "events": _rest_drain(sid)})
     if action == "stop":
         stopped = await loop.run_in_executor(EXECUTOR, stop_session, sid)
         return _json({"type": "control", "action": "voice_stop", "ok": stopped,
@@ -475,6 +570,16 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
                 client.spawn(run_command(data))
             elif kind == "status":
                 await client.send({"type": "hello", "status": await call(agent.status)})
+            elif kind == "voice_unmute":
+                session = get_session(client.sid)
+                if session is None:
+                    await client.send({"type": "error",
+                                       "message": "no voice session — send voice_start first"})
+                else:
+                    await call(session.unmute)
+                    await client.send({"type": "control", "action": "voice_unmute", "ok": True,
+                                       "state": session.state})
+
             elif kind == "voice_start":
                 session = await call(start_session, client.sid, agent, client.push,
                                      **_voice_opts(data))
@@ -593,6 +698,8 @@ def build_app() -> web.Application:
     app.router.add_post("/api/listen", api_listen)
     app.router.add_post("/api/voice", api_voice)
     app.router.add_post("/api/audio", api_audio)
+    app.router.add_get("/api/enroll", api_enroll)
+    app.router.add_post("/api/enroll", api_enroll)
     app.router.add_post("/api/command", api_command)
     # Unknown /api/* must answer as JSON for every method. Registered before the
     # UI catch-all below (aiohttp resolves resources in registration order), so

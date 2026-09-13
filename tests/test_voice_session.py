@@ -83,6 +83,29 @@ def speech(agent, text: str) -> bytes:
     return (np.clip(x, -1.0, 1.0) * 32767).astype("<i2").tobytes()
 
 
+def foreign_speech(agent, text: str) -> bytes:
+    """The same words in a timbre the bank has never heard — our stand-in for a
+    human voice. Measured against the shipped bank this scores 0.000 on the wake
+    word, which is exactly the complaint enrolment exists to fix."""
+    from voice.dsp import resample
+    res = agent.voice.synthesize(text, engine="formant")
+    x = resample(np.asarray(res.samples, dtype=np.float32), res.sample_rate, SR)
+    return (np.clip(x, -1.0, 1.0) * 32767).astype("<i2").tobytes()
+
+
+def wav_wrap(pcm: bytes, sr: int = SR) -> bytes:
+    """Raw Int16 mono PCM → a WAV file, the shape /api/enroll expects."""
+    import io
+    import wave
+    b = io.BytesIO()
+    with wave.open(b, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(pcm)
+    return b.getvalue()
+
+
 def silence(seconds: float = 0.9) -> bytes:
     return np.zeros(int(SR * seconds), dtype="<i2").tobytes()
 
@@ -195,7 +218,7 @@ def part_session() -> None:
 
     # 7 — an abandoned microphone disarms itself
     ev.clear()
-    quiet = VoiceSession(agent, ev.append, ack="", idle_timeout=0.4)
+    quiet = VoiceSession(agent, ev.append, ack="", idle_timeout=0.4, arm_on_start=False)
     quiet._state = LISTENING
     quiet._last_voice = time.time() - 1.0
     quiet.feed(np.zeros(3200, dtype="<i2"))
@@ -203,6 +226,68 @@ def part_session() -> None:
     check("the timeout says why",
           any(e.get("reason") == "idle timeout" for e in find(ev, "voice.state")),
           f"({[e.get('reason') for e in find(ev, 'voice.state')]})")
+
+    # 7b — an always-open microphone re-arms instead of falling asleep. The wake
+    # word only matches voices the bank has templates for, so a session that
+    # demanded one would go permanently deaf for anyone who has not enrolled.
+    ev.clear()
+    open_mic = VoiceSession(agent, ev.append, ack="", idle_timeout=0.4, arm_on_start=True)
+    open_mic._state = LISTENING
+    open_mic._last_voice = time.time() - 1.0
+    open_mic.feed(np.zeros(3200, dtype="<i2"))
+    check("an always-open microphone keeps listening through a quiet room",
+          open_mic.state == LISTENING, f"(state={open_mic.state})")
+    check("the re-arm says it is still listening",
+          any(e.get("reason") == "still listening" for e in find(ev, "voice.state")),
+          f"({[e.get('reason') for e in find(ev, 'voice.state')]})")
+    check("re-arms are counted", open_mic.snapshot().get("rearms") == 1,
+          f"({open_mic.snapshot().get('rearms')})")
+    open_mic.feed(np.zeros(3200, dtype="<i2"))
+    check("a re-armed microphone still hears the next command",
+          open_mic.state == LISTENING and open_mic.snapshot().get("rearms") >= 1)
+
+    # 7c — the echo guard is reported and can be lifted by the HUD
+    guarded = VoiceSession(agent, ev.append, ack="", idle_timeout=60.0)
+    guarded._state = LISTENING
+    guarded._mute_until = time.time() + 5.0
+    ev.clear()
+    guarded.feed(np.frombuffer(speech(agent, "מה השעה"), dtype="<i2"))
+    check("audio during the echo guard is announced, not silently eaten",
+          len(find(ev, "voice.muted")) == 1, f"({kinds(ev)})")
+    check("the announcement says how long is left",
+          bool(find(ev, "voice.muted")) and find(ev, "voice.muted")[0].get("remaining", 0) > 4.0,
+          f"({find(ev, 'voice.muted')[:1]})")
+    guarded.feed(np.frombuffer(speech(agent, "מה השעה"), dtype="<i2"))
+    check("the announcement is throttled, not spammed", len(find(ev, "voice.muted")) == 1,
+          f"({len(find(ev, 'voice.muted'))} events)")
+    ev.clear()
+    guarded.unmute()
+    check("the HUD can lift the guard when playback really ends",
+          guarded._mute_until == 0.0 and len(find(ev, "voice.unmuted")) == 1, f"({kinds(ev)})")
+
+    # 7d — a missed utterance comes back with the audio, so it can be taught
+    ev.clear()
+    teach = VoiceSession(agent, ev.append, ack="", idle_timeout=60.0, unheard_cues=0)
+    teach._state = LISTENING
+    for c in chunks(speech(agent, "בלה בלה בלה בלה")):
+        teach.feed(c)
+    for c in chunks(silence(1.0)):
+        teach.feed(c)
+    missed = find(ev, "voice.unheard")
+    check("a missed utterance is offered back for teaching",
+          bool(missed) and missed[0].get("teachable") is True, f"({kinds(ev)})")
+    if missed and missed[0].get("wav_b64"):
+        import base64 as _b64
+        import io as _io
+        import wave as _wave
+        raw = _b64.b64decode(missed[0]["wav_b64"])
+        with _wave.open(_io.BytesIO(raw)) as w:
+            secs = w.getnframes() / float(w.getframerate())
+        check("the offered audio is a whole WAV of the utterance",
+              raw[:4] == b"RIFF" and raw[8:12] == b"WAVE" and 0.3 < secs < 9.0,
+              f"({len(raw)} bytes, {secs:.2f}s)")
+        check("the failure also reports its closest guesses",
+              isinstance(missed[0].get("top"), list), f"({missed[0].get('top')})")
 
     # 8 — stop() closes the microphone for good
     quiet._state = LISTENING
@@ -213,10 +298,23 @@ def part_session() -> None:
 
     # 9 — the registry the server uses
     sid = "test-session"
+    ev.clear()
     sess2 = start_session(sid, agent, ev.append, ack="")
     check("start_session registers the session", get_session(sid) is sess2)
     check("active_sessions lists it", sid in active_sessions(), f"({active_sessions()})")
-    check("a new session starts disarmed", sess2.state == IDLE)
+    check("a new session opens already listening", sess2.state == LISTENING,
+          f"(state={sess2.state})")
+    check("and says no wake word is required",
+          any(e.get("wake_required") is False for e in find(ev, "voice.state")),
+          f"({[e.get('wake_required') for e in find(ev, 'voice.state')]})")
+    stop_session(sid)
+    ev.clear()
+    gated = start_session(sid, agent, ev.append, ack="", arm_on_start=False)
+    check("the wake-gated mode still starts disarmed", gated.state == IDLE,
+          f"(state={gated.state})")
+    check("and says the wake word is required",
+          any(e.get("wake_required") is True for e in find(ev, "voice.state")),
+          f"({[e.get('wake_required') for e in find(ev, 'voice.state')]})")
     check("stop_session removes it", stop_session(sid) is True and get_session(sid) is None)
     check("stopping twice is harmless", stop_session(sid) is False)
 
@@ -268,10 +366,20 @@ def part_live() -> None:
     port = free_port()
     base = f"http://127.0.0.1:{port}"
     base_ws = f"ws://127.0.0.1:{port}/ws"
+    # Enrolment writes into the template bank, so this server runs against a
+    # throwaway copy — the shipped bank must survive the test run untouched.
+    import os as _os
+    import shutil as _shutil
+    src_bank = ROOT / "voice" / "stt" / "bank"
+    tmp_bank = ROOT / "data" / "bank-test"
+    if tmp_bank.exists():
+        _shutil.rmtree(tmp_bank)
+    if src_bank.exists():
+        _shutil.copytree(src_bank, tmp_bank)
     proc = subprocess.Popen(
         [sys.executable, "-m", "core.server", "--host", "127.0.0.1", "--port", str(port)],
         cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-        env={**__import__("os").environ, "PYTHONUNBUFFERED": "1"},
+        env={**_os.environ, "PYTHONUNBUFFERED": "1", "JARVIS_STT_BANK": str(tmp_bank)},
     )
     sid = "pytest-rest"
     try:
@@ -307,15 +415,19 @@ def part_live() -> None:
                         ctype="application/json")
         d = json.loads(body.decode())
         check("POST /api/voice starts a session",
-              st == 200 and d.get("action") == "voice_start" and d.get("state") == "idle",
+              st == 200 and d.get("action") == "voice_start" and d.get("state") == "listening",
               f"[{st}] {d.get('state')}")
+        check("it opens already listening, no wake word needed",
+              d.get("arm_on_start") is True and d.get("armed") is True,
+              f"({{k: d.get(k) for k in ('arm_on_start', 'armed')}})")
         check("the session reports its tuning", d.get("idle_timeout") == 60.0, f"({d.get('idle_timeout')})")
 
         st, body = post(f"{base}/api/voice", json.dumps({"action": "state", "sid": sid}).encode(),
                         ctype="application/json")
         d = json.loads(body.decode())
         check("GET-style state query works over POST",
-              d.get("state") == "idle" and sid in (d.get("sessions") or []), f"({d.get('sessions')})")
+              d.get("state") == "listening" and sid in (d.get("sessions") or []),
+              f"({d.get('state')}, {d.get('sessions')})")
 
         # stream the wake word
         events: list = []
@@ -360,6 +472,102 @@ def part_live() -> None:
                   wav[:4] == b"RIFF" and wav[8:12] == b"WAVE" and len(wav) > 4000,
                   f"({len(wav)} bytes @ {audio[0].get('sample_rate')}Hz)")
 
+        # ------------------------------------- teaching JARVIS a new voice ----
+        print("\n== live server: voice enrolment and teach-back ==")
+        st, body = post(f"{base}/api/voice", json.dumps({"action": "unmute", "sid": sid}).encode(),
+                        ctype="application/json")
+        d = json.loads(body.decode())
+        check("POST /api/voice can lift the echo guard",
+              st == 200 and d.get("ok") is True and d.get("action") == "voice_unmute",
+              f"[{st}] {d.get('ok')}")
+
+        st, body = get(f"{base}/api/enroll")
+        d = json.loads(body.decode())
+        check("GET /api/enroll offers a training script",
+              st == 200 and d.get("ok") is True and len(d.get("script") or []) >= 3,
+              f"[{st}] {[p.get('label') for p in (d.get('script') or [])]}")
+        check("the script starts with the wake word and says it in Hebrew",
+              bool(d.get("script")) and d["script"][0].get("label") == "wake"
+              and d["script"][0].get("text") == "ג'רוויס",
+              f"({d.get('script', [{}])[0]})")
+        check("the whole vocabulary is offered for teaching",
+              len(d.get("vocabulary") or []) >= 20, f"({len(d.get('vocabulary') or [])} labels)")
+
+        st, body = post(f"{base}/api/enroll?label=nope", wav_wrap(foreign_speech(agent, "מה השעה")))
+        check("an unknown label is refused, not invented", st == 404, f"[{st}]")
+        st, body = post(f"{base}/api/enroll?label=wake", b"")
+        d = json.loads(body.decode())
+        check("an empty recording is reported, not stored", d.get("ok") is False, f"({d})")
+
+        before = json.loads(get(f"{base}/api/enroll")[1].decode()).get("enrolled_total") or 0
+        clip = foreign_speech(agent, "ספר לי בדיחה")
+        st, body = post(f"{base}/api/enroll?label=joke", wav_wrap(clip))
+        d = json.loads(body.decode())
+        check("a foreign voice can enrol its own recording",
+              st == 200 and d.get("ok") is True and d.get("label") == "joke", f"[{st}] {d}")
+        check("enrolment reports how well that voice is now heard",
+              float(d.get("score") or 0) > 0.5 and d.get("heard") is True,
+              f"(score={d.get('score')} heard={d.get('heard')})")
+        after = json.loads(get(f"{base}/api/enroll")[1].decode()).get("enrolled_total") or 0
+        check("the recording is counted in the bank", after == before + 1, f"({before} -> {after})")
+
+        # the proof that matters: the same foreign voice, a *different* take of the
+        # same phrase, is now understood through the live session
+        post(f"{base}/api/voice", json.dumps({"action": "unmute", "sid": sid}).encode(),
+             ctype="application/json")
+        events, audio = [], []
+        fresh = foreign_speech(agent, "ספר לי בדיחה")
+        for c in list(chunks(fresh)) + list(chunks(quiet)):
+            st, body = post(f"{base}/api/audio?sid={sid}", c)
+            d = json.loads(body.decode())
+            events += d.get("events") or []
+            audio += d.get("audio") or []
+        heard = find(events, "voice.heard")
+        check("a newly enrolled voice is understood on an unseen take",
+              bool(heard) and heard[0].get("label") == "joke",
+              f"(labels={[h.get('label') for h in heard]}, {kinds(events)})")
+        check("and JARVIS answers it out loud", len(find(events, "answer")) >= 1 and len(audio) >= 1,
+              f"({len(find(events, 'answer'))} turns, {len(audio)} audio frames)")
+
+        # A single enrolled phrase is not a trained voice: measured, its template
+        # becomes an attractor for that speaker's other speech (timbre dominates
+        # content in MFCC+DTW). Train a second phrase so this next step measures
+        # teach-back rather than that artefact — and check the server says so.
+        st, body = post(f"{base}/api/enroll?label=time", wav_wrap(foreign_speech(agent, "מה השעה")))
+        d = json.loads(body.decode())
+        check("the bank keeps warning while fewer than three phrases are trained",
+              bool(d.get("advise")) and d.get("enrolled_labels") == 2,
+              f"(labels={d.get('enrolled_labels')}, advise={bool(d.get('advise'))})")
+        st, body = post(f"{base}/api/enroll?label=stop", wav_wrap(foreign_speech(agent, "עצור")))
+        d = json.loads(body.decode())
+        check("three phrases are counted", d.get("enrolled_labels") == 3,
+              f"({d.get('enrolled_labels')} labels)")
+        check("and the warning stops once the voice is really trained",
+              not d.get("advise"), f"({d.get('advise')})")
+
+        # teach-back: a phrase nobody enrolled comes back with its own audio
+        post(f"{base}/api/voice", json.dumps({"action": "unmute", "sid": sid}).encode(),
+             ctype="application/json")
+        events = []
+        unknown = foreign_speech(agent, "מה אתה יודע לעשות")
+        for c in list(chunks(unknown)) + list(chunks(quiet)):
+            st, body = post(f"{base}/api/audio?sid={sid}", c)
+            events += json.loads(body.decode()).get("events") or []
+        missed = find(events, "voice.unheard")
+        check("an unenrolled phrase is missed, not guessed", bool(missed), f"({kinds(events)})")
+        check("the miss carries the audio so the HUD can teach it",
+              bool(missed) and missed[0].get("teachable") is True and len(missed[0].get("wav_b64") or "") > 1000,
+              f"({{k: (missed[0].get(k) if missed else None) for k in ('teachable', 'confidence')}})")
+        if missed and missed[0].get("wav_b64"):
+            import base64 as _b64
+            raw = _b64.b64decode(missed[0]["wav_b64"])
+            check("the returned audio is a playable WAV",
+                  raw[:4] == b"RIFF" and raw[8:12] == b"WAVE", f"({len(raw)} bytes)")
+            st, body = post(f"{base}/api/enroll?label=help", raw)
+            d = json.loads(body.decode())
+            check("teaching from the returned audio succeeds",
+                  st == 200 and d.get("ok") is True and d.get("heard") is True, f"[{st}] {d}")
+
         st, body = post(f"{base}/api/voice", json.dumps({"action": "stop", "sid": sid}).encode(),
                         ctype="application/json")
         d = json.loads(body.decode())
@@ -379,8 +587,10 @@ def part_live() -> None:
               len([m for m in log if m.get("type") == "voice.level"]) > 0)
         heard = [m for m in log if m.get("type") == "voice.heard"]
         check("the socket carries the recognised command", bool(heard), f"({[m.get('text') for m in heard]})")
-        check("it was the time command", bool(heard) and heard[0].get("label") == "time",
-              f"(label={heard[0].get('label') if heard else None})")
+        labels = [m.get("label") for m in heard]
+        check("the wake word spoken to an open microphone is answered, not obeyed",
+              "wake" in labels, f"({labels})")
+        check("it was the time command", "time" in labels, f"(labels={labels})")
         answers = [m for m in log if m.get("type") == "answer" and m.get("voice")]
         check("the socket carries the voice turn", bool(answers))
         check("the socket broadcasts the spoken reply",
@@ -437,6 +647,8 @@ def part_live() -> None:
                 proc.kill()
             except Exception:
                 pass
+        if tmp_bank.exists():
+            _shutil.rmtree(tmp_bank, ignore_errors=True)
 
 
 def main() -> int:

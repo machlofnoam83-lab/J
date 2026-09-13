@@ -25,6 +25,7 @@ Two things make this behave in a real room rather than in a demo:
 
 from __future__ import annotations
 
+import base64
 import threading
 import time
 from typing import Any, Callable, Dict, List, Optional
@@ -42,6 +43,20 @@ IDLE, LISTENING, THINKING, SPEAKING = "idle", "listening", "thinking", "speaking
 
 # labels that end a conversation rather than continue it
 _END_LABELS = frozenset({"stop", "silence"})
+
+
+def _wav_bytes(x: np.ndarray, sr: int) -> bytes:
+    """Minimal 16-bit mono WAV encoder — used to hand a missed utterance back."""
+    import io
+    import wave
+    y = np.clip(np.asarray(x, dtype=np.float32).reshape(-1), -1.0, 1.0)
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(int(sr))
+        w.writeframes((y * 32767).astype("<i2").tobytes())
+    return buf.getvalue()
 
 
 def pcm_to_float(data: Any, sr: int = SR) -> np.ndarray:
@@ -65,7 +80,8 @@ class VoiceSession:
                  ack: str = "כן, אדוני?", idle_timeout: float = 25.0,
                  min_speech_ms: float = 220.0, end_silence_ms: float = 560.0,
                  max_utterance_s: float = 8.0, unheard_cues: int = 2,
-                 wake_threshold: float = 0.55, level_hz: float = 8.0) -> None:
+                 wake_threshold: float = 0.55, level_hz: float = 8.0,
+                 arm_on_start: bool = True, teach_back: bool = True) -> None:
         self.agent = agent
         self.emit = emit
         self.sr = int(sr)
@@ -76,6 +92,26 @@ class VoiceSession:
         self.end_frames = max(1, int(end_silence_ms / HOP_MS))
         self.unheard_cues = int(unheard_cues)
         self.level_every = 1.0 / max(1.0, level_hz)
+        # The wake word only matches voices it has templates for, and the shipped
+        # bank is built from our own TTS — measured: a different timbre scores
+        # 0.000 on it. So by default we open the microphone *already listening*
+        # and treat the wake word as a bonus path, not a gate. Enrolling the
+        # user's own voice (POST /api/enroll) is what makes the gate itself work.
+        self.arm_on_start = bool(arm_on_start)
+        # When a phrase is not recognised, send the audio itself back with the
+        # failure. The HUD can then ask "what did you say?" and enrol that very
+        # recording as a template — the listener teaches JARVIS their own voice
+        # mid-conversation instead of concluding that he is deaf.
+        self.teach_back = bool(teach_back)
+        # The wake detector fires after only ~0.45 s of audio, i.e. while the wake
+        # word is still being spoken. Without a guard, the rest of "ג'רוויס" is
+        # buffered as the beginning of the command and dilutes the match —
+        # measured: a 1.0 s command reached the recogniser as 2.76 s of audio and
+        # scored 0.286, just under the 0.30 floor. So after a wake we wait for a
+        # real pause, but cap the wait so "ג'רוויס מה השעה" said in one breath is
+        # not thrown away either.
+        self.gap_ms = 220.0
+        self.gap_max_ms = 1400.0
 
         self.engine = get_engine()
         self.wake = WakeListener(engine=self.engine, threshold=wake_threshold)
@@ -89,9 +125,15 @@ class VoiceSession:
         self._armed_at = 0.0
         self._last_voice = time.time()
         self._mute_until = 0.0
+        self._last_mute_note = 0.0
         self._last_level = 0.0
         self._cues_spent = 0
         self._turns = 0
+        self._rearms = 0
+        self._await_gap = False
+        self._gap_ms = 0.0
+        self._drop_ms = 0.0
+        self._wake_peak = 0.0
         self._stopped = False
 
     # ------------------------------------------------------------- public ---
@@ -119,6 +161,14 @@ class VoiceSession:
             # our own voice coming back through the microphone is metered but
             # never buffered, recognised or allowed to re-trigger the wake word
             if now < self._mute_until:
+                # Say so. A microphone that goes deaf without a word is
+                # indistinguishable from a broken one, and "he isn't listening"
+                # is exactly the complaint this avoids.
+                if now - self._last_mute_note > 1.0:
+                    self._last_mute_note = now
+                    self._emit({"type": "voice.muted",
+                                "remaining": round(self._mute_until - now, 2),
+                                "state": self._state})
                 return
 
             if self._state == IDLE:
@@ -130,6 +180,21 @@ class VoiceSession:
 
             self._accumulate(x)
             self._maybe_timeout(now)
+
+    def unmute(self) -> None:
+        """Lift the echo mute early.
+
+        The mute window is a wall-clock guess at how long playback will take, but
+        the HUD knows the truth — it is the thing making the sound. Letting it
+        report "I have finished talking" makes the conversation resume instantly
+        instead of after a conservative estimate.
+        """
+        with self._lock:
+            if self._stopped:
+                return
+            self._mute_until = 0.0
+            self._last_voice = time.time()
+            self._emit({"type": "voice.unmuted", "state": self._state})
 
     def stop(self) -> None:
         with self._lock:
@@ -143,6 +208,7 @@ class VoiceSession:
     def snapshot(self) -> Dict[str, Any]:
         with self._lock:
             return {"state": self._state, "armed": self._state != IDLE,
+                    "arm_on_start": self.arm_on_start, "rearms": self._rearms,
                     "turns": self._turns, "buffer_s": round(len(self._buf) / self.sr, 2),
                     "idle_timeout": self.idle_timeout, "muted": time.time() < self._mute_until}
 
@@ -167,8 +233,15 @@ class VoiceSession:
         self._last_level = now
         rms = float(np.sqrt(np.mean(np.square(x, dtype=np.float64)))) if x.size else 0.0
         db = 20.0 * np.log10(max(rms, 1e-7))
-        self._emit({"type": "voice.level", "rms": round(rms, 5), "db": round(float(db), 1),
-                    "state": self._state})
+        payload: Dict[str, Any] = {"type": "voice.level", "rms": round(rms, 5),
+                                   "db": round(float(db), 1), "state": self._state}
+        # The wake check runs every ~0.45 s; report its freshest verdict so the
+        # HUD can show how close the listener's voice is to firing.
+        age = time.time() - float(getattr(self.wake, "last_score_ts", 0.0) or 0.0)
+        if age < 2.0:
+            payload["wake"] = round(float(getattr(self.wake, "last_score", 0.0)), 3)
+            payload["wake_threshold"] = self.wake.threshold
+        self._emit(payload)
 
     def _watch_for_wake(self, x: np.ndarray) -> None:
         hit = self.wake.push(x, self.sr)
@@ -180,12 +253,33 @@ class VoiceSession:
             self._armed_at = time.time()
             self._last_voice = self._armed_at
             self._cues_spent = 0
+            self._await_gap = True
+            self._gap_ms = 0.0
+            self._drop_ms = 0.0
+            self._wake_peak = 0.0
         self._emit_state(LISTENING, reason="wake word",
                          confidence=round(float(hit.get("confidence", 0.0)), 3))
         if self.ack:
             self._say(self.ack)
 
     def _accumulate(self, x: np.ndarray) -> None:
+        if self._await_gap:
+            ms = 1000.0 * len(x) / float(self.sr)
+            self._drop_ms += ms
+            # Deliberately *not* self.vad.mask(): its noise floor is a quantile of
+            # whatever it is handed, so on one short chunk of loud speech the floor
+            # rises with the signal and the word reads as silence. Plain RMS against
+            # the loudest thing heard since the wake word is stable at any length.
+            rms = float(np.sqrt(np.mean(np.square(x, dtype=np.float64)))) if x.size else 0.0
+            self._wake_peak = max(self._wake_peak, rms)
+            quiet = rms < max(0.008, 0.15 * self._wake_peak)
+            self._gap_ms = self._gap_ms + ms if quiet else 0.0
+            if self._gap_ms < self.gap_ms and self._drop_ms < self.gap_max_ms:
+                return                       # still the wake word's own tail
+            self._await_gap = False
+            self._buf = np.zeros(0, dtype=np.float32)
+            self._speech_on = False
+            self._start_frame = 0
         self._buf = np.concatenate([self._buf, x])
         if len(self._buf) > self.max_buf:
             self._buf = self._buf[-self.max_buf:]
@@ -241,9 +335,24 @@ class VoiceSession:
             self._handle_utterance(utterance)
 
     def _maybe_timeout(self, now: float) -> None:
-        if self._state == LISTENING and now - self._last_voice > self.idle_timeout:
-            self._emit_state(IDLE, reason="idle timeout",
-                             seconds=round(now - self._armed_at, 1), turns=self._turns)
+        if self._state != LISTENING or now - self._last_voice <= self.idle_timeout:
+            return
+        if self.arm_on_start and not self._stopped:
+            # An always-open microphone should not fall asleep on a quiet room:
+            # clear the buffer and keep listening instead of demanding a wake
+            # word that an unenrolled voice cannot produce.
+            self._rearms += 1
+            self._buf = np.zeros(0, dtype=np.float32)
+            self._speech_on = False
+            self._await_gap = False
+            self._last_voice = now
+            self._armed_at = now
+            self._cues_spent = 0
+            self._emit_state(LISTENING, reason="still listening",
+                             rearms=self._rearms, turns=self._turns)
+            return
+        self._emit_state(IDLE, reason="idle timeout",
+                         seconds=round(now - self._armed_at, 1), turns=self._turns)
 
     def _handle_utterance(self, utt: np.ndarray) -> None:
         self._emit_state(THINKING, reason="endpoint reached")
@@ -261,8 +370,22 @@ class VoiceSession:
         conf = float(getattr(res, "confidence", 0.0) or 0.0) if res is not None else 0.0
 
         if not ok or not text:
-            self._emit({"type": "voice.unheard", "confidence": round(conf, 3),
-                        "label": label, "ms": ms, "seconds": round(len(utt) / self.sr, 2)})
+            missed: Dict[str, Any] = {"type": "voice.unheard", "confidence": round(conf, 3),
+                                      "label": label, "ms": ms,
+                                      "seconds": round(len(utt) / self.sr, 2)}
+            try:
+                missed["top"] = [{"label": str(t.get("label", "")),
+                                  "confidence": round(float(t.get("confidence", 0.0)), 3)}
+                                 for t in (getattr(res, "top", None) or [])][:3]
+            except Exception:
+                pass
+            if self.teach_back and 0 < len(utt) <= int(self.sr * 8):
+                try:
+                    missed["wav_b64"] = base64.b64encode(_wav_bytes(utt, self.sr)).decode("ascii")
+                    missed["teachable"] = True
+                except Exception:
+                    pass
+            self._emit(missed)
             self._emit_state(LISTENING, reason="nothing recognised")
             if self._cues_spent < self.unheard_cues:
                 self._cues_spent += 1
@@ -272,6 +395,25 @@ class VoiceSession:
         self._emit({"type": "voice.heard", "text": text, "label": label,
                     "confidence": round(conf, 3), "ms": ms,
                     "seconds": round(len(utt) / self.sr, 2)})
+
+        if label == "wake":
+            # Already listening and the listener said the wake word again: answer
+            # the call instead of feeding his own name to the brain as a command.
+            with self._lock:
+                self._buf = np.zeros(0, dtype=np.float32)
+                self._speech_on = False
+                # No wake-tail guard here: this utterance was endpointed, so the
+                # word is already complete and the next sound really is the
+                # command. Arming the guard would swallow it (it drops up to
+                # gap_max_ms of audio waiting for a pause that already happened).
+                self._last_voice = time.time()
+                self._armed_at = self._last_voice
+                self._cues_spent = 0
+            self._emit_state(LISTENING, reason="wake word while listening",
+                             confidence=round(conf, 3))
+            if self.ack:
+                self._say(self.ack)
+            return
 
         if label in _END_LABELS:
             self._say("כמובן, אדוני." if label == "stop" else "שקט מוחלט.")
@@ -324,7 +466,12 @@ def start_session(sid: str, agent: Any, emit: Callable[[Dict[str, Any]], Any],
             old.stop()
         sess = VoiceSession(agent, emit, **kwargs)
         _SESSIONS[sid] = sess
-    sess._emit_state(IDLE, reason="microphone open — say the wake word")
+    if sess.arm_on_start:
+        sess._emit_state(LISTENING, reason="microphone open — just speak",
+                         wake_required=False)
+    else:
+        sess._emit_state(IDLE, reason="microphone open — say the wake word",
+                         wake_required=True)
     return sess
 
 
