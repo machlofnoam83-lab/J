@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from brain.intent import IntentRouter, Route  # noqa: E402
+from brain.knowledge import content_tokens, shares_topic  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
 from core.config import CONFIG  # noqa: E402
 
@@ -439,9 +440,28 @@ class ReasoningEngine:
             out = {"text": f"סוכן המתכנת נכשל: {exc}", "code": "", "ok": False}
         BUS.emit(T.AGENT_RESULT, {"agent": "hephaestus", "ok": bool(out.get("ok"))}, source="reasoning")
         t = time.perf_counter()
-        trace.add("tool", "coder agent returned", {"ok": out.get("ok"), "chars": len(out.get("text", ""))}, t)
+        trace.add("tool", "coder agent returned",
+                  {"ok": out.get("ok"), "understood": out.get("understood", True),
+                   "chars": len(out.get("text", ""))}, t)
+
+        if not out.get("understood", True) and self.knowledge is not None:
+            # The coder only produced a skeleton, so this was probably not a coding
+            # task at all. Give the curated knowledge a chance before we answer —
+            # "יש לי שגיאה בקוד" has a real answer in the KB, and a skeleton does not.
+            qa = self.knowledge.search_qa(text, k=1, min_score=0.5)
+            if qa:
+                route = Route("KNOWLEDGE", 0.9, f"coder declined; KB answer ({qa[0]['fact_id']})")
+                route.grounded = True
+                trace.add("reflect", "coder declined — answering from the knowledge base",
+                          {"from": qa[0]["fact_id"]}, time.perf_counter())
+                answer = self._verify_and_pack(qa[0]["answer"], route, trace, t0)
+                self._remember(text, answer.text)
+                return answer
+
+        understood = bool(out.get("understood", True))
         ans = Answer(text=out.get("text", ""), speak=self.verifier.speakable(out.get("text", "")),
-                     grounded=bool(out.get("ok")), confidence=0.9 if out.get("ok") else 0.4,
+                     grounded=bool(out.get("ok")) and understood,
+                     confidence=(0.9 if out.get("ok") else 0.4) if understood else 0.45,
                      intent="CODE", agent="hephaestus",
                      data={"code": out.get("code", ""), "tests": out.get("tests"), "repairs": out.get("repairs")},
                      ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
@@ -498,6 +518,9 @@ class ReasoningEngine:
                 reply = lines[self._smalltalk_turn % len(lines)]
                 self._smalltalk_turn += 1
                 source = f"canned:{category}"
+                # a canned line is curated text from our own KB, not an invention
+                # of the neural core — it earns the same grounded flag as a fact
+                route.grounded = True
         if reply:
             trace.add("plan", f"smalltalk reply from {source}", {"text": reply[:80]}, t)
             answer = self._verify_and_pack(reply, route, trace, t0)
@@ -507,13 +530,19 @@ class ReasoningEngine:
         return self._neural_answer(text, trace, t0, route=route)
 
     def _handle_identity(self, intent: str, trace: Trace, t0: float) -> Answer:
+        # Both branches below answer from text we wrote ourselves (a KB fact or the
+        # persona card), so neither is a hallucination risk -> grounded.
         route = Route(intent, 0.95, "identity/help answer")
+        route.grounded = True
         if self.knowledge is not None:
             qa = self.knowledge.search_qa("מי אתה" if intent == "IDENTITY" else "מה אתה יודע לעשות", k=1, min_score=0.4)
             if qa:
                 t = time.perf_counter()
                 trace.add("answer", "grounded identity answer", {"from": qa[0]["fact_id"]}, t)
                 return self._verify_and_pack(qa[0]["answer"], route, trace, t0)
+        t = time.perf_counter()
+        trace.add("answer", "identity answer from the persona card",
+                  {"from": "persona", "kb_match": False}, t)
         reply = (f"אני {self.persona['name']} — {self.persona['full_name']}. עוזר אישי שרץ כולו על המחשב שלך, "
                  f"בלי ענן ובלי מפתחות API. אני חושב, מדבר בעברית, כותב ומריץ קוד, שולט בקבצים ובתהליכים, "
                  f"וזוכר את השיחות שלנו.")
@@ -566,6 +595,19 @@ class ReasoningEngine:
             return Answer(text="", speak="", intent=route.intent, confidence=0.0,
                           ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
 
+        # Free generation with no deterministic basis has to at least be *about*
+        # the question. A 6.2M-parameter core drifts into unrelated corpus
+        # fragments on out-of-domain prompts ("מי כתב את ההמלט" -> "אני מריץ את
+        # הקוד עכשיו"), and publishing a non-sequitur is worse than the caller's
+        # honest "I don't know". Returning empty text hands control to that path.
+        if route.intent == "UNKNOWN" and route.confidence < 0.5 and not shares_topic(text, cleaned):
+            t = time.perf_counter()
+            trace.add("reflect", "discarding a non-sequitur generation — no shared topic",
+                      {"question_tokens": sorted(content_tokens(text))[:6],
+                       "answer_tokens": sorted(content_tokens(cleaned))[:6]}, t)
+            return Answer(text="", speak="", intent=route.intent, confidence=route.confidence,
+                          ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
+
         speak = self.verifier.speakable(cleaned)
         return Answer(text=cleaned, speak=speak, grounded=False,
                       confidence=max(0.35, route.confidence), intent=route.intent,
@@ -577,7 +619,7 @@ class ReasoningEngine:
         t = time.perf_counter()
         trace.add("reflect", "all paths failed — honest fallback", {}, t)
         if self.knowledge is not None:
-            hits = self.knowledge.search(text, k=1, min_score=0.15)
+            hits = self.knowledge.search(text, k=1, min_score=0.15, require_overlap=True)
             if hits:
                 reply = f"אין לי תשובה ישירה, אבל מצאתי במאגר הידע: {hits[0]['text_he'][:300]}"
                 return self._verify_and_pack(reply, route, trace, t0)

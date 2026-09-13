@@ -370,8 +370,23 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
     return ws
 
 
+async def api_not_found(request: web.Request) -> web.Response:
+    """JSON 404 for any unmatched /api/* route, for any method."""
+    return web.json_response(
+        {"type": "error",
+         "message": f"no such API route: {request.method} {request.path}"},
+        status=404)
+
+
 # ------------------------------------------------------------------- static --
 async def index(request: web.Request) -> web.StreamResponse:
+    # The catch-all below would otherwise answer an unknown /api/* route with
+    # index.html — which the REST fallback in the UI cannot tell apart from a
+    # real response. Unknown API paths must say so, in JSON, with a 404.
+    if request.path.startswith("/api/") or request.path == "/api":
+        return web.json_response(
+            {"type": "error", "message": f"no such API route: {request.method} {request.path}"},
+            status=404)
     path = UI_DIR / (request.match_info.get("tail", "") or "index.html")
     if not str(path.resolve()).startswith(str(UI_DIR.resolve())):
         raise web.HTTPForbidden()
@@ -444,6 +459,10 @@ def build_app() -> web.Application:
     app.router.add_get("/api/stt", api_stt)
     app.router.add_post("/api/listen", api_listen)
     app.router.add_post("/api/command", api_command)
+    # Unknown /api/* must answer as JSON for every method. Registered before the
+    # UI catch-all below (aiohttp resolves resources in registration order), so
+    # a typo or a stale client gets a real 404 instead of index.html or a bare 405.
+    app.router.add_route("*", "/api/{tail:.*}", api_not_found)
     if UI_DIR.exists():
         app.router.add_static("/ui/", path=str(UI_DIR), show_index=False)
         app.router.add_static("/assets/", path=str(UI_DIR / "assets"), show_index=False) \

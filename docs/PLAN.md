@@ -213,7 +213,7 @@ J/
 - **P8 — ELECTRON SHELL ✅ (קוד נשלח; אימות סופי על Windows)** — main.js, preload, חלון fullscreen שקוף, קיצורים גלובליים, tray, auto-start. **אפליקציה אמיתית.**
 - **P9 — אינטגרציה קצה-אל-קצה + קשיחות ✅** — צינור מלא: דיבור → חשיבה → פעולה → דיבור. stress tests, benchmarks, fallbacks.
 - **P10 — אריזה והפצה ◐ (חלקי)** — `tools/train.py` מלא ל־GPU שלך, PyInstaller/Nuitka exe, Electron builder ל־Windows installer, סקריפט התקנה בלחיצה, מדריך משתמש.
-### מה נמדד בפועל (נכון ל־P9)
+### מה נמדד בפועל (נכון ל־P9 + סבב תיקוני הכנות)
 
 | שכבה | תוצאה מדידה |
 |---|---|
@@ -228,8 +228,9 @@ J/
 | מתכנת | 10 תבניות · 8 חוקי תיקון עצמי · הרצה מבודדת עם timeout · בדיקות מיוצרות |
 | אבטחה | חומת הרשאות · אישור אנושי חי דרך ה־HUD · audit JSONL · dry-run · kill switch |
 | HUD | Electron frameless · Arc Reactor canvas · זרם אירועים · טלמטריה · תורי הרשאות · שמע ב־WS |
-| שרת | aiohttp · loopback בלבד · WS + 9 REST · CORS ל־renderer · אפס בלוקציות בלולאת הקריאה |
-| בדיקות | **307 passed / 0 failed** בשבעה מודולים (101 שניות) |
+| שרת | aiohttp · loopback בלבד · WS + REST תאום (`POST /api/command`) על מנתב אחד · 404 JSON לנתיבי API לא מוכרים · CORS ל־renderer · אפס בלוקציות בלולאת הקריאה |
+| כנות | 4 שומרים: רלוונטיות נושאית לקרקוע · `understood` בסוכן המתכנת · אי-למידת שלדים · מסך אי-רצף לניסוח חופשי |
+| בדיקות | **375 passed / 0 failed** בשבעה מודולים (109 שניות) |
 
 - **P11 — R&D** — הרחבת מודל, self-distillation, STT מתקדם, vision (OCR + תיאור מסך), ריבוי סוכנים מקבילי.
 

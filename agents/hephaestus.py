@@ -68,11 +68,17 @@ class CodeResult:
     repairs: int = 0
     pattern: str = ""
     language: str = "python"
+    # False when no task pattern matched and we could only build a bare skeleton.
+    # `ok` then still describes the sandbox run, but it must never be read as
+    # "the user's task was solved" — that distinction is the whole point of this
+    # flag, and the orchestrator uses it to keep looking for a real answer.
+    understood: bool = True
     data: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {"ok": self.ok, "code": self.code, "tests": self.tests, "text": self.text,
                 "repairs": self.repairs, "pattern": self.pattern, "language": self.language,
+                "understood": self.understood,
                 "runs": [r.to_dict() for r in self.runs], "data": self.data}
 
 
@@ -713,18 +719,23 @@ class HephaestusAgent:
         pattern = match_pattern(task)
         pname = pattern.name if pattern else "generic"
         code = pattern.template(task=task) if pattern else _generic_code(task)
+        understood = pattern is not None
 
         # a learned skill can beat the static library
-        learned = self._recall_skill(task)
-        if learned:
-            code = learned
+        hit = self._recall_skill(task)
+        if hit:
+            code = hit["solution"]
             pname = "learned:" + pname
+            # a skill that was learned from a bare skeleton is not evidence that we
+            # understood anything — only skills from real templates count
+            understood = understood or "generic" not in hit["name"]
 
         # the neural core can refine the code when it is confident
         neural = self._neural_code(task, code)
         if neural and _looks_like_python(neural) and _parses(neural):
             code = neural
             pname = "neural:" + pname
+            understood = True
 
         fn = _first_function(code)
         tests = _simple_tests(code, fn)
@@ -743,10 +754,13 @@ class HephaestusAgent:
                                       extra_files={"target_code.py": code})
                 runs.append(test_run)
                 if test_run.ok and "TESTS OK" in test_run.stdout:
-                    self._learn_skill(task, code, pname)
+                    if understood:
+                        self._learn_skill(task, code, pname)
                     res = CodeResult(ok=True, code=code, tests=tests,
-                                     text=self._report(task, code, run, repairs, notes, pname),
+                                     text=self._report(task, code, run, repairs, notes, pname,
+                                                       understood=understood),
                                      runs=runs, repairs=repairs, pattern=pname,
+                                     understood=understood,
                                      data={"ms": (time.perf_counter() - t0) * 1000,
                                            "stdout": run.stdout[:2000], "function": fn})
                     BUS.emit("coder.done", res.data | {"ok": True}, source=self.name)
@@ -761,8 +775,9 @@ class HephaestusAgent:
             repairs += 1
 
         res = CodeResult(ok=False, code=code, tests=tests,
-                         text=self._report(task, code, runs[-1], repairs, notes, pname, failed=True),
-                         runs=runs, repairs=repairs, pattern=pname,
+                         text=self._report(task, code, runs[-1], repairs, notes, pname,
+                                           failed=True, understood=understood),
+                         runs=runs, repairs=repairs, pattern=pname, understood=understood,
                          data={"ms": (time.perf_counter() - t0) * 1000,
                                "error": runs[-1].stderr[:1200], "function": fn})
         BUS.emit("coder.done", {"ok": False, "repairs": repairs}, source=self.name)
@@ -816,7 +831,7 @@ class HephaestusAgent:
         return out
 
     # -------------------------------------------------------------- memory --
-    def _recall_skill(self, task: str) -> Optional[str]:
+    def _recall_skill(self, task: str) -> Optional[Dict[str, Any]]:
         if self.memory is None:
             return None
         try:
@@ -825,11 +840,15 @@ class HephaestusAgent:
             return None
         if hit and hit["score"] > 0.55 and hit["successes"] >= hit["failures"]:
             BUS.emit("coder.skill_hit", {"name": hit["name"], "score": hit["score"]}, source=self.name)
-            return hit["solution"]
+            return hit
         return None
 
     def _learn_skill(self, task: str, code: str, pattern: str) -> None:
         if self.memory is None:
+            return
+        if "generic" in pattern:
+            # never memorise the throwaway skeleton: replaying it later would let a
+            # task we did not understand be reported as a known, solved skill
             return
         try:
             self.memory.learn_skill(f"code:{pattern}:{hashlib.sha1(task.encode()).hexdigest()[:8]}",
@@ -858,8 +877,16 @@ class HephaestusAgent:
     # -------------------------------------------------------------- report --
     @staticmethod
     def _report(task: str, code: str, run: RunResult, repairs: int,
-                notes: Sequence[str], pattern: str, failed: bool = False) -> str:
+                notes: Sequence[str], pattern: str, failed: bool = False,
+                understood: bool = True) -> str:
         fn = _first_function(code)
+        if not failed and not understood:
+            # Claiming "I wrote, ran and verified it" for a bare skeleton would be
+            # a false report: the sandbox really did pass, but nothing of the
+            # user's task was actually solved. Say exactly that instead.
+            return ("לא זיהיתי כאן משימת קוד קונקרטית, אדוני, אז בניתי שלד בסיסי בלבד. "
+                    f"השלד ({fn or 'solve'}) עבר הרצה ובדיקת עשן בארגז חול — אבל זו לא תשובה למשימה. "
+                    "תאר לי מה הפונקציה צריכה לקבל ומה להחזיר, ואכתוב את המימוש המלא, אריץ ואבדוק אותו.")
         if failed:
             head = f"ניסיתי לכתוב ולהריץ, אבל לא הצלחתי לאמת את הקוד אחרי {repairs} תיקונים."
             err = (run.stderr.splitlines() or [""]) [-1][:200] if run.stderr else ""

@@ -82,6 +82,26 @@ def main() -> int:
           info["signatures"][0]["returns"] == "float", str(info.get("signatures"))[:90])
     check("parses cleanly", info["parses"] is True)
 
+    print("\n== honesty: a skeleton is not a solution ==")
+    h = HephaestusAgent()
+    for task in ("חפש קבצי פייתון", "יש לי שגיאה בקוד, מה עושים", "abc def ghi"):
+        out = h.handle(task)
+        check(f"non-coding task {task!r} is reported as not understood",
+              out.get("understood") is False and out.get("pattern") == "generic",
+              f"(understood={out.get('understood')} pattern={out.get('pattern')})")
+        check(f"its report does not claim a verified solution",
+              "הכול עובר" not in out.get("text", "") and "לא זיהיתי" in out.get("text", ""),
+              out.get("text", "")[:56])
+
+    out = h.handle("כתוב פונקציה שמחשבת את מספר פיבונאצ'י")
+    check("a real task is still understood, run and verified",
+          out.get("ok") is True and out.get("understood") is True
+          and out.get("pattern") != "generic", f"(pattern={out.get('pattern')})")
+    check("a real task may claim success", "הכול עובר" in out.get("text", ""),
+          out.get("text", "")[:56])
+    check("CodeResult.to_dict carries the understood flag",
+          "understood" in out and isinstance(out["understood"], bool))
+
     print("\n== procedural memory integration ==")
     try:
         from brain.memory import MemoryPalace
@@ -97,6 +117,13 @@ def main() -> int:
         hit = mem.find_skill(task)
         check("skill is retrievable", hit is not None and "is_prime" in (hit or {}).get("solution", ""),
               f"score={(hit or {}).get('score')}")
+
+        # a task we did NOT understand must never be memorised as a solved skill:
+        # replaying that skeleton later would report an unrelated task as verified
+        agent2.handle("abc def ghi xyz")
+        junk = mem._conn.execute(
+            "SELECT COUNT(*) c FROM skills WHERE name LIKE '%generic%'").fetchone()["c"]
+        check("no skeleton is ever learned as a skill", junk == 0, f"({junk} junk rows)")
     except Exception as exc:
         check("memory integration", False, f"{type(exc).__name__}: {exc}")
 

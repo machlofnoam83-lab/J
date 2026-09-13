@@ -476,6 +476,31 @@ def main() -> int:
         st_, hdr_, body_ = post(f"{base}/api/command", b"{not json", ctype="application/json")
         check("REST rejects a malformed body", st_ == 200 and b"invalid JSON" in body_, str(body_)[:70])
 
+        # Unknown API routes must fail loudly and as JSON — never as index.html,
+        # which the REST fallback in the UI could not tell apart from a success.
+        def any_method(method: str, url: str, data: bytes | None = None):
+            req = urllib.request.Request(url, data=data, method=method,
+                                         headers={"Origin": "null"})
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    return r.status, r.read()
+            except urllib.error.HTTPError as e:
+                return e.code, e.read()
+
+        for method, path in (("GET", "/api/health"), ("POST", "/api/nope"),
+                             ("GET", "/api/command"), ("DELETE", "/api/status/x"),
+                             ("PUT", "/api/status")):
+            st_, body_ = any_method(method, f"{base}{path}")
+            check(f"unmatched {method} {path} answers JSON 404",
+                  st_ == 404 and b'"type": "error"' in body_ and b"no such API route" in body_,
+                  f"[{st_}] {body_[:64]!r}")
+        st_, body_ = any_method("GET", f"{base}/")
+        check("the UI catch-all still serves the HUD", st_ == 200 and b"<html" in body_.lower(),
+              f"[{st_}]")
+        st_, body_ = any_method("GET", f"{base}/no-such-page")
+        check("an unknown UI path still falls back to the HUD", st_ == 200 and b"<html" in body_.lower(),
+              f"[{st_}]")
+
         # the firewall applies to REST exactly as it does to the socket:
         # the level is still SAFE from the control test above, so WRITE must fail
         target = Path.home() / "jarvis_rest_write.txt"

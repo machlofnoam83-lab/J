@@ -56,10 +56,15 @@ class Route:
 
 # ------------------------------------------------------------------ patterns --
 _TIME_Q = re.compile(r"(מה (ה)?שעה|שעה עכשיו|what time|השעה כרגע|מה התאריך|איזה יום|what date|today's date)", re.I)
-_HELP_Q = re.compile(r"(מה אתה (יודע|מסוגל)|עזרה|help|מה אפשר|היכולות שלך|what can you do)", re.I)
+_HELP_Q = re.compile(r"(מה אתה (יודע|מסוגל|עושה|טוב)|מה (ה)?תפקיד(ך| שלך)|למה אתה מסוגל"
+                     r"|עזרה|help|מה אפשר|היכולות שלך|הכישורים שלך"
+                     r"|what can you do|what do you do|your (abilities|skills))", re.I)
 _GREET = re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|צהריים טובים|hello|hi|hey|good (morning|evening))\b", re.I)
 _THANKS = re.compile(r"(תודה|thanks|thank you|מעולה|יופי|all good)", re.I)
-_IDENTITY = re.compile(r"(מי אתה|מה השם שלך|מי זה ג'רוויס|who are you|what are you|your name)", re.I)
+_IDENTITY = re.compile(r"(מי אתה|מה השם שלך|מי זה ג'רוויס|(ספר|תספר|תגיד) לי (על )?(עצמך|עליך)"
+                       r"|על עצמך|מי אתה בכלל|הצג את עצמך"
+                       r"|who are you|what are you|your name|(tell me )?about yourself"
+                       r"|introduce yourself)", re.I)
 _CODE = re.compile(
     # programming vocabulary. \bקוד\b (word-bounded) so "קודם" (=earlier) never matches.
     r"(תכתוב|כתוב לי|תקודד|קודד|תפתח|תבנה|בנה לי|תיצור|צור לי|ליישם|מימש|implement|compile|"
@@ -72,9 +77,11 @@ _MEM_WRITE = re.compile(r"(תזכור|תזכרי|זכור|remember that|אל ת�
 _MEM_QUERY = re.compile(r"(מה (אמרתי|סיפרתי|ביקשתי)|זוכר (מה|את)|recall|מה דיברנו|לפני (שעה|יום|שבוע))", re.I)
 _SYS_Q = re.compile(r"(מצב (ה)?מחשב|טלמטריה|cpu|ram|זיכרון פנוי|מעבד|דיסק|סוללה|temperature|"
                     r"system status|מה קורה עם המחשב|תהליכים|processes)", re.I)
-_FILES = re.compile(r"(קובץ|קבצים|תיקייה|תת־תיקייה|file|folder|directory|json|txt|csv|"
-                     r"לקרוא את|לכתוב את|לשמור את|למחוק את|לחפש)", re.I)
+_FILES = re.compile(r"(קובץ|קבצים|קבצי(?=[\s־\-.,!?]|$)|תיקי(?:יה|ית|ות|ה|ת)|תת־תיקייה"
+                     r"|file|folder|directory|json|txt|csv|"
+                     r"לקרוא את|לכתוב את|לשמור את|למחוק את|לחפש|חפש)", re.I)
 _APPS = re.compile(r"(פתח את|סגור את|הפעל את|open |close |launch |start |kill |הרג את|מחשבון|דפדפן)", re.I)
+_FILE_VERB = re.compile(r"(קרא|הצג|שמור|כתוב|מחק|ערוך|read|show|save|write|delete|edit|list)", re.I)
 _SCREEN = re.compile(r"(צילום מסך|צלם את המסך|screenshot|capture the screen)", re.I)
 _CLIP = re.compile(r"(לוח|clipboard|העתק|הדבק|copy|paste)", re.I)
 _MEDIA = re.compile(r"(מוזיקה|ווליום|עוצמת קול|נגן|השהה|volume|music|pause|play|next)", re.I)
@@ -85,6 +92,79 @@ _MATH_HINT = re.compile(
     r"ראשוני|prime|פיבונאצ'י|fibonacci|ממוצע|average|סכום|sum|מחלק|gcd|בינארי|binary|"
     r"עצרת|factorial|המרה|convert|\d)", re.I)
 _MATH_STRICT = re.compile(r"^\s*[-+*/%^().,\d\s]+$|\d+\s*(?:[+\-*/%^]|\*\*)\s*\d+", re.I)
+
+
+_EXT_WORDS = (
+    (("פייתון", "python", "py"), "py"),
+    (("ג'אווה סקריפט", "javascript", "js"), "js"),
+    (("טקסט", "text", "txt"), "txt"),
+    (("json", "ג'סון"), "json"),
+    (("csv", "טבלה"), "csv"),
+    (("תמונ", "image", "picture", "png", "jpg"), "png"),
+    (("יומן", "log", "לוג"), "log"),
+    (("yaml", "yml"), "yaml"),
+    (("markdown", "md", "תיעוד"), "md"),
+    (("html", "דף"), "html"),
+)
+
+
+def _num(x: Any) -> str:
+    """Render a number the way a person would: 36.0 -> 36, 12.5 -> 12.5."""
+    if isinstance(x, bool):
+        return str(x)
+    if isinstance(x, float):
+        if x.is_integer():
+            return str(int(x))
+        return f"{round(x, 6):g}"
+    return str(x)
+
+
+def _search_extension(text: str) -> str:
+    """Map a spoken file type ("קבצי פייתון") onto the extension fs.search wants.
+
+    Latin keywords are matched on word boundaries, otherwise "json" contains "js"
+    and a JSON request would be searched as JavaScript.
+    """
+    low = (text or "").lower()
+    for words, ext in _EXT_WORDS:
+        for w in words:
+            if w.isascii():
+                if re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", low):
+                    return ext
+            elif w in low:
+                return ext
+    return ""
+
+
+_PATH_HINT = re.compile(r"(?:בקובץ|לקובץ|את הקובץ|הקובץ|בתיקי+(?:ה|ת)|מתיקי+(?:ה|ת)"
+                        r"|אל התיקי+(?:ה|ת)|את|של|file|path|folder|directory)\s+([^\s,;:()]+)", re.I)
+# a bare token that is unmistakably a path: it has a separator or a file extension
+_PATH_TOKEN = re.compile(r"([^\s,;:()\"'“”]+/[^\s,;:()\"'“”]+|"
+                         r"[^\s,;:()\"'“”]+\.[A-Za-z]{1,6})(?![\w/])")
+
+
+def _extract_path(text: str) -> str:
+    """Pull the file/folder a request is about, keeping extensions and separators.
+
+    Order matters: a quoted path, then any token that is *shaped* like a path
+    ("docs/PLAN.md", "output.json"), and only then a hint word — otherwise the
+    generic "את" in "כתוב לקובץ output.json את הטקסט" would win over the real
+    target and we would try to open a file called "הטקסט".
+    """
+    t = text or ""
+    m = re.search(r"['\"“]([^'\"”]{1,120})['\"”]", t)
+    if m:
+        return m.group(1).strip().rstrip(".")
+    for cand in _PATH_TOKEN.findall(t):
+        cand = cand.rstrip(".")
+        if "/" in cand or re.search(r"\.[A-Za-z]{1,6}$", cand):
+            return cand
+    m = _PATH_HINT.search(t)
+    if m:
+        cand = m.group(1).rstrip(".")
+        if len(cand) > 1 and not cand.endswith(("?", "!")):
+            return cand
+    return ""
 
 
 def _looks_like_math(text: str) -> bool:
@@ -144,6 +224,9 @@ class IntentRouter:
         if _APPS.search(t):
             return self._route_app(t)
         if _FILES.search(t):
+            return self._route_files(t)
+        # a bare path plus a file verb needs no keyword: "קרא את docs/PLAN.md"
+        if _FILE_VERB.search(t) and _extract_path(t):
             return self._route_files(t)
 
         # 6. memory
@@ -222,12 +305,14 @@ class IntentRouter:
                              reply_he=_phrase_math(text, expr, value), grounded=True)
 
         # b) two-argument helpers (percent, gcd from natural language)
-        m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|אחוז|percent)\s*(?:מ|מתוך|of)?\s*(\d+(?:\.\d+)?)", text, re.I)
+        m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|אחוזים?|אחוז|percent|per cent)\s*"
+                      r"(?:מ|מתוך|מן|of)?\s*[-–—־]?\s*(\d+(?:\.\d+)?)", text, re.I)
         if m:
             p, of = float(m.group(1)), float(m.group(2))
             return Route("MATH", 0.97, "percentage", skill="math.percent", args={"p": p, "of": of},
                          value=p * of / 100.0,
-                         reply_he=f"{p} אחוז מ־{of} הם {round(p * of / 100.0, 6)}.", grounded=True)
+                         reply_he=f"{_num(p)} אחוז מ־{_num(of)} הם {_num(p * of / 100.0)}.",
+                         grounded=True)
         if ("מחלק משותף" in text or "gcd" in low) and re.search(r"\d+\D+\d+", text):
             nums = [int(x) for x in re.findall(r"\d+", text)][:2]
             if len(nums) == 2:
@@ -283,20 +368,39 @@ class IntentRouter:
 
     # ---------------------------------------------------------------- files --
     def _route_files(self, text: str) -> Route:
-        m = re.search(r"['\"“]([^'\"”]{1,120})['\"”]", text)
-        path = m.group(1) if m else ""
-        if not path:
-            m2 = re.search(r"(?:בקובץ|את הקובץ|בתיקייה|file|path)\s+([^\s,.;:]+)", text, re.I)
-            path = m2.group(1) if m2 else ""
+        path = _extract_path(text)
+        # "what is in the folder" is a listing, not a read of one file
+        if re.search(r"(מה יש|מה נמצא|רשימת (ה)?קבצים|הצג (את )?הקבצים|תוכן התיקייה"
+                     r"|מה בתיקייה|list (the )?(files|folder|directory)|what('s| is) in|contents of)",
+                     text, re.I):
+            return Route("FILES", 0.9, "directory listing", skill="fs.tree",
+                         args={"path": path or ".", "depth": 2}, risk="SAFE")
         if re.search(r"(מחק|delete|remove)", text, re.I):
+            if not path:
+                return Route("FILES", 0.9, "delete request without a target",
+                             reply_he="איזה קובץ למחוק, אדוני? תן לי נתיב מדויק — מחיקה עוברת דרך חומת ההרשאות.",
+                             grounded=True, risk="CRITICAL")
             return Route("FILES", 0.88, "file delete request", skill="fs.delete",
                          args={"path": path}, risk="CRITICAL")
         if re.search(r"(כתוב|שמור|write|save)", text, re.I):
+            if not path:
+                return Route("FILES", 0.9, "write request without a target",
+                             reply_he="לאן לכתוב, אדוני? ציין נתיב קובץ ואת התוכן ואשמור אותו.",
+                             grounded=True, risk="WRITE")
             return Route("FILES", 0.88, "file write request", skill="fs.write",
                          args={"path": path}, risk="WRITE")
         if re.search(r"(חפש|find|search)", text, re.I):
+            # "find python files" must search for *.py — handing the whole Hebrew
+            # sentence to fs.search as a glob matches nothing at all
+            ext = _search_extension(text)
             return Route("FILES", 0.9, "file search request", skill="fs.search",
-                         args={"pattern": path or text}, risk="SAFE")
+                         args={"pattern": path or "*", "extension": ext, "limit": 60}, risk="SAFE")
+        if not path:
+            # invoking fs.read with an empty path only yields "missing required
+            # arg" — asking for the path is both friendlier and more honest
+            return Route("FILES", 0.9, "read request without a target",
+                         reply_he="איזה קובץ לקרוא, אדוני? תן לי נתיב (או שם תיקייה ואפרט את תוכנה).",
+                         grounded=True, risk="SAFE")
         return Route("FILES", 0.85, "file read request", skill="fs.read",
                      args={"path": path}, risk="SAFE")
 
@@ -354,7 +458,7 @@ def _phrase_keyword_math(skill: str, args: Dict[str, Any], value: Any) -> str:
 
 def _phrase_math(original: str, expr: str, value: Any) -> str:
     """Natural Hebrew phrasing for an exact computed answer."""
-    shown = f"{value:,}".replace(",", ",") if isinstance(value, int) else str(value)
+    shown = f"{value:,}".replace(",", ",") if isinstance(value, int) else _num(value)
     if "שורש" in original:
         return f"השורש הריבועי הוא {shown}. חושב במנוע המתמטיקה המדויק, לא בניחוש."
     if "אחוז" in original or "percent" in original.lower():

@@ -43,6 +43,82 @@ class Fact:
         return " ".join(filter(None, [self.he, self.en, self.topic, " ".join(self.tags)]))
 
 
+# ------------------------------------------------------- topical relevance --
+# Character-n-gram cosine is easily fooled by a shared *request frame*:
+# "ספר לי על חורים שחורים" and "ספר לי בדיחה" both start with "tell me", and
+# that prefix alone can push an unrelated joke above the grounding threshold.
+# A grounded answer is a promise, so we require the two sides to share at least
+# one word that actually carries topic — after the polite frame is stripped.
+
+_REQUEST_FRAMES = (
+    "אני רוצה לדעת", "אני רוצה לשמוע", "האם אתה יכול", "אתה יכול", "אפשר לקבל",
+    "ספר לי", "ספרי לי", "תגיד לי", "תגידי לי", "אמור לי", "תן לי", "תני לי",
+    "הסבר לי", "תסביר לי", "אשמח לדעת", "בבקשה", "נא",
+    "tell me", "can you", "could you", "i want to know", "i would like to know",
+    "please", "explain",
+)
+
+_STOPWORDS = frozenset("""
+    מה מי איך מתי למה כמה על של את זה זו הזו הזאת אני אתה את הם הן יש אין האם או גם כי אם
+    לי לך אותי אצלי שם כאן כל מאוד קצת יותר הכי בין עם בלי לפני אחרי תודה בבקשה שלום
+    הוא היא היה הייתה יהיה יכול יכולה צריך רוצה יודע
+    the a an is are was were be been do does did you i we they he she it me my your our
+    to of in on at for with about into from that this these those and or but not no
+    can could should would will may might tell know get
+""".split())
+
+_HE_PREFIXES = ("ובה", "וה", "וב", "כש", "מה", "שה", "ה", "ו", "ב", "כ", "ל", "מ", "ש")
+
+_PLACEHOLDER = re.compile(r"\{[a-z_]+\}")
+
+
+_HE_SUFFIXES = ("ימ", "ות", "ה")     # ם is normalised to מ, so ים appears as ימ
+
+
+def _stem(tok: str) -> str:
+    """Very light Hebrew/English stemming — enough to see that חור and החורים agree."""
+    if re.search(r"[\u0590-\u05FF]", tok):
+        for pre in _HE_PREFIXES:
+            if tok.startswith(pre) and len(tok) - len(pre) >= 3:
+                tok = tok[len(pre):]
+                break
+        for suf in _HE_SUFFIXES:
+            if tok.endswith(suf) and len(tok) - len(suf) >= 3:
+                return tok[:-len(suf)]
+        return tok
+    if tok.endswith("s") and len(tok) > 4:
+        return tok[:-1]
+    return tok
+
+
+def content_tokens(text: str) -> set:
+    """Words that carry topic: request frames and function words removed."""
+    t = f" {normalize(str(text)).lower()} "
+    for frame in _REQUEST_FRAMES:
+        t = t.replace(f" {frame} ", " ")
+    toks = re.findall(r"[A-Za-z\u0590-\u05FF][A-Za-z\u0590-\u05FF'\-]{1,}", t)
+    return {_stem(w) for w in toks
+            if w not in _STOPWORDS and _stem(w) not in _STOPWORDS and len(_stem(w)) >= 2}
+
+
+def shares_topic(a: str, b: str) -> bool:
+    """True when two strings have at least one substantive word in common."""
+    ta, tb = content_tokens(a), content_tokens(b)
+    if not ta or not tb:
+        return False
+    if ta & tb:
+        return True
+    # allow a stem/inflection match (חור ~ חורים, token ~ tokens). Hebrew roots are
+    # short, so a 3-letter stem is enough there; Latin needs 4 to stay meaningful.
+    for x in ta:
+        for y in tb:
+            short, long = (x, y) if len(x) <= len(y) else (y, x)
+            floor = 3 if re.search(r"[\u0590-\u05FF]", short) else 4
+            if len(short) >= floor and long.startswith(short):
+                return True
+    return False
+
+
 # ------------------------------------------------------------- vectoriser ---
 class HashedNgramVectorizer:
     """Character n-gram hashing vectoriser with sublinear TF and IDF.
@@ -156,7 +232,8 @@ class KnowledgeStore:
         return out
 
     # -------------------------------------------------------------- queries --
-    def search(self, query: str, k: int = 3, min_score: float = 0.08) -> List[Dict[str, Any]]:
+    def search(self, query: str, k: int = 3, min_score: float = 0.08,
+               require_overlap: bool = False) -> List[Dict[str, Any]]:
         if self._matrix is None or not self.facts:
             return []
         qv = self.vectorizer.transform_one(query)
@@ -168,21 +245,34 @@ class KnowledgeStore:
             if score < min_score:
                 continue
             f = self.facts[int(idx)]
+            if require_overlap and not shares_topic(query, f.text()):
+                continue
             hits.append({"id": f.id, "topic": f.topic, "score": round(score, 4),
                          "text_he": f.he, "text_en": f.en, "tags": list(f.tags)})
             if len(hits) >= k:
                 break
         return hits
 
-    def search_qa(self, query: str, k: int = 3, min_score: float = 0.25) -> List[Dict[str, Any]]:
-        """Look for a near-duplicate question we already know the answer to."""
+    def search_qa(self, query: str, k: int = 3, min_score: float = 0.25,
+                  require_overlap: bool = True, skip_templates: bool = True) -> List[Dict[str, Any]]:
+        """Look for a near-duplicate question we already know the answer to.
+
+        A high character-n-gram score is *not* sufficient: the candidate must also
+        share a substantive word with the query, otherwise a polite shared prefix
+        ("ספר לי…") can sell an unrelated canned answer as grounded truth.
+        """
         if not self._qa_index:
             return []
         qv = self.vectorizer.transform_one(query)
         scored = []
         for q, a, fi in self._qa_index:
+            if skip_templates and _PLACEHOLDER.search(a):
+                # some KB answers are templates for the skill layer ("השעה היא
+                # {time}"); publishing one raw would show the user literal braces.
+                # Those questions are answered deterministically by their intent.
+                continue
             s = float(qv @ self.vectorizer.transform_one(q))
-            if s >= min_score:
+            if s >= min_score and (not require_overlap or shares_topic(query, q)):
                 scored.append((s, q, a, self.facts[fi].id, self.facts[fi].topic))
         scored.sort(reverse=True)
         return [{"score": round(s, 4), "question": q, "answer": a, "fact_id": fid, "topic": tp}
