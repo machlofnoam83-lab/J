@@ -125,10 +125,17 @@ class PermissionFirewall:
         if level not in _RANK:
             return self._decide(action, level, False, f"unknown risk level {level!r}", args, agent)
 
+        escalated = False
         if _RANK[level] > _RANK[self.level]:
-            return self._decide(
-                action, level, False,
-                f"blocked: action is {level} but the firewall is set to {self.level}", args, agent)
+            # SAFE level is a hard ceiling. From WRITE upward, a CRITICAL action may
+            # still run — but only through explicit human confirmation in the HUD.
+            may_escalate = (level == "CRITICAL" and self.require_confirmation
+                            and _RANK[self.level] >= _RANK["WRITE"])
+            if not may_escalate:
+                return self._decide(
+                    action, level, False,
+                    f"blocked: action is {level} but the firewall is set to {self.level}", args, agent)
+            escalated = True
 
         # path protection
         for key in ("path", "target", "file", "folder", "destination"):
@@ -167,7 +174,9 @@ class PermissionFirewall:
             return self._decide(action, level, True,
                                 f"dry-run: {action} would execute with {args}", args, agent)
 
-        return self._decide(action, level, True, "policy satisfied", args, agent)
+        return self._decide(action, level, True,
+                            "user confirmed a CRITICAL escalation" if escalated else "policy satisfied",
+                            args, agent)
 
     def check_shell(self, command: str) -> Decision:
         cmd = (command or "").strip()

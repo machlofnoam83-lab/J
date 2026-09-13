@@ -91,6 +91,7 @@ class SecurityConfig:
     level: str = "write"               # safe | write | critical
     require_confirmation: bool = True  # ask user in HUD before CRITICAL actions
     dry_run: bool = False              # if True: report what *would* happen
+    confirm_timeout: float = 180.0     # seconds the HUD has to answer a CRITICAL prompt
     audit_log: str = str(LOGS / "audit.jsonl")
     kill_switch_key: str = "F12"
     shell_enabled: bool = True

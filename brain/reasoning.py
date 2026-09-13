@@ -152,6 +152,37 @@ class Verifier:
         return out.strip()
 
 
+# --------------------------------------------------- template-leak guard ----
+# The neural core was trained on a templated corpus, so an off-topic prompt can
+# make it recite a template from another domain instead of answering. These
+# signature/keyword pairs catch that: if the answer reeks of a domain the
+# question never mentioned, the answer is rejected and we fall back honestly.
+_TEMPLATE_DOMAINS: Tuple[Tuple[re.Pattern, re.Pattern, str], ...] = (
+    (re.compile(r"פעולה ברמת (CRITICAL|WRITE|SAFE)|אישור מפורש|יומן הביקורת|חומת ההרשאות|kill switch"),
+     re.compile(r"הרשאה|אבטחה|סיכון|מסוכן|אישור|permission|critical|מחיקה|delete|חומרה|kill", re.I),
+     "permissions"),
+    (re.compile(r"זיהוי הדיבור|מילת השכמה|MFCC|מנוע דיבור|פונמות|voicebank"),
+     re.compile(r"דיבור|קול|שומע|מדבר|מזהה|voice|speech|stt|tts|מיקרופון", re.I),
+     "voice"),
+    (re.compile(r"בדיקת התחלקות|התחלקות עד השורש|מספר ראשוני|פיבונאצ"),
+     re.compile(r"ראשוני|prime|פיבונאצ|fib|מספר|חלוקה|חשבון|מתמטיק|כמה", re.I),
+     "math"),
+    (re.compile(r"מחרוזת הופכת|פלינדרום|palindrome"),
+     re.compile(r"פלינדרום|הופכת|מחרוזת|string|reverse|קוד|פונקציה", re.I),
+     "code"),
+)
+
+
+def template_leak(answer: str, question: str) -> str:
+    """Return the leaked domain name when the answer is off-topic, else ''."""
+    if not answer or not question:
+        return ""
+    for signature, keywords, domain in _TEMPLATE_DOMAINS:
+        if signature.search(answer) and not keywords.search(question):
+            return domain
+    return ""
+
+
 def _num_key(value: Any) -> str:
     try:
         if isinstance(value, str):
@@ -200,6 +231,8 @@ class ReasoningEngine:
         self.verifier = Verifier(knowledge)
         self.history: List[Tuple[str, str]] = []
         self.persona = CONFIG.persona
+        self._smalltalk_turn = 0
+        self._canned: Optional[Dict[str, List[str]]] = None
 
     # ---------------------------------------------------------------- API --
     def think(self, text: str, *, speak_stream: Optional[Callable[[str], None]] = None) -> Answer:
@@ -242,6 +275,8 @@ class ReasoningEngine:
             return self._handle_code(text, route, trace, t0)
         if route.intent in ("IDENTITY", "HELP"):
             return self._handle_identity(route.intent, trace, t0)
+        if route.intent in ("SMALLTALK", "GREETING"):
+            return self._handle_smalltalk(text, route, trace, t0)
 
         # 4 --------------------------------------- tool execution (act) ----
         if route.skill and self.skills is not None:
@@ -324,6 +359,9 @@ class ReasoningEngine:
         BUS.emit(T.BRAIN_TOOL_RESULT, result.to_dict(), source="reasoning")
         trace.add("tool", f"{route.skill} -> {'ok' if result.ok else 'error'}", result.to_dict(), t)
 
+        # a real tool result is *grounded truth* — that is the whole point of tools
+        if result.ok:
+            route.grounded = True
         reply = self._phrase_tool_result(route, result)
         numbers = _numbers_in(result.value)
         return self._verify_and_pack(reply, route, trace, t0, numbers=numbers)
@@ -410,6 +448,64 @@ class ReasoningEngine:
         self._remember(text, ans.text)
         return ans
 
+    # ------------------------------------------------------------- smalltalk --
+    SMALLTALK_CATEGORIES: Tuple[Tuple[str, re.Pattern], ...] = (
+        ("bye", re.compile(r"להתראות|ביי|נתראה|לילה טוב|bye|good ?night", re.I)),
+        ("joke", re.compile(r"בדיחה|תצחיק|מצחיק|joke|funny", re.I)),
+        ("howareyou", re.compile(r"מה שלומך|מה נשמע|איך אתה מרגיש|מה מצבך|how are you", re.I)),
+        ("thanks", re.compile(r"תודה|thanks|thank you|מעולה|יופי|כל הכבוד", re.I)),
+        ("opinion", re.compile(r"מה דעתך|מה אתה חושב|האם אתה מאמין|what do you think", re.I)),
+        ("learning", re.compile(r"ללמוד|לימוד|יכולת למידה|learn", re.I)),
+        ("capability", re.compile(r"מה אתה (יודע|מסוגל)|היכולות שלך|what can you do", re.I)),
+        ("greeting", re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|צהריים טובים|hello|hi|hey)", re.I)),
+    )
+
+    def _smalltalk_category(self, text: str) -> str:
+        for name, pattern in self.SMALLTALK_CATEGORIES:
+            if pattern.search(text):
+                return name
+        return "unknown"
+
+    def _smalltalk_lines(self, category: str) -> List[str]:
+        if self.knowledge is None:
+            return []
+        if getattr(self, "_canned", None) is None:
+            canned: Dict[str, List[str]] = {}
+            for fact in self.knowledge.facts:
+                block = (fact.extra or {}).get("canned")
+                if isinstance(block, dict):
+                    for k, v in block.items():
+                        if isinstance(v, (list, tuple)):
+                            canned.setdefault(str(k), []).extend(str(x) for x in v if x)
+            self._canned = canned
+        return list(self._canned.get(category) or self._canned.get("unknown") or [])
+
+    def _handle_smalltalk(self, text: str, route: Route, trace: Trace, t0: float) -> Answer:
+        """Short social exchange — answered from our own KB, never invented."""
+        t = time.perf_counter()
+        reply = ""
+        source = ""
+        if self.knowledge is not None:
+            qa = self.knowledge.search_qa(text, k=1, min_score=0.42)
+            if qa:
+                reply = qa[0]["answer"]
+                source = f"knowledge:{qa[0]['fact_id']} ({qa[0]['score']:.2f})"
+                route.grounded = True
+        if not reply:
+            category = self._smalltalk_category(text)
+            lines = self._smalltalk_lines(category)
+            if lines:
+                reply = lines[self._smalltalk_turn % len(lines)]
+                self._smalltalk_turn += 1
+                source = f"canned:{category}"
+        if reply:
+            trace.add("plan", f"smalltalk reply from {source}", {"text": reply[:80]}, t)
+            answer = self._verify_and_pack(reply, route, trace, t0)
+            self._remember(text, answer.text)
+            return answer
+        trace.add("reflect", "no smalltalk match — deferring to the neural core", {}, t)
+        return self._neural_answer(text, trace, t0, route=route)
+
     def _handle_identity(self, intent: str, trace: Trace, t0: float) -> Answer:
         route = Route(intent, 0.95, "identity/help answer")
         if self.knowledge is not None:
@@ -450,6 +546,11 @@ class ReasoningEngine:
         raw = gen.text
         t = time.perf_counter()
         ok, issues, cleaned = self.verifier.check(raw, route=route)
+        leaked = template_leak(raw, text)
+        if leaked:
+            ok = False
+            issues.append(f"recited an unrelated {leaked} template instead of answering")
+            cleaned = ""
         trace.add("verify", "pass" if ok else f"issues: {issues}",
                   {"ok": ok, "issues": issues, "tokens": gen.tokens, "ms": round(gen.ms, 1)}, t)
 

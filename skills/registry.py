@@ -29,10 +29,11 @@ class SkillResult:
     ms: float = 0.0
     skill: str = ""
     data: Dict[str, Any] = field(default_factory=dict)
+    risk: str = SAFE
 
     def to_dict(self) -> Dict[str, Any]:
         return {"ok": self.ok, "value": self.value, "error": self.error,
-                "ms": round(self.ms, 2), "skill": self.skill, **self.data}
+                "ms": round(self.ms, 2), "skill": self.skill, "risk": self.risk, **self.data}
 
 
 @dataclass

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self' data: blob:; connect-src 'self' ws: wss: http://127.0.0.1:* http://localhost:*;
+               img-src 'self' data: blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>J.A.R.V.I.S. — Neural HUD</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="theme-mark1" data-state="booting">
+
+<!-- ───────────────────────── ambient layers ───────────────────────── -->
+<div id="grid-bg" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+<div id="scanlines" aria-hidden="true"></div>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<!-- ─────────────────────────── title bar ─────────────────────────── -->
+<header id="titlebar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r="17" class="bm-ring"/>
+      <circle cx="20" cy="20" r="11" class="bm-ring2"/>
+      <path d="M20 6 L20 34 M6 20 L34 20" class="bm-cross"/>
+      <circle cx="20" cy="20" r="4.5" class="bm-core"/>
+    </svg>
+    <div class="brand-text">
+      <h1>J.A.R.V.I.S.</h1>
+      <p>Just A Rather Very Intelligent System <span class="sep">·</span> <span id="build-tag">MK-VII</span></p>
+    </div>
+  </div>
+
+  <div class="status-pills">
+    <div class="pill" id="pill-brain"><i class="dot"></i><span>מוח</span><b>—</b></div>
+    <div class="pill" id="pill-voice"><i class="dot"></i><span>קול</span><b>—</b></div>
+    <div class="pill" id="pill-security"><i class="dot"></i><span>אבטחה</span><b>—</b></div>
+    <div class="pill" id="pill-uptime"><i class="dot"></i><span>זמן פעילות</span><b>00:00</b></div>
+  </div>
+
+  <div class="clock">
+    <div id="clock-time">00:00:00</div>
+    <div id="clock-date">—</div>
+  </div>
+
+  <div class="win-controls">
+    <button id="btn-always-top" class="wc" title="נעץ למעלה (Ctrl+Shift+J)">📌</button>
+    <button id="btn-fullscreen" class="wc" title="מסך מלא">⛶</button>
+    <button id="btn-minimize" class="wc" title="מזער">—</button>
+    <button id="btn-maximize" class="wc" title="הגדל">▢</button>
+    <button id="btn-close" class="wc wc-danger" title="סגור">✕</button>
+  </div>
+</header>
+
+<!-- ───────────────────────────── grid ───────────────────────────── -->
+<main id="grid">
+
+  <!-- ══════════ left rail ══════════ -->
+  <aside id="rail-left">
+
+    <section class="panel" id="panel-agents">
+      <header><h2>סוכנים פעילים</h2><span class="panel-tag">AGENTS</span></header>
+      <ul id="agent-list"></ul>
+    </section>
+
+    <section class="panel" id="panel-model">
+      <header><h2>ליבה עצבית</h2><span class="panel-tag">NANO-1</span></header>
+      <div id="model-stats" class="kv"></div>
+      <div class="bar-wrap"><div class="bar" id="bar-load"></div></div>
+      <p class="hint" id="model-hint">ממתין לטעינה…</p>
+    </section>
+
+    <section class="panel" id="panel-stt">
+      <header><h2>זיהוי דיבור</h2><span class="panel-tag">STT</span></header>
+      <div id="stt-stats" class="kv"></div>
+      <div class="bar-wrap"><div class="bar" id="bar-stt"></div></div>
+      <ul id="stt-vocab" class="ticker"></ul>
+      <p class="hint">לחץ על 🎙 ואמור אחת מהפקודות. הזיהוי מקומי לגמרי — תבניות MFCC+DTW שהמערכת בנתה לעצמה.</p>
+    </section>
+
+    <section class="panel" id="panel-memory">
+      <header><h2>ארמון זיכרון</h2><span class="panel-tag">MEMORY</span></header>
+      <div id="memory-stats" class="kv"></div>
+      <ul id="memory-list" class="ticker"></ul>
+    </section>
+
+  </aside>
+
+  <!-- ══════════ center stage ══════════ -->
+  <section id="stage">
+
+    <div id="reactor-wrap">
+      <canvas id="reactor"></canvas>
+      <div id="reactor-center">
+        <div id="reactor-state">מאתחל</div>
+        <div id="reactor-sub">JARVIS CORE</div>
+      </div>
+      <div class="ring-labels">
+        <span class="rl rl1">INFER</span><span class="rl rl2">MEMORY</span>
+        <span class="rl rl3">SKILLS</span><span class="rl rl4">SECURE</span>
+      </div>
+    </div>
+
+    <div id="transcript" aria-live="polite"></div>
+
+    <div id="composer">
+      <div id="composer-modes">
+        <button class="mode active" data-mode="chat">שיחה</button>
+        <button class="mode" data-mode="code">קוד</button>
+        <button class="mode" data-mode="math">מתמטיקה</button>
+        <button class="mode" data-mode="system">מערכת</button>
+      </div>
+      <div id="composer-row">
+        <button id="btn-mic" title="דיבור (Ctrl+Shift+Space)">🎙</button>
+        <input id="input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="דבר אליי, אדוני… (Enter לשליחה · Shift+Enter לשורה חדשה)">
+        <label class="toggle" title="הפעל קול"><input type="checkbox" id="chk-speak" checked><span>קול</span></label>
+        <button id="btn-send">שגר ➤</button>
+      </div>
+      <div id="composer-foot">
+        <span class="kbd">Enter</span> שליחה
+        <span class="kbd">Ctrl+Shift+Space</span> דיבור
+        <span class="kbd">Ctrl+Shift+J</span> נעיצה
+        <span class="kbd">Ctrl+Shift+Esc</span> <b class="danger">KILL SWITCH</b>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ right rail ══════════ -->
+  <aside id="rail-right">
+
+    <section class="panel" id="panel-telemetry">
+      <header><h2>טלמטריה</h2><span class="panel-tag">TELEMETRY</span></header>
+      <div class="gauges">
+        <div class="gauge"><canvas class="g-canvas" data-g="cpu"></canvas><span>CPU</span><b id="g-cpu">—</b></div>
+        <div class="gauge"><canvas class="g-canvas" data-g="ram"></canvas><span>RAM</span><b id="g-ram">—</b></div>
+        <div class="gauge"><canvas class="g-canvas" data-g="disk"></canvas><span>DISK</span><b id="g-disk">—</b></div>
+        <div class="gauge"><canvas class="g-canvas" data-g="net"></canvas><span>NET</span><b id="g-net">—</b></div>
+      </div>
+      <canvas id="spark-cpu" class="spark"></canvas>
+      <canvas id="spark-ram" class="spark"></canvas>
+    </section>
+
+    <section class="panel grow" id="panel-events">
+      <header><h2>זרם אירועים</h2><span class="panel-tag">BUS</span>
+        <button class="mini" id="btn-clear-events">נקה</button></header>
+      <ul id="event-stream"></ul>
+    </section>
+
+    <section class="panel" id="panel-permissions">
+      <header><h2>חומת הרשאות</h2><span class="panel-tag">FIREWALL</span></header>
+      <div id="perm-queue"></div>
+      <div id="perm-stats" class="kv"></div>
+      <div class="perm-controls">
+        <select id="sel-level">
+          <option value="readonly">readonly</option>
+          <option value="write" selected>write</option>
+          <option value="dangerous">dangerous</option>
+        </select>
+        <label class="toggle"><input type="checkbox" id="chk-dryrun" checked><span>dry-run</span></label>
+        <button id="btn-kill" class="danger">KILL</button>
+        <button id="btn-revive">REVIVE</button>
+      </div>
+    </section>
+
+  </aside>
+</main>
+
+<!-- ─────────────────────────── overlays ─────────────────────────── -->
+<div id="boot-overlay" class="overlay">
+  <div class="boot-inner">
+    <pre id="boot-log"></pre>
+    <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+  </div>
+</div>
+
+<div id="kill-overlay" class="overlay kill">
+  <div class="kill-inner">
+    <div class="kill-icon">⛔</div>
+    <h2>KILL SWITCH פעיל</h2>
+    <p id="kill-reason">—</p>
+    <button id="btn-kill-revive">אתחל מחדש את JARVIS</button>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="assets/audio.js"></script>
+<script src="assets/hud.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

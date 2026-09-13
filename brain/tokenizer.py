@@ -87,6 +87,46 @@ def normalize(text: str, keep_niqqud: bool = False, fold_finals: bool = True) ->
     return text.strip() if text.strip() else text
 
 
+NON_FINAL = {"כ": "ך", "מ": "ם", "נ": "ן", "צ": "ץ", "פ": "ף"}
+_HEB = ("\u05d0", "\u05ea")
+
+
+def restore_finals(text: str) -> str:
+    """Undo :func:`normalize`'s final-form folding for human-readable output.
+
+    ``normalize`` folds ם→ם so BPE sees one alphabet; the model therefore emits
+    folded text ("בשלבימ"). Hebrew orthography requires the final form at the end
+    of a word, so we put it back — but only for genuine word-final Hebrew letters:
+
+      * a word must contain ≥2 Hebrew letters (protects single-letter prefixes
+        and acronyms such as "מ־" or "פ"),
+      * a word ending in a Latin letter or digit is left untouched,
+      * trailing punctuation/niqqud is skipped when locating the final letter.
+    """
+    if not text or not any(ch in text for ch in NON_FINAL):
+        return text
+    out: List[str] = []
+    for word in re.split(r"(\s+)", text):
+        if not word or word.isspace():
+            out.append(word)
+            continue
+        idx = -1
+        for i in range(len(word) - 1, -1, -1):
+            ch = word[i]
+            if _HEB[0] <= ch <= _HEB[1] or ch in NON_FINAL.values():
+                idx = i
+                break
+            if ch.isalnum():
+                idx = -2                     # latin/digit tail — not Hebrew
+                break
+        if idx >= 0 and word[idx] in NON_FINAL:
+            letters = sum(1 for ch in word if _HEB[0] <= ch <= _HEB[1] or ch in NON_FINAL.values())
+            if letters >= 2:
+                word = word[:idx] + NON_FINAL[word[idx]] + word[idx + 1:]
+        out.append(word)
+    return "".join(out)
+
+
 class Tokenizer:
     """Byte-level BPE with Hebrew normalisation."""
 

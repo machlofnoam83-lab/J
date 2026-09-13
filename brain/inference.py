@@ -189,16 +189,21 @@ class NeuralCore:
                 text = text.split(st)[0]
                 stop_reason = f"stop:{st}"
                 break
-        return GenerationResult(text=text.strip(), tokens=len(out[0]) - x.shape[1],
+        # the tokenizer folds Hebrew final forms (ם→מ) so BPE sees one alphabet;
+        # put them back before the text reaches a human.
+        from brain.tokenizer import restore_finals
+        return GenerationResult(text=restore_finals(text.strip()), tokens=len(out[0]) - x.shape[1],
                                 stop_reason=stop_reason)
 
     # --------------------------------------------------------------- info --
     def describe(self) -> Dict[str, Any]:
+        train = dict(self.meta.get("train") or {})
         return {
             "available": self.available,
             "backend": self.backend,
             "tokenizer_vocab": len(self.tokenizer) if self.tokenizer else 0,
             "checkpoint": str(self.model_path),
+            "train": train,                       # ppl / loss / steps — shown in the HUD
             **{k: v for k, v in self.meta.items() if k != "train"},
         }
 

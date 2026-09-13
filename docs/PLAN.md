@@ -203,16 +203,34 @@ J/
 > נבחר: **Brain-first**. כל שלב מסתיים במשהו **שרץ וניתן לבדיקה**.
 
 - **P0 — תשתית ✅** — אימות סביבה, התקנת stack, תוכנית, שלד הפרויקט, config, event bus, self-test.
-- **P1 — NEURAL CORE** — טוקנייזר BPE עברי מאפס → corpus forge → מודל transformer → אימון הוכחת-צינור → inference engine (torch/ONNX/numpy) → **JARVIS אומר את המשפט הראשון שלו**.
-- **P2 — SYMBOLIC KERNEL** — intent router, skill registry, math engine, fact store + retriever, reasoning loop, verifier. **JARVIS באמת עונה נכון ולא מפברק.**
-- **P3 — MEMORY** — SQLite + vectors + שכחה חכמה + procedural skills. **JARVIS זוכר אותך.**
-- **P4 — VOICE** — G2P עברי → בנק קול → מנוע קונקטיבי → מנוע פורמנטי → prosody → **JARVIS מדבר בקול אמיתי**. ואז STT: wake-word → פקודות → AM סינתטי.
-- **P5 — CODER AGENT (HEPHAESTUS)** — code-gen → sandbox → self-repair loop → code explainer → פרויקט שלם. **JARVIS כותב ומריץ קוד בעצמו.**
-- **P6 — SYSTEM OPS** — כל מודולי ה־Windows + Permission Firewall + audit + kill switch. **JARVIS שולט במחשב.**
-- **P7 — UI HUD** — Reactor, rings, particles, neural web, telemetry, code forge, boot sequence, themes. **המסך העתידני.**
-- **P8 — ELECTRON SHELL** — main.js, preload, חלון fullscreen שקוף, קיצורים גלובליים, tray, auto-start. **אפליקציה אמיתית.**
-- **P9 — אינטגרציה קצה-אל-קצה + קשיחות** — צינור מלא: דיבור → חשיבה → פעולה → דיבור. stress tests, benchmarks, fallbacks.
-- **P10 — אריזה והפצה** — `tools/train.py` מלא ל־GPU שלך, PyInstaller/Nuitka exe, Electron builder ל־Windows installer, סקריפט התקנה בלחיצה, מדריך משתמש.
+- **P1 — NEURAL CORE ✅** — טוקנייזר BPE עברי מאפס → corpus forge → מודל transformer → אימון הוכחת-צינור → inference engine (torch/ONNX/numpy) → **JARVIS אומר את המשפט הראשון שלו**.
+- **P2 — SYMBOLIC KERNEL ✅** — intent router, skill registry, math engine, fact store + retriever, reasoning loop, verifier. **JARVIS באמת עונה נכון ולא מפברק.**
+- **P3 — MEMORY ✅** — SQLite + vectors + שכחה חכמה + procedural skills. **JARVIS זוכר אותך.**
+- **P4 — VOICE ✅** — G2P עברי → בנק קול → מנוע קונקטיבי → מנוע פורמנטי → prosody → **JARVIS מדבר בקול אמיתי**. ואז STT: wake-word → פקודות → AM סינתטי.
+- **P5 — CODER AGENT (HEPHAESTUS) ✅** — code-gen → sandbox → self-repair loop → code explainer → פרויקט שלם. **JARVIS כותב ומריץ קוד בעצמו.**
+- **P6 — SYSTEM OPS ✅** — כל מודולי ה־Windows + Permission Firewall + audit + kill switch. **JARVIS שולט במחשב.**
+- **P7 — UI HUD ✅** — Reactor, rings, particles, neural web, telemetry, code forge, boot sequence, themes. **המסך העתידני.**
+- **P8 — ELECTRON SHELL ✅ (קוד נשלח; אימות סופי על Windows)** — main.js, preload, חלון fullscreen שקוף, קיצורים גלובליים, tray, auto-start. **אפליקציה אמיתית.**
+- **P9 — אינטגרציה קצה-אל-קצה + קשיחות ✅** — צינור מלא: דיבור → חשיבה → פעולה → דיבור. stress tests, benchmarks, fallbacks.
+- **P10 — אריזה והפצה ◐ (חלקי)** — `tools/train.py` מלא ל־GPU שלך, PyInstaller/Nuitka exe, Electron builder ל־Windows installer, סקריפט התקנה בלחיצה, מדריך משתמש.
+### מה נמדד בפועל (נכון ל־P9)
+
+| שכבה | תוצאה מדידה |
+|---|---|
+| טוקנייזר | 8,057 טוקנים · 7,791 מיזוגים · 2.999 תו/טוקן · 0/2000 כשלי שחזור |
+| קורפוס | 100,910 אימון / 5,312 בדיקה · סדר ReAct תקין |
+| ליבה עצבית | 6.20M פרמטרים · 6 שכבות · dev loss 0.188 · ppl **1.207** · 37 דק׳ על 2×CPU |
+| קרנל סימבולי | מתמטיקה מדויקת · 11 כוונות · 20 עובדות / 52 QA · מאמת טענות |
+| כלים | 54 skills (SAFE 41 / WRITE 6 / CRITICAL 7) |
+| זיכרון | SQLite · אפיזודי/סמנטי/פרוצדורלי · שכחה בחצי-חיים 21 יום |
+| דיבור (פלט) | concat מ־118 מילים + 381 פונמות אמיתיות · 26/29 פונמות · 24kHz · RTF 0.11–0.21 |
+| דיבור (קלט) | 25 פקודות + wake · 50/50 זיהוי עצמי · 0 זיהויי שווא · 36ms לפקודה · כיול עצמי |
+| מתכנת | 10 תבניות · 8 חוקי תיקון עצמי · הרצה מבודדת עם timeout · בדיקות מיוצרות |
+| אבטחה | חומת הרשאות · אישור אנושי חי דרך ה־HUD · audit JSONL · dry-run · kill switch |
+| HUD | Electron frameless · Arc Reactor canvas · זרם אירועים · טלמטריה · תורי הרשאות · שמע ב־WS |
+| שרת | aiohttp · loopback בלבד · WS + 9 REST · CORS ל־renderer · אפס בלוקציות בלולאת הקריאה |
+| בדיקות | **307 passed / 0 failed** בשבעה מודולים (101 שניות) |
+
 - **P11 — R&D** — הרחבת מודל, self-distillation, STT מתקדם, vision (OCR + תיאור מסך), ריבוי סוכנים מקבילי.
 
 ---

@@ -61,9 +61,13 @@ _GREET = re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב ט�
 _THANKS = re.compile(r"(תודה|thanks|thank you|מעולה|יופי|all good)", re.I)
 _IDENTITY = re.compile(r"(מי אתה|מה השם שלך|מי זה ג'רוויס|who are you|what are you|your name)", re.I)
 _CODE = re.compile(
-    r"(תכתוב|כתוב לי|תקודד|תפתח|תבנה|תיצור|fix|debug|refactor|באג|שגיאה בקוד|סקריפט|"
-    r"פונקציה|מחלקה|write (me )?(a )?(function|script|class|code)|explain (this|the) code|"
-    r"תסביר את הקוד|python|javascript|json|regex)", re.I)
+    # programming vocabulary. \bקוד\b (word-bounded) so "קודם" (=earlier) never matches.
+    r"(תכתוב|כתוב לי|תקודד|קודד|תפתח|תבנה|בנה לי|תיצור|צור לי|ליישם|מימש|implement|compile|"
+    r"fix|debug|refactor|באג|שגיאה בקוד|סקריפט|תוכנה|תכנות|אלגוריתם|פונקציה|פונקציות|מחלקה|"
+    r"\bקוד\b|\bcode\b|פייתון|פייטון|python|javascript|typescript|json|regex|sql|html|css|"
+    r"unit ?tests?|pytest|"
+    r"write (me )?(a )?(function|script|class|code|program)|explain (this|the) code|"
+    r"תסביר את הקוד|להריץ קוד|הרץ קוד)", re.I)
 _MEM_WRITE = re.compile(r"(תזכור|תזכרי|זכור|remember that|אל תשכח|שים לב ש|העדפה שלי|קרא לי)", re.I)
 _MEM_QUERY = re.compile(r"(מה (אמרתי|סיפרתי|ביקשתי)|זוכר (מה|את)|recall|מה דיברנו|לפני (שעה|יום|שבוע))", re.I)
 _SYS_Q = re.compile(r"(מצב (ה)?מחשב|טלמטריה|cpu|ram|זיכרון פנוי|מעבד|דיסק|סוללה|temperature|"

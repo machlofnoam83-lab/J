@@ -1,0 +1,535 @@
+#!/usr/bin/env python3
+"""JARVIS server tests — the bridge between the brain and the HUD.
+
+Starts the real server on a free port as a subprocess and drives it over
+HTTP + WebSocket exactly the way the Electron HUD does.
+
+Covers: static HUD serving · CORS for the file:// renderer · every JSON API ·
+WebSocket chat turn · audio frames reaching the UI · the human-in-the-loop
+CRITICAL permission prompt answered over the same socket · kill switch ·
+bus event streaming.
+
+Run:  python tests/test_server.py
+"""
+
+from __future__ import annotations
+
+import asyncio
+import base64
+import json
+import socket
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+ok = 0
+fail = 0
+
+
+def check(label: str, cond: bool, detail: str = "") -> bool:
+    global ok, fail
+    if cond:
+        ok += 1
+        print(f"  PASS  {label}" + (f"  {detail}" if detail else ""))
+    else:
+        fail += 1
+        print(f"  FAIL  {label}" + (f"  {detail}" if detail else ""))
+    return bool(cond)
+
+
+def free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def get(url: str, timeout: float = 180.0):
+    req = urllib.request.Request(url, headers={"Origin": "null"})   # Electron file:// origin
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        body = r.read()
+        return r.status, dict(r.headers), body
+
+
+def get_json(url: str, timeout: float = 180.0):
+    status, headers, body = get(url, timeout)
+    return status, headers, json.loads(body.decode("utf-8"))
+
+
+def post(url: str, data: bytes = b"", ctype: str = "application/octet-stream", timeout: float = 240.0):
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers={"Content-Type": ctype, "Origin": "null"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, dict(r.headers), r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, dict(e.headers), e.read()
+
+
+async def ws_session(base_ws: str, script, timeout: float = 240.0):
+    """Connect, then run `script(ws, log)`; returns the collected message log."""
+    import websockets
+    log: list[dict] = []
+    async with websockets.connect(base_ws, max_size=32 * 1024 * 1024, open_timeout=60) as ws:
+        await script(ws, log)
+    return log
+
+
+def wait_for(log: list[dict], pred, timeout: float = 60.0):
+    """Poll a growing log until pred(msg) is true."""
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        for m in log:
+            if pred(m):
+                return m
+        time.sleep(0.05)
+    return None
+
+
+def main() -> int:
+    port = free_port()
+    base = f"http://127.0.0.1:{port}"
+    base_ws = f"ws://127.0.0.1:{port}/ws"
+
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "core.server", "--host", "127.0.0.1", "--port", str(port)],
+        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        env={**__import__("os").environ, "PYTHONUNBUFFERED": "1"},
+    )
+
+    try:
+        # ------------------------------------------------------------ startup --
+        print("\n== startup ==")
+        up = False
+        t0 = time.time()
+        while time.time() - t0 < 240:
+            if proc.poll() is not None:
+                out = proc.stdout.read() if proc.stdout else ""
+                print(out[-2500:])
+                break
+            try:
+                st, _, _ = get(f"{base}/api/status", timeout=200)
+                if st == 200:
+                    up = True
+                    break
+            except Exception:
+                time.sleep(0.4)
+        check("server comes up and answers /api/status", up, f"({time.time()-t0:.1f}s)")
+        if not up:
+            return 1
+
+        # --------------------------------------------------------------- HTTP --
+        print("\n== HTTP API ==")
+        st, hdr, body = get(f"{base}/")
+        html = body.decode("utf-8", "replace")
+        check("HUD page served", st == 200 and "J.A.R.V.I.S." in html, f"({len(body)} bytes)")
+        check("HUD page declares Hebrew RTL", 'lang="he"' in html and 'dir="rtl"' in html)
+        check("HUD page has a strict CSP", "Content-Security-Policy" in html)
+
+        st, hdr, body = get(f"{base}/assets/style.css")
+        check("stylesheet served", st == 200 and len(body) > 5000, f"({len(body)} bytes)")
+        for name in ("app.js", "hud.js", "audio.js"):
+            st, _, body = get(f"{base}/assets/{name}")
+            check(f"{name} served", st == 200 and len(body) > 1000, f"({len(body)} bytes)")
+
+        check("CORS allows the file:// renderer", hdr.get("Access-Control-Allow-Origin") == "*",
+              str(hdr.get("Access-Control-Allow-Origin")))
+
+        st, _, d = get_json(f"{base}/api/status")
+        check("/api/status returns the full panel",
+              all(k in d for k in ("brain", "voice", "security", "skills", "memory", "telemetry")),
+              f"skills={d.get('skills')} voice={d.get('voice', {}).get('engine')}")
+
+        st, _, d = get_json(f"{base}/api/skills")
+        check("/api/skills lists the catalogue", d.get("count", 0) > 20 and d.get("skills"),
+              f"({d.get('count')} skills)")
+        first = (d.get("skills") or [{}])[0]
+        check("skill schema is machine-readable", all(k in first for k in ("name", "risk", "args")), str(first)[:100])
+
+        st, _, d = get_json(f"{base}/api/memory")
+        check("/api/memory responds", st == 200 and "stats" in d, str(d.get("stats")))
+        st, _, d = get_json(f"{base}/api/audit")
+        check("/api/audit responds", st == 200 and "stats" in d and "tail" in d,
+              f"level={d['stats'].get('level')} entries={d['stats'].get('total')}")
+        st, _, d = get_json(f"{base}/api/permissions")
+        check("/api/permissions responds", st == 200 and isinstance(d.get("pending"), list),
+              f"timeout={d.get('timeout')}")
+        st, _, d = get_json(f"{base}/api/events?n=20")
+        check("/api/events responds", st == 200 and isinstance(d.get("events"), list),
+              f"({len(d.get('events', []))} events)")
+        st, _, d = get_json(f"{base}/api/history")
+        check("/api/history responds", st == 200 and isinstance(d.get("turns"), list))
+
+        st, _, d = get_json(f"{base}/api/boot")
+        check("/api/boot runs the honest POST", st == 200 and len(d.get("report", [])) == 15,
+              f"({sum(1 for r in d.get('report', []) if r['ok'])}/15 ok)")
+
+        st, _, d = get_json(f"{base}/api/stt")
+        check("/api/stt reports the recogniser", st == 200 and "commands" in d,
+              f"(available={d.get('available')} commands={d.get('commands')} templates={d.get('templates')})")
+
+        st, hdr, body = post(f"{base}/api/listen", b"")
+        d = json.loads(body.decode("utf-8", "replace"))
+        check("empty /api/listen is rejected cleanly", st == 200 and d.get("ok") is False, d.get("error", "")[:70])
+
+        # the full voice loop: synthesise a command, post it as a WAV, get an answer
+        if True:
+            import io as _io
+            import wave as _wave
+            import numpy as _np
+            sys.path.insert(0, str(ROOT))
+            from voice.stt import COMMANDS as _CMDS
+            from voice.tts import get_voice as _gv
+            _r = _gv().synthesize(_CMDS["time"]["say"][0], rate=1.0)
+            _pcm = (_np.clip(_np.asarray(_r.samples, dtype="float32"), -1, 1) * 32767).astype("<i2").tobytes()
+            _buf = _io.BytesIO()
+            with _wave.open(_buf, "wb") as _w:
+                _w.setnchannels(1); _w.setsampwidth(2); _w.setframerate(_r.sample_rate)
+                _w.writeframes(_pcm)
+            st, _, body = post(f"{base}/api/listen?speak=0", _buf.getvalue())
+            d = json.loads(body.decode("utf-8", "replace"))
+            check("POST /api/listen recognises a spoken command",
+                  st == 200 and d.get("ok") is True and d.get("label") == "time",
+                  str({k: d.get(k) for k in ("ok", "label", "text", "confidence")})[:130])
+            turn = d.get("turn") or {}
+            check("the recognised command reached the brain",
+                  bool(turn) and "שעה" in str((turn.get("answer") or {}).get("text", "")),
+                  str((turn.get("answer") or {}).get("text", ""))[:90])
+
+        # ------------------------------------------------------- websocket ----
+        print("\n== WebSocket ==")
+
+        async def hello_script(ws, log):
+            raw = await asyncio.wait_for(ws.recv(), timeout=120)
+            log.append(json.loads(raw))
+
+        log = asyncio.run(ws_session(base_ws, hello_script))
+        hello = log[0] if log else {}
+        check("socket greets with hello + status", hello.get("type") == "hello" and "status" in hello,
+              str(list(hello))[:80])
+
+        async def ping_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))  # hello
+            await ws.send(json.dumps({"type": "ping"}))
+            t_end = time.time() + 30
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=30))
+                log.append(msg)
+                if msg.get("type") == "pong":
+                    break
+
+        log = asyncio.run(ws_session(base_ws, ping_script))
+        check("ping/pong keepalive", any(m.get("type") == "pong" for m in log), str([m.get("type") for m in log])[:90])
+
+        async def chat_script(ws, log):
+            # drain the hello
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "user_text", "text": "כמה זה 17 כפול 23", "speak": True}))
+            t_end = time.time() + 180
+            while time.time() < t_end:
+                try:
+                    msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=180))
+                except asyncio.TimeoutError:
+                    break
+                log.append(msg)
+                if msg.get("type") == "answer":
+                    break
+
+        log = asyncio.run(ws_session(base_ws, chat_script))
+        kinds = [m.get("type") for m in log]
+        answer = next((m for m in log if m.get("type") == "answer"), None)
+        check("chat turn streams thinking → answer", "answer" in kinds, str(kinds)[:120])
+        check("bus events are mirrored to the HUD", "event" in kinds, str(kinds)[:150])
+        audio = next((m for m in log if m.get("type") == "audio"), None)
+        check("audio frame delivered to the HUD", audio is not None and bool(audio.get("wav_b64")))
+        if audio:
+            wav = base64.b64decode(audio["wav_b64"])
+            check("audio frame is RIFF/WAVE PCM", wav[:4] == b"RIFF" and wav[8:12] == b"WAVE",
+                  f"({len(wav)} bytes @ {audio.get('sample_rate')}Hz)")
+            secs = len(wav) / (2 * (audio.get("sample_rate") or 24000))
+            check("audio frame has real duration", 0.2 < secs < 60, f"({secs:.2f}s)")
+        if answer:
+            a = answer.get("answer", {})
+            check("answer is exact and grounded", "391" in a.get("text", "") and a.get("grounded") is True,
+                  a.get("text", "")[:70])
+            check("answer carries a HUD-ready trace", isinstance(a.get("trace"), dict) and a["trace"],
+                  str(list(a.get("trace", {})))[:90])
+            check("answer reports latency", (answer.get("ms") or 0) > 0, f"({answer.get('ms')}ms)")
+
+        # the reader loop must stay responsive *while* a worker thread is parked
+        perm_file = Path.home() / "jarvis_server_perm_test.txt"
+        perm_file.write_text("delete me", encoding="utf-8")
+
+        async def perm_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "invoke", "req": 7, "skill": "fs.delete",
+                                      "args": {"path": str(perm_file)}}))
+            ask = None
+            t_end = time.time() + 90
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=90))
+                log.append(msg)
+                ev = msg.get("event") or {}
+                if ev.get("topic") == "security.permission.request":
+                    ask = ev.get("data") or {}
+                    break
+            check("CRITICAL invoke raises a permission prompt", bool(ask), str(ask)[:120])
+            if not ask:
+                return
+            check("prompt names the action and its risk",
+                  ask.get("action") == "fs.delete" and ask.get("level") == "CRITICAL", str(ask)[:110])
+            check("prompt shows the arguments to the human",
+                  str(perm_file) in json.dumps(ask.get("args")), str(ask.get("args"))[:100])
+            await ws.send(json.dumps({"type": "ping"}))
+            pong = None
+            t_end = time.time() + 20
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=20))
+                log.append(msg)
+                if msg.get("type") == "pong":
+                    pong = msg
+                    break
+            check("socket stays responsive while a worker waits for the human", pong is not None)
+            await ws.send(json.dumps({"type": "permission", "id": ask["id"], "allow": True}))
+            t_end = time.time() + 60
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=60))
+                log.append(msg)
+                if msg.get("type") == "skill_result" and msg.get("req") == 7:
+                    break
+            res = next((m for m in log if m.get("type") == "skill_result"), None)
+            check("approved action returns its result", res is not None, str(res)[:140])
+            check("approved CRITICAL action actually ran", bool(res and res.get("ok")),
+                  str(res.get("error") if res else "")[:90])
+            check("the file is really gone", not perm_file.exists(), str(perm_file))
+            check("approval is audited on the bus",
+                  any((m.get("event") or {}).get("topic") == "security.permission.answer" for m in log))
+
+        log = asyncio.run(ws_session(base_ws, perm_script))
+
+        # a client that lies about permissions must still be stopped
+        async def bypass_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "invoke", "skill": "fs.delete", "granted": True,
+                                      "args": {"path": str(Path.home() / "jarvis_never_exists.txt")}}))
+            t_end = time.time() + 90
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=90))
+                log.append(msg)
+                ev = msg.get("event") or {}
+                if ev.get("topic") == "security.permission.request":
+                    await ws.send(json.dumps({"type": "permission", "id": ev["data"]["id"], "allow": False}))
+                if msg.get("type") == "skill_result":
+                    break
+
+        log = asyncio.run(ws_session(base_ws, bypass_script))
+        check("`granted:true` from the client cannot bypass the firewall",
+              any((m.get("event") or {}).get("topic") == "security.permission.request" for m in log),
+              str([(m.get("event") or {}).get("topic") for m in log if m.get("type") == "event"][-4:]))
+
+        deny_file = Path.home() / "jarvis_server_deny_test.txt"
+        deny_file.write_text("keep me", encoding="utf-8")
+
+        async def deny_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "invoke", "skill": "fs.delete",
+                                      "args": {"path": str(deny_file)}}))
+            ask = None
+            t_end = time.time() + 90
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=90))
+                log.append(msg)
+                ev = msg.get("event") or {}
+                if ev.get("topic") == "security.permission.request":
+                    ask = ev.get("data") or {}
+                    break
+            if ask:
+                await ws.send(json.dumps({"type": "permission", "id": ask["id"], "allow": False}))
+            t_end = time.time() + 60
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=60))
+                log.append(msg)
+                if msg.get("type") == "skill_result":
+                    break
+
+        log = asyncio.run(ws_session(base_ws, deny_script))
+        res = next((m for m in log if m.get("type") == "skill_result"), None)
+        check("denied CRITICAL action is refused", res is not None and res.get("ok") is False,
+              str(res.get("error") if res else "")[:100])
+        check("denial reason is reported to the human",
+              bool(res) and "denied" in str(res.get("error", "")).lower(), str(res.get("error") if res else "")[:100])
+        check("the denied file survived", deny_file.exists(), str(deny_file))
+        check("denial is audited", any((m.get("event") or {}).get("topic") == "security.permission.deny"
+                                       for m in log), str([ (m.get("event") or {}).get("topic") for m in log if m.get("type") == "event"][-6:]))
+
+        # ---------------------------------------------------------- controls --
+        print("\n== controls ==")
+
+        async def kill_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "kill", "reason": "test"}))
+            t_end = time.time() + 30
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=30))
+                log.append(msg)
+                if msg.get("type") == "control":
+                    break
+
+        log = asyncio.run(ws_session(base_ws, kill_script))
+        ctl = next((m for m in log if m.get("type") == "control"), None)
+        check("kill switch acknowledged", bool(ctl and ctl.get("killed") is True), str(ctl)[:90])
+        st, _, d = get_json(f"{base}/api/status")
+        check("kill visible over HTTP", d["security"]["killed"] is True)
+
+        async def revive_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "revive"}))
+            t_end = time.time() + 30
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=30))
+                log.append(msg)
+                if msg.get("type") == "control":
+                    break
+            await ws.send(json.dumps({"type": "set_level", "level": "safe"}))
+            t_end = time.time() + 30
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=30))
+                log.append(msg)
+                if msg.get("type") == "control" and msg.get("level"):
+                    break
+
+        log = asyncio.run(ws_session(base_ws, revive_script))
+        check("revive acknowledged", any(m.get("type") == "control" and m.get("killed") is False for m in log),
+              str([m for m in log if m.get("type") == "control"])[:110])
+        check("permission level change acknowledged",
+              any(m.get("type") == "control" and str(m.get("level")) == "SAFE" for m in log),
+              str([m.get("level") for m in log if m.get("type") == "control"]))
+        st, _, d = get_json(f"{base}/api/status")
+        check("level persisted in the firewall", d["security"]["level"] == "SAFE", str(d["security"])[:90])
+
+        async def theme_script(ws, log):
+            log.append(json.loads(await asyncio.wait_for(ws.recv(), timeout=120)))
+            await ws.send(json.dumps({"type": "set_theme", "theme": "mark2"}))
+            t_end = time.time() + 30
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=30))
+                log.append(msg)
+                if msg.get("type") == "control":
+                    break
+            await ws.send(json.dumps({"type": "nonsense"}))
+            t_end = time.time() + 20
+            while time.time() < t_end:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=20))
+                log.append(msg)
+                if msg.get("type") == "error":
+                    break
+
+        log = asyncio.run(ws_session(base_ws, theme_script))
+        check("theme change acknowledged", any(m.get("theme") == "mark2" for m in log), str(log[-3:])[:130])
+        check("unknown command returns a clean error",
+              any(m.get("type") == "error" and "unknown type" in str(m.get("message")) for m in log))
+
+        # ------------------------------------------- REST twin of the socket ----
+        print("\n== REST transport (/api/command) ==")
+
+        def cmd(payload: dict):
+            st_, hdr_, body_ = post(f"{base}/api/command",
+                                    json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                                    ctype="application/json")
+            return st_, json.loads(body_.decode("utf-8", "replace"))
+
+        st_, d = cmd({"type": "user_text", "text": "כמה זה 12 בחזקת 3", "speak": True})
+        a = d.get("answer") or {}
+        # the math engine formats thousands with a separator — compare digits only
+        digits = str(a.get("text", "")).replace(",", "").replace("\u00a0", "")
+        check("REST chat returns the same answer shape", st_ == 200 and d.get("type") == "answer"
+              and "1728" in digits and a.get("grounded") is True, str(a.get("text"))[:70])
+        frames = d.get("audio") or []
+        check("REST chat carries the speech inline", len(frames) == 1 and frames[0].get("wav_b64"),
+              f"({len(frames)} frame(s))")
+        if frames:
+            wav = base64.b64decode(frames[0]["wav_b64"])
+            check("inline audio is RIFF/WAVE", wav[:4] == b"RIFF" and wav[8:12] == b"WAVE",
+                  f"({len(wav)} bytes)")
+            secs = len(wav) / (2 * (frames[0].get("sample_rate") or 24000))
+            check("inline audio has real duration", 0.2 < secs < 60, f"({secs:.2f}s)")
+
+        st_, d = cmd({"type": "status"})
+        check("REST status command", st_ == 200 and d.get("type") == "hello" and "status" in d,
+              f"(skills {(d.get('status') or {}).get('skills')})")
+        st_, d = cmd({"type": "invoke", "skill": "time.now", "args": {}})
+        check("REST runs a SAFE skill", st_ == 200 and d.get("ok") is True and d.get("value"),
+              str(d.get("value"))[:60])
+        st_, d = cmd({"type": "invoke", "skill": "nope.nope", "args": {}})
+        check("REST rejects an unknown skill", d.get("ok") is False and "unknown skill" in str(d.get("error")),
+              str(d.get("error"))[:60])
+        st_, d = cmd({"type": "set_theme", "theme": "mark1"})
+        check("REST control command", d.get("type") == "control" and d.get("theme") == "mark1", str(d)[:80])
+        st_, d = cmd({"type": "nonsense"})
+        check("REST reports unknown commands cleanly",
+              d.get("type") == "error" and "unknown type" in str(d.get("message")), str(d)[:80])
+        st_, hdr_, body_ = post(f"{base}/api/command", b"{not json", ctype="application/json")
+        check("REST rejects a malformed body", st_ == 200 and b"invalid JSON" in body_, str(body_)[:70])
+
+        # the firewall applies to REST exactly as it does to the socket:
+        # the level is still SAFE from the control test above, so WRITE must fail
+        target = Path.home() / "jarvis_rest_write.txt"
+        st_, d = cmd({"type": "invoke", "skill": "fs.write",
+                      "args": {"path": str(target), "content": "x"}})
+        check("REST cannot exceed the firewall level", d.get("ok") is False
+              and "blocked" in str(d.get("error")), str(d.get("error"))[:90])
+        check("the blocked write never touched the disk", not target.exists())
+
+        st_, d = cmd({"type": "set_level", "level": "write"})
+        check("level raised over REST", str(d.get("level")) == "WRITE", str(d)[:80])
+        st_, d = cmd({"type": "invoke", "skill": "fs.write",
+                      "args": {"path": str(target), "content": "x"}})
+        check("REST WRITE skill runs once policy allows it", d.get("ok") is True,
+              str(d.get("error"))[:90])
+        check("the file really was written", target.exists() and target.read_text() == "x")
+        try:
+            target.unlink()
+        except Exception:
+            pass
+
+        # ------------------------------------------------------------- load ----
+        print("\n== resilience ==")
+        st, _, d = get_json(f"{base}/api/history?n=5")
+        check("turns survived the session", len(d.get("turns", [])) >= 1, f"({len(d.get('turns', []))} turns)")
+        st, _, d = get_json(f"{base}/api/events?n=400")
+        check("bus history retained for the HUD timeline", len(d.get("events", [])) > 20,
+              f"({len(d.get('events', []))} events)")
+        st, _, body = get(f"{base}/no/such/page")
+        check("unknown path falls back to the HUD shell", st == 200 and b"J.A.R.V.I.S." in body)
+        st, hdr, body = post(f"{base}/api/listen", b"NOT_A_WAV_AT_ALL" * 40)
+        d = json.loads(body.decode("utf-8", "replace"))
+        check("garbage audio is rejected, not crashed", st == 200 and d.get("ok") is False,
+              str(d.get("error"))[:90])
+        check("process still healthy after abuse", proc.poll() is None)
+
+        for f in (Path.home() / "jarvis_server_perm_test.txt",
+                  Path.home() / "jarvis_server_deny_test.txt"):
+            try:
+                if f.exists():
+                    f.unlink()
+            except Exception:
+                pass
+
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=20)
+        except Exception:
+            proc.kill()
+
+    print(f"\nRESULT: {ok} passed, {fail} failed")
+    return 1 if fail else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

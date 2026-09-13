@@ -1,7 +1,8 @@
 # J.A.R.V.I.S — Just A Rather Very Intelligent System
 
 > עוזר AI ריבוני לחלוטין. **אפס API keys. אפס ענן. אפס משקולות שהורדו מבחוץ.**
-> הטוקנייזר, המודל העצבי, מנוע הדיבור, זיהוי הקול, הזיכרון, סוכני המשנה, ה־UI והשליטה במחשב — **הכול נבנה ומאומן כאן, מאפס**.
+> הטוקנייזר, המודל העצבי, מנוע הדיבור, זיהוי הקול, הזיכרון, סוכני המשנה, ה־HUD והשליטה במחשב —
+> **הכול נבנה ואומן כאן, מאפס.**
 
 📖 **[תוכנית האב המלאה → `docs/PLAN.md`](docs/PLAN.md)**
 
@@ -9,48 +10,185 @@
 
 ## מה זה
 
-אפליקציית Desktop מלאה (Electron, מסך מלא, HUD הולוגרמי) עם מוח AI היברידי ש:
+אפליקציית Desktop מלאה (Electron, frameless, מסך מלא) עם מוח AI היברידי ש:
 
-- 🧠 **חושב** — מודל Transformer שנבנה ואומן מאפס + קרנל סימבולי (תכנון, אימות, מניעת הזיות)
-- 🗣️ **מדבר ומקשיב** — מנוע TTS/STT עצמי בעברית, בלי ענן
-- 💻 **מתכנת** — סוכן `HEPHAESTUS` שכותב קוד, **מריץ אותו, קורא את השגיאות ומתקן את עצמו**
-- 🖥️ **שולט במחשב** — קבצים, תהליכים, אפליקציות, קליפבורד, צילום מסך, אוטומציה (Windows)
-- 🧬 **זוכר** — זיכרון קבוע: אפיזודי, סמנטי, פרוצדורלי + שכחה חכמה
-- 🔒 **מפוקח** — Permission Firewall, audit log, dry-run, kill switch
-- ✨ **נראה כמו מחר** — Arc Reactor, טבעות הולוגרפיות, 10k חלקיקים reactive לקול, ויזואליזציה חיה של המחשבה
+- 🧠 **חושב** — Transformer שנבנה ואומן מאפס על קורפוס שייצרנו בעצמנו + קרנל סימבולי (תכנון, כלים, אימות, מניעת הזיות)
+- 🗣️ **מדבר ומקשיב** — TTS קונקטיב בקול אמיתי + זיהוי פקודות קוליות ומילת השכמה, הכול מקומי
+- 💻 **מתכנת** — `HEPHAESTUS` כותב קוד, **מריץ אותו בארגז חול, קורא את השגיאה ומתקן את עצמו**
+- 🖥️ **שולט במחשב** — קבצים, תהליכים, אפליקציות, קליפבורד, צילום מסך, מדיה, אוטומציה (Windows)
+- 🧬 **זוכר** — זיכרון אפיזודי, סמנטי ופרוצדורלי עם שכחה חכמה, נשמר ב־SQLite
+- 🔒 **מפוקח** — חומת הרשאות, אישור אנושי לפעולות CRITICAL, יומן ביקורת, dry-run, מתג חירום
+- ✨ **נראה כמו מחר** — Arc Reactor חי על canvas, זרם אירועים בזמן אמת, טלמטריה, גלים קוליים סביב הליבה
 
 ## סוכנים
 
-| סוכן | תפקיד |
-|---|---|
-| **JARVIS** | המנצח — שיחה, כוונה, תכנון, קבלת החלטות |
-| **HEPHAESTUS** | סוכן המתכנת — כתיבה, הרצה, תיקון עצמי |
-| **MNEMOSYNE** | הזיכרון — שינון ושליפה |
-| **ARGUS** | העיניים — מצב המחשב, מסך |
-| **HERMES** | הידיים — ביצוע פעולות |
+| סוכן | תפקיד | קוד |
+|---|---|---|
+| **JARVIS** | המנצח — שיחה, כוונה, תכנון, החלטות, קול | `agents/jarvis.py` |
+| **HEPHAESTUS** | המתכנת — כתיבה, הרצה, תיקון עצמי, בדיקות | `agents/hephaestus.py` |
+| **MNEMOSYNE** | הזיכרון — שינון ושליפה | `brain/memory.py` |
+| **ARGUS** | העיניים — טלמטריה, מסך, אבטחה | `skills/sk_system.py`, `security/` |
+| **HERMES** | הידיים — ביצוע פעולות במערכת | `skills/` |
 
-## הרצה
+## ארכיטקטורה
+
+```
+  ┌────────────────────── Electron (desktop shell) ─────────────────────┐
+  │  ui/index.html · assets/hud.js (canvas) · app.js (WS/REST) · audio  │
+  │  frameless HUD · global hotkeys · tray · spawns & supervises ↓      │
+  └───────────────┬────────────────────────────────────┬────────────────┘
+                  │ WebSocket /ws                      │ mic WAV → POST /api/listen
+                  │ (events · commands · audio frames) │
+  ┌───────────────▼────────────────────────────────────▼────────────────┐
+  │              core/server.py — aiohttp, 127.0.0.1 only               │
+  │   never blocks: every command runs as a task so a CRITICAL prompt    │
+  │   can be answered on the same socket that is waiting for it          │
+  └───────────────┬─────────────────────────────────────────────────────┘
+                  │
+        agents/jarvis.py  (orchestrator: boot · turns · voice · controls)
+                  │
+   ┌──────────────┼───────────────┬──────────────┬────────────────┐
+   ▼              ▼               ▼              ▼                ▼
+brain/         skills/        security/       voice/           core/bus.py
+reasoning      54 skills      firewall        tts (concat)     every event,
++ neural core  + registry     + audit         stt (MFCC/DTW)   ring-buffered
++ knowledge    + validation   + kill switch   + dsp            = observability
++ memory
++ intent
+```
+
+**עיקרון מנחה:** הרשת העצבית מנסחת ומנתבת; **שום מספר ושום פעולה לא עוברים בלי קרנל סימבולי.**
+מתמטיקה מחושבת במנוע מתמטי, עובדות נשלפות ממאגר הידע, קוד נבדק על ידי הרצה אמיתית,
+ופעולות במערכת עוברות רק דרך חומת ההרשאות. מה שלא ודאי — נאמר כלא־ודאי.
+
+---
+
+## התחלה מהירה (Windows)
+
+```bat
+:: פעם אחת — מתקין Python deps + Electron
+tools\setup_windows.bat
+
+:: הפעלה — HUD שולחן עבודה (Electron ירים את המוח בעצמו)
+JARVIS.bat
+```
+
+מצב פיתוח / דפדפן (בלי Electron):
 
 ```bash
 pip install -r requirements.txt
-python jarvis.py                 # מוח + שרת + HUD
-python jarvis.py --mode desktop  # אפליקציית Electron (Windows)
-python tools/selftest.py         # בדיקת כל המערכות
+python -m core.server            # http://127.0.0.1:8756
+                                 #   WebSocket /ws + REST /api/command (תאום)
+                                 #   ה־UI נופל אוטומטית ל־REST אם פרוקסי מסרב
+                                 #   לשדרג את החיבור — בלי לאבד שמע או שליטה
+python run_jarvis.py --browser   # אוטומטית: שרת + דפדפן
 ```
 
-## בניית המוח מאפס
+בדיקות (הכול רץ מקומית, בלי רשת):
 
 ```bash
-python tools/forge_corpus.py --size large   # יצירת קורפוס עברי+אנגלי+קוד
-python tools/build_tokenizer.py             # BPE דו-לשוני משלנו
-python tools/train.py --size nano           # אימון הוכחת-צינור (CPU)
-python tools/train.py --size core --gpu     # אימון מלא (אם יש GPU)
-python tools/export_onnx.py                 # ריצה מהירה ב-onnxruntime
+python tests/run_all.py          # כל הסוויטה
+python tests/run_all.py --quick  # בלי אינטגרציה כבדה
 ```
+
+קיצורי מקש: `Ctrl+Shift+Space` דיבור · `Ctrl+Shift+J` נעיצה למעלה · `Ctrl+Shift+Esc` מתג חירום.
+
+---
+
+## מה באמת עובד — נמדד, לא מוצהר
+
+| רכיב | מצב | מספרים |
+|---|---|---|
+| טוקנייזר BPE | ✅ מאפס | 8,057 טוקנים · 7,791 מיזוגים · 2.999 תו/טוקן · 0 כשלי שחזור ב־2,000 דגימות |
+| קורפוס | ✅ מיוצר עצמית | 100,910 דוגמאות אימון / 5,312 בדיקה · סדר ReAct נכון (user→think→plan→tool→answer) |
+| ליבה עצבית | ✅ אומנה כאן | NANO · 6.20M פרמטרים · 6 שכבות · dev loss 0.188 · **perplexity 1.207** · 37 דקות אימון על 2 ליבות CPU |
+| מנוע מתמטיקה | ✅ | ארבע פעולות, חזקות, שורשים, לוגריתמים, טריגונומטריה, עצרת, פיבונאצ'י, ראשוניות, בסיסים, סטטיסטיקה, משוואות — מדויק לחלוטין |
+| מנתב כוונות | ✅ | 11 כוונות · זיהוי מתמטיקה/קוד/קבצים/אפליקציות/זיכרון/מערכת |
+| מאגר ידע | ✅ | 20 רשומות · 52 זוגות שאלה־תשובה · אחזור char-n-gram TF-IDF שנבנה מאפס |
+| כלים (skills) | ✅ | 54 כלים · SAFE=41 / WRITE=6 / CRITICAL=7 · 8 מודולים |
+| HEPHAESTUS | ✅ | 10 תבניות משימה · ארגז חול מבודד · 8 חוקי תיקון עצמי · מחולל בדיקות מודע-טיפוסים · זיכרון פרוצדורלי |
+| TTS (דיבור) | ✅ מאפס | מנוע קונקטציה: 118 מילים + 381 פונמות שהוקלטו בקול אמיתי · כיסוי 26/29 פונמות · 24kHz · RTF 0.11–0.21 |
+| STT (זיהוי) | ✅ מאפס | 25 פקודות + מילת השכמה · **50/50** בזיהוי עצמי · **0 זיהויי שווא** על רעש/שקט/טון/משפטים מחוץ לאוצר · 36ms לפקודה · כיול עצמי |
+| חומת הרשאות | ✅ | רמות SAFE/WRITE/CRITICAL · אישור אנושי בזמן אמת · יומן ביקורת JSONL · dry-run · מתג חירום |
+| HUD | ✅ | Electron frameless · Arc Reactor על canvas · זרם אירועים חי · טלמטריה · תורי הרשאות · שמע דרך WebSocket |
+| שרת מקומי | ✅ | aiohttp · 127.0.0.1 בלבד · WebSocket + REST/`api/command` תאום על מנתב אחד · 9 נקודות REST · CORS ל־renderer · אפס תלות רשת |
+| בדיקות | ✅ | **7 מודולים · 322 בדיקות · 0 כשלים** (104 שניות) |
+
+### פירוט הבדיקות
+
+```
+tests/test_brain_smoke.py      טוקנייזר, מודל, KV-cache, ייצוא/טעינה
+tests/test_intent_math.py      מנוע מתמטיקה + ניתוב כוונות + קרקוע
+tests/test_skills_security.py  מרשם הכלים, אימות ארגומנטים, חומת הרשאות, ביקורת
+tests/test_coder.py            ארגז חול, 10 תבניות, 5 תרחישי תיקון עצמי, הסבר/ניתוח
+tests/test_orchestrator.py     אתחול כן (15 בדיקות אמיתיות), שיחה, קול, אישורים, בקרה
+tests/test_stt.py              DTW מול brute-force, WAV, MFCC, בנק, דיוק, דחייה, השכמה
+tests/test_server.py           HTTP + WebSocket אמיתיים מול שרת חי, לולאת קול מלאה,
+                               תעבורת ה־REST התאומה + זיקת חומת ההרשאות בשתי התעבורות
+```
+
+---
+
+## הגינות: מה עדיין לא
+
+- **זיהוי הדיבור הוא אוצר פקודות סגור + מילת השכמה**, לא הכתבה חופשית. הכתבה חופשית דורשת מודל
+  אקוסטי ענק ומודל שפה — שום דבר כזה לא ניתן לבנות מאפס על המחשב הזה, ואנחנו לא מעמידים פנים.
+  מה שכן: אפשר לשפר דרמטית את הדיוק בקול שלך — `python tools/enroll_voice.py --record`.
+- **הליבה העצבית קטנה (6.2M פרמטרים)** ולכן היא טובה בניסוח וניתוב, לא בידע כללי פתוח.
+  הידע העובדתי מגיע ממאגר הידע ומהכלים, וזו החלטה תכנונית מודעת (מניעת הזיות).
+- **3 פונמות (CH, J, o)** חסרות בבנק הקול כי 4 הקלטות גולמיות חסרות; מנוע הפורמנטים מכסה אותן.
+  להשלמה: להקליט את `hv_a/hv_e/hv_i/hv_o` ולהריץ `python tools/build_voicebank.py`.
+- **סביבת הפיתוח כאן היא Linux ללא מסך**, ולכן קליפת ה־Electron נבדקה סטטית;
+  ההרצה האמיתית היא על Windows (היעד שנבחר). השרת וה־HUD נבדקו אנד־טו־אנד דרך HTTP/WS.
+- פקודות מערכת שדורשות חלון גרפי (צילום מסך, מקשי מדיה, קליפבורד) מדווחות בכנות שהרכיב
+  חסר בסביבה ללא שולחן עבודה, ועובדות על Windows עם `pyperclip`, `mss`, `pyautogui`, `pynput`.
+
+---
+
+## מבנה הקוד
+
+```
+brain/          tokenizer.py (BPE) · model.py (Transformer+RoPE) · inference.py (NeuralCore)
+                reasoning.py (לולאת חשיבה + מאמת) · intent.py (ניתוב) · math_engine.py
+                knowledge.py (+knowledge_base.yaml) · memory.py (SQLite) · voicebank/
+voice/          dsp.py (MFCC, VAD, F0, DTW, pitch/time) · tts/ (g2p, formant, concat, engine)
+                stt/ (זיהוי פקודות + בנק תבניות + WakeListener)
+skills/         registry.py + 8 מודולים (fs, system, apps, media, screen, scheduler, math, code)
+security/       permissions.py (חומת הרשאות + ביקורת + מתג חירום)
+agents/         jarvis.py (מנצח) · hephaestus.py (מתכנת)
+core/           bus.py (אפיק אירועים = שכבת התצפיתיות) · config.py · server.py (aiohttp)
+ui/             index.html · assets/{style.css,app.js,hud.js,audio.js}
+electron/       main.js (חלון, tray, hotkeys, השגחה על המוח) · preload.js · assets/icon.png
+tools/          forge_corpus · build_tokenizer · train · build_voicebank · build_stt_templates
+                enroll_voice · probe_brain
+tests/          7 מודולי בדיקה + run_all.py
+models/         jarvis_nano.pt (משקולות מאומנות, 24.8MB) · tokenizer.json
+```
+
+## בניית הכול מאפס (אם רוצים לוודא שאין כאן שום דבר מוכן)
+
+```bash
+python tools/forge_corpus.py --size large     # קורפוס עברי+אנגלי+קוד עם סדר ReAct
+python tools/build_tokenizer.py               # BPE דו-לשוני משלנו
+python tools/train.py --size nano             # אימון הליבה (CPU)
+python tools/build_voicebank.py               # חיתוך הקלטות הקול ליחידות
+python tools/build_stt_templates.py           # בנק תבניות הזיהוי + כיול עצמי
+python tools/probe_brain.py                   # שיחת בדיקה מול המוח
+```
+
+## אבטחת הפרטיות
+
+השרת נקשר ל־`127.0.0.1` בלבד (`--preview` קיים רק לסביבת הפיתוח בסנדבוקס).
+ה־renderer של Electron רץ עם `contextIsolation`, בלי `nodeIntegration`, ועם CSP הדוק.
+הקוד ש־HEPHAESTUS מריץ נכנס לתהליך נפרד עם `-I -B`, סביבה מבודדת, ופסק זמן מחייב.
+שום בקשה לא יוצאת מהמכונה. יומן ביקורת מלא נכתב ל־`logs/audit.jsonl`.
+
+---
 
 ## מצב הפרויקט
 
-ראה **[ROADMAP](docs/PLAN.md#7-שלבי-ביצוע-build-phases)** — שלבי P0→P11.
+ראה **[PLAN.md](docs/PLAN.md)** — שלבי P0→P11; **P0–P9 הושלמו ונבדקו**, P10 חלקי
+(סקריפטי התקנה + הגדרת electron-builder קיימים; אין עדיין exe ארוז), P11 ממתין.
 
 ---
 

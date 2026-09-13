@@ -6,10 +6,13 @@ models/exports/
 models/*.onnx
 corpus/generated/
 data/
+# STT template bank: regenerated in ~30s by tools/build_stt_templates.py
+voice/stt/bank/
 *.pt
 *.ckpt
 *.onnx
 *.log
+logs/
 
 # --- Python ---
 __pycache__/
