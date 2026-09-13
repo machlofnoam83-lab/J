@@ -1,0 +1,11 @@
+{"id": 1, "ts": 1789294217.1745589, "action": "fs.read", "level": "SAFE", "allowed": true, "reason": "policy satisfied", "args": {"path": "/tmp/x"}, "agent": "jarvis", "dry_run": false}
+{"id": 2, "ts": 1789294217.174664, "action": "fs.write", "level": "WRITE", "allowed": false, "reason": "blocked: action is WRITE but the firewall is set to SAFE", "args": {"path": "/tmp/x", "content": "y"}, "agent": "jarvis", "dry_run": false}
+{"id": 3, "ts": 1789294217.1747098, "action": "fs.delete", "level": "CRITICAL", "allowed": false, "reason": "blocked: action is CRITICAL but the firewall is set to SAFE", "args": {"path": "/tmp/x"}, "agent": "jarvis", "dry_run": false}
+{"id": 4, "ts": 1789294217.1748383, "action": "fs.write", "level": "WRITE", "allowed": true, "reason": "policy satisfied", "args": {"path": "/home/user/x.txt", "content": "y"}, "agent": "jarvis", "dry_run": false}
+{"id": 5, "ts": 1789294217.1748965, "action": "fs.delete", "level": "CRITICAL", "allowed": false, "reason": "blocked: action is CRITICAL but the firewall is set to WRITE", "args": {"path": "/home/user/x.txt"}, "agent": "jarvis", "dry_run": false}
+{"id": 6, "ts": 1789294217.1749523, "action": "fs.write", "level": "WRITE", "allowed": false, "reason": "blocked: path='/etc/passwd' is inside a protected path", "args": {"path": "/etc/passwd", "content": "x"}, "agent": "jarvis", "dry_run": false}
+{"id": 7, "ts": 1789294217.1749942, "action": "fs.write", "level": "WRITE", "allowed": false, "reason": "blocked: path='C:\\\\Windows\\\\System32\\\\evil.dll' is inside a protected path", "args": {"path": "C:\\Windows\\System32\\evil.dll", "content": "x"}, "agent": "jarvis", "dry_run": false}
+{"id": 8, "ts": 1789294217.1754458, "action": "__KILL_SWITCH__", "level": "CRITICAL", "allowed": false, "reason": "test", "args": {}, "agent": "jarvis", "dry_run": false}
+{"id": 9, "ts": 1789294217.175499, "action": "time.now", "level": "SAFE", "allowed": false, "reason": "kill switch engaged", "args": {}, "agent": "jarvis", "dry_run": false}
+{"id": 10, "ts": 1789294217.1755316, "action": "__REVIVE__", "level": "SAFE", "allowed": true, "reason": "kill switch released", "args": {}, "agent": "jarvis", "dry_run": false}
+{"id": 11, "ts": 1789294217.1756115, "action": "time.now", "level": "SAFE", "allowed": true, "reason": "policy satisfied", "args": {}, "agent": "jarvis", "dry_run": false}

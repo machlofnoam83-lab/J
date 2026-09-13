@@ -61,7 +61,7 @@ class VoiceConfig:
     language: str = "he"
     engine: str = "auto"               # auto | concat | formant
     sample_rate: int = 24000
-    rate: float = 1.0                  # speech rate multiplier
+    rate: float = 1.14                 # speech rate multiplier (crisp JARVIS cadence)
     pitch: float = 1.0                 # pitch multiplier
     volume: float = 1.0
     voicebank_dir: str = str(VOICEBANK)

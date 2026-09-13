@@ -1,0 +1,3774 @@
+{
+  "sample_rate": 24000,
+  "words": {
+    "בו": {
+      "file": "word_בו.wav",
+      "samples": 43776,
+      "duration": 1.824,
+      "kind": "syllables"
+    },
+    "גו": {
+      "file": "word_גו.wav",
+      "samples": 16416,
+      "duration": 0.684,
+      "kind": "syllables"
+    },
+    "דו": {
+      "file": "word_דו.wav",
+      "samples": 16416,
+      "duration": 0.684,
+      "kind": "syllables"
+    },
+    "הו": {
+      "file": "word_הו.wav",
+      "samples": 15888,
+      "duration": 0.662,
+      "kind": "syllables"
+    },
+    "וו": {
+      "file": "word_וו.wav",
+      "samples": 6096,
+      "duration": 0.254,
+      "kind": "letters"
+    },
+    "זו": {
+      "file": "word_זו.wav",
+      "samples": 16608,
+      "duration": 0.692,
+      "kind": "syllables"
+    },
+    "חו": {
+      "file": "word_חו.wav",
+      "samples": 11568,
+      "duration": 0.482,
+      "kind": "syllables"
+    },
+    "טו": {
+      "file": "word_טו.wav",
+      "samples": 15936,
+      "duration": 0.664,
+      "kind": "syllables"
+    },
+    "יו": {
+      "file": "word_יו.wav",
+      "samples": 13488,
+      "duration": 0.562,
+      "kind": "syllables"
+    },
+    "כו": {
+      "file": "word_כו.wav",
+      "samples": 14928,
+      "duration": 0.622,
+      "kind": "syllables"
+    },
+    "לו": {
+      "file": "word_לו.wav",
+      "samples": 15168,
+      "duration": 0.632,
+      "kind": "syllables"
+    },
+    "מו": {
+      "file": "word_מו.wav",
+      "samples": 14928,
+      "duration": 0.622,
+      "kind": "syllables"
+    },
+    "נו": {
+      "file": "word_נו.wav",
+      "samples": 16896,
+      "duration": 0.704,
+      "kind": "syllables"
+    },
+    "סו": {
+      "file": "word_סו.wav",
+      "samples": 12048,
+      "duration": 0.502,
+      "kind": "syllables"
+    },
+    "עו": {
+      "file": "word_עו.wav",
+      "samples": 12768,
+      "duration": 0.532,
+      "kind": "syllables"
+    },
+    "פו": {
+      "file": "word_פו.wav",
+      "samples": 14976,
+      "duration": 0.624,
+      "kind": "syllables"
+    },
+    "צו": {
+      "file": "word_צו.wav",
+      "samples": 13248,
+      "duration": 0.552,
+      "kind": "syllables"
+    },
+    "קו": {
+      "file": "word_קו.wav",
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "syllables"
+    },
+    "רו": {
+      "file": "word_רו.wav",
+      "samples": 16608,
+      "duration": 0.692,
+      "kind": "syllables"
+    },
+    "שו": {
+      "file": "word_שו.wav",
+      "samples": 12048,
+      "duration": 0.502,
+      "kind": "syllables"
+    },
+    "תו": {
+      "file": "word_תו.wav",
+      "samples": 11136,
+      "duration": 0.464,
+      "kind": "letters"
+    },
+    "או": {
+      "file": "word_או.wav",
+      "samples": 16128,
+      "duration": 0.672,
+      "kind": "syllables"
+    },
+    "זה": {
+      "file": "word_זה.wav",
+      "samples": 4176,
+      "duration": 0.174,
+      "kind": "words"
+    },
+    "אלף": {
+      "file": "word_אלף.wav",
+      "samples": 4656,
+      "duration": 0.194,
+      "kind": "digits"
+    },
+    "בית": {
+      "file": "word_בית.wav",
+      "samples": 16416,
+      "duration": 0.684,
+      "kind": "letters"
+    },
+    "גימל": {
+      "file": "word_גימל.wav",
+      "samples": 38928,
+      "duration": 1.622,
+      "kind": "letters"
+    },
+    "דלת": {
+      "file": "word_דלת.wav",
+      "samples": 32688,
+      "duration": 1.362,
+      "kind": "letters"
+    },
+    "הא": {
+      "file": "word_הא.wav",
+      "samples": 8736,
+      "duration": 0.364,
+      "kind": "letters"
+    },
+    "זין": {
+      "file": "word_זין.wav",
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "letters"
+    },
+    "חית": {
+      "file": "word_חית.wav",
+      "samples": 17136,
+      "duration": 0.714,
+      "kind": "letters"
+    },
+    "טית": {
+      "file": "word_טית.wav",
+      "samples": 12816,
+      "duration": 0.534,
+      "kind": "letters"
+    },
+    "יוד": {
+      "file": "word_יוד.wav",
+      "samples": 12816,
+      "duration": 0.534,
+      "kind": "letters"
+    },
+    "כף": {
+      "file": "word_כף.wav",
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "letters"
+    },
+    "למד": {
+      "file": "word_למד.wav",
+      "samples": 13968,
+      "duration": 0.582,
+      "kind": "letters"
+    },
+    "מם": {
+      "file": "word_מם.wav",
+      "samples": 4656,
+      "duration": 0.194,
+      "kind": "letters"
+    },
+    "נון": {
+      "file": "word_נון.wav",
+      "samples": 5760,
+      "duration": 0.24,
+      "kind": "letters"
+    },
+    "סמך": {
+      "file": "word_סמך.wav",
+      "samples": 17376,
+      "duration": 0.724,
+      "kind": "letters"
+    },
+    "עין": {
+      "file": "word_עין.wav",
+      "samples": 12528,
+      "duration": 0.522,
+      "kind": "letters"
+    },
+    "פא": {
+      "file": "word_פא.wav",
+      "samples": 13488,
+      "duration": 0.562,
+      "kind": "letters"
+    },
+    "צדיק": {
+      "file": "word_צדיק.wav",
+      "samples": 16416,
+      "duration": 0.684,
+      "kind": "letters"
+    },
+    "קוף": {
+      "file": "word_קוף.wav",
+      "samples": 12816,
+      "duration": 0.534,
+      "kind": "letters"
+    },
+    "ריש": {
+      "file": "word_ריש.wav",
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "letters"
+    },
+    "שין": {
+      "file": "word_שין.wav",
+      "samples": 14688,
+      "duration": 0.612,
+      "kind": "letters"
+    },
+    "אפס": {
+      "file": "word_אפס.wav",
+      "samples": 2688,
+      "duration": 0.112,
+      "kind": "digits"
+    },
+    "אחת": {
+      "file": "word_אחת.wav",
+      "samples": 62736,
+      "duration": 2.614,
+      "kind": "digits"
+    },
+    "שתיים": {
+      "file": "word_שתיים.wav",
+      "samples": 17616,
+      "duration": 0.734,
+      "kind": "digits"
+    },
+    "שלוש": {
+      "file": "word_שלוש.wav",
+      "samples": 13776,
+      "duration": 0.574,
+      "kind": "digits"
+    },
+    "ארבע": {
+      "file": "word_ארבע.wav",
+      "samples": 17136,
+      "duration": 0.714,
+      "kind": "digits"
+    },
+    "חמש": {
+      "file": "word_חמש.wav",
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "digits"
+    },
+    "שש": {
+      "file": "word_שש.wav",
+      "samples": 14736,
+      "duration": 0.614,
+      "kind": "digits"
+    },
+    "שבע": {
+      "file": "word_שבע.wav",
+      "samples": 16368,
+      "duration": 0.682,
+      "kind": "digits"
+    },
+    "שמונה": {
+      "file": "word_שמונה.wav",
+      "samples": 13536,
+      "duration": 0.564,
+      "kind": "digits"
+    },
+    "תשע": {
+      "file": "word_תשע.wav",
+      "samples": 13776,
+      "duration": 0.574,
+      "kind": "digits"
+    },
+    "עשר": {
+      "file": "word_עשר.wav",
+      "samples": 18336,
+      "duration": 0.764,
+      "kind": "digits"
+    },
+    "עשרים": {
+      "file": "word_עשרים.wav",
+      "samples": 14736,
+      "duration": 0.614,
+      "kind": "digits"
+    },
+    "מאה": {
+      "file": "word_מאה.wav",
+      "samples": 14496,
+      "duration": 0.604,
+      "kind": "digits"
+    },
+    "מיליון": {
+      "file": "word_מיליון.wav",
+      "samples": 9648,
+      "duration": 0.402,
+      "kind": "digits"
+    },
+    "אחוז": {
+      "file": "word_אחוז.wav",
+      "samples": 15408,
+      "duration": 0.642,
+      "kind": "digits"
+    },
+    "מעלות": {
+      "file": "word_מעלות.wav",
+      "samples": 19248,
+      "duration": 0.802,
+      "kind": "digits"
+    },
+    "שניות": {
+      "file": "word_שניות.wav",
+      "samples": 18816,
+      "duration": 0.784,
+      "kind": "digits"
+    },
+    "דקות": {
+      "file": "word_דקות.wav",
+      "samples": 16896,
+      "duration": 0.704,
+      "kind": "digits"
+    },
+    "שעות": {
+      "file": "word_שעות.wav",
+      "samples": 15648,
+      "duration": 0.652,
+      "kind": "digits"
+    },
+    "שלום": {
+      "file": "word_שלום.wav",
+      "samples": 26016,
+      "duration": 1.084,
+      "kind": "words"
+    },
+    "אדוני": {
+      "file": "word_אדוני.wav",
+      "samples": 2496,
+      "duration": 0.104,
+      "kind": "words"
+    },
+    "כן": {
+      "file": "word_כן.wav",
+      "samples": 12288,
+      "duration": 0.512,
+      "kind": "words"
+    },
+    "לא": {
+      "file": "word_לא.wav",
+      "samples": 13776,
+      "duration": 0.574,
+      "kind": "words"
+    },
+    "אני": {
+      "file": "word_אני.wav",
+      "samples": 20688,
+      "duration": 0.862,
+      "kind": "words"
+    },
+    "אתה": {
+      "file": "word_אתה.wav",
+      "samples": 6576,
+      "duration": 0.274,
+      "kind": "words"
+    },
+    "את": {
+      "file": "word_את.wav",
+      "samples": 34608,
+      "duration": 1.442,
+      "kind": "words"
+    },
+    "מה": {
+      "file": "word_מה.wav",
+      "samples": 14976,
+      "duration": 0.624,
+      "kind": "words"
+    },
+    "איך": {
+      "file": "word_איך.wav",
+      "samples": 46416,
+      "duration": 1.934,
+      "kind": "words"
+    },
+    "למה": {
+      "file": "word_למה.wav",
+      "samples": 24336,
+      "duration": 1.014,
+      "kind": "words"
+    },
+    "כאשר": {
+      "file": "word_כאשר.wav",
+      "samples": 5040,
+      "duration": 0.21,
+      "kind": "words"
+    },
+    "אם": {
+      "file": "word_אם.wav",
+      "samples": 2016,
+      "duration": 0.084,
+      "kind": "words"
+    },
+    "אז": {
+      "file": "word_אז.wav",
+      "samples": 20256,
+      "duration": 0.844,
+      "kind": "words"
+    },
+    "אבל": {
+      "file": "word_אבל.wav",
+      "samples": 20208,
+      "duration": 0.842,
+      "kind": "words"
+    },
+    "כי": {
+      "file": "word_כי.wav",
+      "samples": 17328,
+      "duration": 0.722,
+      "kind": "words"
+    },
+    "גם": {
+      "file": "word_גם.wav",
+      "samples": 15216,
+      "duration": 0.634,
+      "kind": "words"
+    },
+    "רק": {
+      "file": "word_רק.wav",
+      "samples": 17376,
+      "duration": 0.724,
+      "kind": "words"
+    },
+    "עוד": {
+      "file": "word_עוד.wav",
+      "samples": 14448,
+      "duration": 0.602,
+      "kind": "words"
+    },
+    "כבר": {
+      "file": "word_כבר.wav",
+      "samples": 19248,
+      "duration": 0.802,
+      "kind": "words"
+    },
+    "עכשיו": {
+      "file": "word_עכשיו.wav",
+      "samples": 20256,
+      "duration": 0.844,
+      "kind": "words"
+    },
+    "היום": {
+      "file": "word_היום.wav",
+      "samples": 18288,
+      "duration": 0.762,
+      "kind": "words"
+    },
+    "תמיד": {
+      "file": "word_תמיד.wav",
+      "samples": 14208,
+      "duration": 0.592,
+      "kind": "words"
+    },
+    "המערכת": {
+      "file": "word_המערכת.wav",
+      "samples": 51936,
+      "duration": 2.164,
+      "kind": "words"
+    },
+    "המוח": {
+      "file": "word_המוח.wav",
+      "samples": 23136,
+      "duration": 0.964,
+      "kind": "words"
+    },
+    "הזיכרון": {
+      "file": "word_הזיכרון.wav",
+      "samples": 17136,
+      "duration": 0.714,
+      "kind": "words"
+    },
+    "הקוד": {
+      "file": "word_הקוד.wav",
+      "samples": 16176,
+      "duration": 0.674,
+      "kind": "words"
+    },
+    "המחשב": {
+      "file": "word_המחשב.wav",
+      "samples": 21696,
+      "duration": 0.904,
+      "kind": "words"
+    },
+    "הקובץ": {
+      "file": "word_הקובץ.wav",
+      "samples": 19776,
+      "duration": 0.824,
+      "kind": "words"
+    },
+    "השרת": {
+      "file": "word_השרת.wav",
+      "samples": 20016,
+      "duration": 0.834,
+      "kind": "words"
+    },
+    "הרשת": {
+      "file": "word_הרשת.wav",
+      "samples": 19248,
+      "duration": 0.802,
+      "kind": "words"
+    },
+    "החלון": {
+      "file": "word_החלון.wav",
+      "samples": 22656,
+      "duration": 0.944,
+      "kind": "words"
+    },
+    "התהליך": {
+      "file": "word_התהליך.wav",
+      "samples": 22656,
+      "duration": 0.944,
+      "kind": "words"
+    },
+    "הנתונים": {
+      "file": "word_הנתונים.wav",
+      "samples": 19056,
+      "duration": 0.794,
+      "kind": "words"
+    },
+    "הפעולה": {
+      "file": "word_הפעולה.wav",
+      "samples": 21216,
+      "duration": 0.884,
+      "kind": "words"
+    },
+    "התוצאה": {
+      "file": "word_התוצאה.wav",
+      "samples": 18768,
+      "duration": 0.782,
+      "kind": "words"
+    },
+    "השגיאה": {
+      "file": "word_השגיאה.wav",
+      "samples": 13056,
+      "duration": 0.544,
+      "kind": "words"
+    },
+    "התיקון": {
+      "file": "word_התיקון.wav",
+      "samples": 1536,
+      "duration": 0.064,
+      "kind": "words"
+    },
+    "הבדיקה": {
+      "file": "word_הבדיקה.wav",
+      "samples": 16848,
+      "duration": 0.702,
+      "kind": "words"
+    },
+    "פותח": {
+      "file": "word_פותח.wav",
+      "samples": 6816,
+      "duration": 0.284,
+      "kind": "words"
+    },
+    "סוגר": {
+      "file": "word_סוגר.wav",
+      "samples": 30336,
+      "duration": 1.264,
+      "kind": "words"
+    },
+    "בודק": {
+      "file": "word_בודק.wav",
+      "samples": 12336,
+      "duration": 0.514,
+      "kind": "words"
+    },
+    "מריץ": {
+      "file": "word_מריץ.wav",
+      "samples": 15216,
+      "duration": 0.634,
+      "kind": "words"
+    },
+    "כותב": {
+      "file": "word_כותב.wav",
+      "samples": 16128,
+      "duration": 0.672,
+      "kind": "words"
+    },
+    "קורא": {
+      "file": "word_קורא.wav",
+      "samples": 26256,
+      "duration": 1.094,
+      "kind": "words"
+    },
+    "מחפש": {
+      "file": "word_מחפש.wav",
+      "samples": 11040,
+      "duration": 0.46,
+      "kind": "words"
+    },
+    "שומר": {
+      "file": "word_שומר.wav",
+      "samples": 28176,
+      "duration": 1.174,
+      "kind": "words"
+    },
+    "מוחק": {
+      "file": "word_מוחק.wav",
+      "samples": 12576,
+      "duration": 0.524,
+      "kind": "words"
+    },
+    "מעתיק": {
+      "file": "word_מעתיק.wav",
+      "samples": 23136,
+      "duration": 0.964,
+      "kind": "words"
+    },
+    "מדביק": {
+      "file": "word_מדביק.wav",
+      "samples": 4320,
+      "duration": 0.18,
+      "kind": "words"
+    },
+    "מחשב": {
+      "file": "word_מחשב.wav",
+      "samples": 37296,
+      "duration": 1.554,
+      "kind": "words"
+    },
+    "חושב": {
+      "file": "word_חושב.wav",
+      "samples": 13776,
+      "duration": 0.574,
+      "kind": "words"
+    },
+    "מתכנן": {
+      "file": "word_מתכנן.wav",
+      "samples": 16176,
+      "duration": 0.674,
+      "kind": "words"
+    },
+    "מבצע": {
+      "file": "word_מבצע.wav",
+      "samples": 16896,
+      "duration": 0.704,
+      "kind": "words"
+    },
+    "מאמת": {
+      "file": "word_מאמת.wav",
+      "samples": 40656,
+      "duration": 1.694,
+      "kind": "words"
+    },
+    "עונה": {
+      "file": "word_עונה.wav",
+      "samples": 12336,
+      "duration": 0.514,
+      "kind": "words"
+    },
+    "לומד": {
+      "file": "word_לומד.wav",
+      "samples": 17328,
+      "duration": 0.722,
+      "kind": "words"
+    }
+  },
+  "phones": {
+    "v_#_w": {
+      "file": "ph_v_unit_w.wav",
+      "sym": "v",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 1.29
+    },
+    "w_v_#": {
+      "file": "ph_w_v_unit.wav",
+      "sym": "w",
+      "left": "v",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.5
+    },
+    "g_#_w": {
+      "file": "ph_g_unit_w.wav",
+      "sym": "g",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.18
+    },
+    "w_g_#": {
+      "file": "ph_w_g_unit.wav",
+      "sym": "w",
+      "left": "g",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.47
+    },
+    "d_#_w": {
+      "file": "ph_d_unit_w.wav",
+      "sym": "d",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_d_#": {
+      "file": "ph_w_d_unit.wav",
+      "sym": "w",
+      "left": "d",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.59
+    },
+    "h_#_w": {
+      "file": "ph_h_unit_w.wav",
+      "sym": "h",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "w_h_#": {
+      "file": "ph_w_h_unit.wav",
+      "sym": "w",
+      "left": "h",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.58
+    },
+    "v_#_a": {
+      "file": "ph_v_unit_a.wav",
+      "sym": "v",
+      "left": "#",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.2
+    },
+    "a_v_w": {
+      "file": "ph_a_v_w.wav",
+      "sym": "a",
+      "left": "v",
+      "right": "w",
+      "takes": 2,
+      "duration": 0.13
+    },
+    "w_a_#": {
+      "file": "ph_w_a_unit.wav",
+      "sym": "w",
+      "left": "a",
+      "right": "#",
+      "takes": 5,
+      "duration": 0.05
+    },
+    "z_#_w": {
+      "file": "ph_z_unit_w.wav",
+      "sym": "z",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "w_z_#": {
+      "file": "ph_w_z_unit.wav",
+      "sym": "w",
+      "left": "z",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.56
+    },
+    "x_#_w": {
+      "file": "ph_x_unit_w.wav",
+      "sym": "x",
+      "left": "#",
+      "right": "w",
+      "takes": 2,
+      "duration": 0.48
+    },
+    "w_x_#": {
+      "file": "ph_w_x_unit.wav",
+      "sym": "w",
+      "left": "x",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.11
+    },
+    "t_#_w": {
+      "file": "ph_t_unit_w.wav",
+      "sym": "t",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.56
+    },
+    "w_t_#": {
+      "file": "ph_w_t_unit.wav",
+      "sym": "w",
+      "left": "t",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "y_#_w": {
+      "file": "ph_y_unit_w.wav",
+      "sym": "y",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "w_y_#": {
+      "file": "ph_w_y_unit.wav",
+      "sym": "w",
+      "left": "y",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.48
+    },
+    "l_#_w": {
+      "file": "ph_l_unit_w.wav",
+      "sym": "l",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "w_l_#": {
+      "file": "ph_w_l_unit.wav",
+      "sym": "w",
+      "left": "l",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.55
+    },
+    "m_#_w": {
+      "file": "ph_m_unit_w.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_m_#": {
+      "file": "ph_w_m_unit.wav",
+      "sym": "w",
+      "left": "m",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.53
+    },
+    "n_#_w": {
+      "file": "ph_n_unit_w.wav",
+      "sym": "n",
+      "left": "#",
+      "right": "w",
+      "takes": 2,
+      "duration": 0.1
+    },
+    "w_n_#": {
+      "file": "ph_w_n_unit.wav",
+      "sym": "w",
+      "left": "n",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.61
+    },
+    "s_#_w": {
+      "file": "ph_s_unit_w.wav",
+      "sym": "s",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.36
+    },
+    "w_s_#": {
+      "file": "ph_w_s_unit.wav",
+      "sym": "w",
+      "left": "s",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "A_#_w": {
+      "file": "ph_A_unit_w.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.45
+    },
+    "w_A_#": {
+      "file": "ph_w_A_unit.wav",
+      "sym": "w",
+      "left": "A",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "f_#_w": {
+      "file": "ph_f_unit_w.wav",
+      "sym": "f",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.19
+    },
+    "w_f_#": {
+      "file": "ph_w_f_unit.wav",
+      "sym": "w",
+      "left": "f",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.4
+    },
+    "T_#_w": {
+      "file": "ph_T_unit_w.wav",
+      "sym": "T",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.42
+    },
+    "w_T_#": {
+      "file": "ph_w_T_unit.wav",
+      "sym": "w",
+      "left": "T",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "Q_#_w": {
+      "file": "ph_Q_unit_w.wav",
+      "sym": "Q",
+      "left": "#",
+      "right": "w",
+      "takes": 2,
+      "duration": 0.57
+    },
+    "w_Q_#": {
+      "file": "ph_w_Q_unit.wav",
+      "sym": "w",
+      "left": "Q",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "r_#_w": {
+      "file": "ph_r_unit_w.wav",
+      "sym": "r",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.56
+    },
+    "w_r_#": {
+      "file": "ph_w_r_unit.wav",
+      "sym": "w",
+      "left": "r",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "S_#_w": {
+      "file": "ph_S_unit_w.wav",
+      "sym": "S",
+      "left": "#",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.16
+    },
+    "w_S_#": {
+      "file": "ph_w_S_unit.wav",
+      "sym": "w",
+      "left": "S",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.31
+    },
+    "t_#_a": {
+      "file": "ph_t_unit_a.wav",
+      "sym": "t",
+      "left": "#",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.34
+    },
+    "a_t_w": {
+      "file": "ph_a_t_w.wav",
+      "sym": "a",
+      "left": "t",
+      "right": "w",
+      "takes": 2,
+      "duration": 0.13
+    },
+    "u_#_#": {
+      "file": "ph_u_unit_unit.wav",
+      "sym": "u",
+      "left": "#",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.64
+    },
+    "z_#_e": {
+      "file": "ph_z_unit_e.wav",
+      "sym": "z",
+      "left": "#",
+      "right": "e",
+      "takes": 2,
+      "duration": 0.11
+    },
+    "e_z_h": {
+      "file": "ph_e_z_h.wav",
+      "sym": "e",
+      "left": "z",
+      "right": "h",
+      "takes": 2,
+      "duration": 0.12
+    },
+    "h_e_#": {
+      "file": "ph_h_e_unit.wav",
+      "sym": "h",
+      "left": "e",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.46
+    },
+    "A_#_l": {
+      "file": "ph_A_unit_l.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "l",
+      "takes": 2,
+      "duration": 0.09
+    },
+    "l_A_f": {
+      "file": "ph_l_A_f.wav",
+      "sym": "l",
+      "left": "A",
+      "right": "f",
+      "takes": 2,
+      "duration": 0.06
+    },
+    "f_l_a": {
+      "file": "ph_f_l_a.wav",
+      "sym": "f",
+      "left": "l",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.42
+    },
+    "a_f_#": {
+      "file": "ph_a_f_unit.wav",
+      "sym": "a",
+      "left": "f",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.25
+    },
+    "b_#_a": {
+      "file": "ph_b_unit_a.wav",
+      "sym": "b",
+      "left": "#",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_b_y": {
+      "file": "ph_a_b_y.wav",
+      "sym": "a",
+      "left": "b",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "y_a_i": {
+      "file": "ph_y_a_i.wav",
+      "sym": "y",
+      "left": "a",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "i_y_t": {
+      "file": "ph_i_y_t.wav",
+      "sym": "i",
+      "left": "y",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "t_i_#": {
+      "file": "ph_t_i_unit.wav",
+      "sym": "t",
+      "left": "i",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.13
+    },
+    "g_#_i": {
+      "file": "ph_g_unit_i.wav",
+      "sym": "g",
+      "left": "#",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.35
+    },
+    "i_g_m": {
+      "file": "ph_i_g_m.wav",
+      "sym": "i",
+      "left": "g",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.91
+    },
+    "m_i_e": {
+      "file": "ph_m_i_e.wav",
+      "sym": "m",
+      "left": "i",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "e_m_l": {
+      "file": "ph_e_m_l.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.21
+    },
+    "l_e_#": {
+      "file": "ph_l_e_unit.wav",
+      "sym": "l",
+      "left": "e",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "d_#_a": {
+      "file": "ph_d_unit_a.wav",
+      "sym": "d",
+      "left": "#",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.51
+    },
+    "a_d_l": {
+      "file": "ph_a_d_l.wav",
+      "sym": "a",
+      "left": "d",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "l_a_e": {
+      "file": "ph_l_a_e.wav",
+      "sym": "l",
+      "left": "a",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "e_l_t": {
+      "file": "ph_e_l_t.wav",
+      "sym": "e",
+      "left": "l",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "t_e_#": {
+      "file": "ph_t_e_unit.wav",
+      "sym": "t",
+      "left": "e",
+      "right": "#",
+      "takes": 6,
+      "duration": 0.06
+    },
+    "h_#_e": {
+      "file": "ph_h_unit_e.wav",
+      "sym": "h",
+      "left": "#",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.19
+    },
+    "e_h_A": {
+      "file": "ph_e_h_A.wav",
+      "sym": "e",
+      "left": "h",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "A_e_#": {
+      "file": "ph_A_e_unit.wav",
+      "sym": "A",
+      "left": "e",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.03
+    },
+    "z_#_y": {
+      "file": "ph_z_unit_y.wav",
+      "sym": "z",
+      "left": "#",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.5
+    },
+    "y_z_n": {
+      "file": "ph_y_z_n.wav",
+      "sym": "y",
+      "left": "z",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "n_y_#": {
+      "file": "ph_n_y_unit.wav",
+      "sym": "n",
+      "left": "y",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.05
+    },
+    "x_#_i": {
+      "file": "ph_x_unit_i.wav",
+      "sym": "x",
+      "left": "#",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "i_x_t": {
+      "file": "ph_i_x_t.wav",
+      "sym": "i",
+      "left": "x",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.47
+    },
+    "t_#_i": {
+      "file": "ph_t_unit_i.wav",
+      "sym": "t",
+      "left": "#",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.26
+    },
+    "i_t_t": {
+      "file": "ph_i_t_t.wav",
+      "sym": "i",
+      "left": "t",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "y_#_u": {
+      "file": "ph_y_unit_u.wav",
+      "sym": "y",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.29
+    },
+    "u_y_d": {
+      "file": "ph_u_y_d.wav",
+      "sym": "u",
+      "left": "y",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "d_u_#": {
+      "file": "ph_d_u_unit.wav",
+      "sym": "d",
+      "left": "u",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.09
+    },
+    "x_#_f": {
+      "file": "ph_x_unit_f.wav",
+      "sym": "x",
+      "left": "#",
+      "right": "f",
+      "takes": 1,
+      "duration": 0.52
+    },
+    "f_x_#": {
+      "file": "ph_f_x_unit.wav",
+      "sym": "f",
+      "left": "x",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "l_#_a": {
+      "file": "ph_l_unit_a.wav",
+      "sym": "l",
+      "left": "#",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.19
+    },
+    "a_l_m": {
+      "file": "ph_a_l_m.wav",
+      "sym": "a",
+      "left": "l",
+      "right": "m",
+      "takes": 2,
+      "duration": 0.16
+    },
+    "m_a_e": {
+      "file": "ph_m_a_e.wav",
+      "sym": "m",
+      "left": "a",
+      "right": "e",
+      "takes": 3,
+      "duration": 0.07
+    },
+    "e_m_d": {
+      "file": "ph_e_m_d.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "d",
+      "takes": 2,
+      "duration": 0.12
+    },
+    "d_e_#": {
+      "file": "ph_d_e_unit.wav",
+      "sym": "d",
+      "left": "e",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.06
+    },
+    "m_#_m": {
+      "file": "ph_m_unit_m.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "m_m_#": {
+      "file": "ph_m_m_unit.wav",
+      "sym": "m",
+      "left": "m",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "w_n_n": {
+      "file": "ph_w_n_n.wav",
+      "sym": "w",
+      "left": "n",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "n_w_#": {
+      "file": "ph_n_w_unit.wav",
+      "sym": "n",
+      "left": "w",
+      "right": "#",
+      "takes": 5,
+      "duration": 0.05
+    },
+    "s_#_m": {
+      "file": "ph_s_unit_m.wav",
+      "sym": "s",
+      "left": "#",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.19
+    },
+    "m_s_x": {
+      "file": "ph_m_s_x.wav",
+      "sym": "m",
+      "left": "s",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.15
+    },
+    "x_m_a": {
+      "file": "ph_x_m_a.wav",
+      "sym": "x",
+      "left": "m",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.24
+    },
+    "a_x_#": {
+      "file": "ph_a_x_unit.wav",
+      "sym": "a",
+      "left": "x",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.1
+    },
+    "A_#_y": {
+      "file": "ph_A_unit_y.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "y",
+      "takes": 2,
+      "duration": 0.34
+    },
+    "y_A_n": {
+      "file": "ph_y_A_n.wav",
+      "sym": "y",
+      "left": "A",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "p_#_e": {
+      "file": "ph_p_unit_e.wav",
+      "sym": "p",
+      "left": "#",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.38
+    },
+    "e_p_A": {
+      "file": "ph_e_p_A.wav",
+      "sym": "e",
+      "left": "p",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "T_#_a": {
+      "file": "ph_T_unit_a.wav",
+      "sym": "T",
+      "left": "#",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_T_d": {
+      "file": "ph_a_T_d.wav",
+      "sym": "a",
+      "left": "T",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.32
+    },
+    "d_a_i": {
+      "file": "ph_d_a_i.wav",
+      "sym": "d",
+      "left": "a",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "i_d_Q": {
+      "file": "ph_i_d_Q.wav",
+      "sym": "i",
+      "left": "d",
+      "right": "Q",
+      "takes": 2,
+      "duration": 0.12
+    },
+    "Q_i_#": {
+      "file": "ph_Q_i_unit.wav",
+      "sym": "Q",
+      "left": "i",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "w_Q_f": {
+      "file": "ph_w_Q_f.wav",
+      "sym": "w",
+      "left": "Q",
+      "right": "f",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "f_w_a": {
+      "file": "ph_f_w_a.wav",
+      "sym": "f",
+      "left": "w",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.15
+    },
+    "r_#_e": {
+      "file": "ph_r_unit_e.wav",
+      "sym": "r",
+      "left": "#",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "e_r_S": {
+      "file": "ph_e_r_S.wav",
+      "sym": "e",
+      "left": "r",
+      "right": "S",
+      "takes": 2,
+      "duration": 0.1
+    },
+    "S_e_#": {
+      "file": "ph_S_e_unit.wav",
+      "sym": "S",
+      "left": "e",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.54
+    },
+    "S_#_y": {
+      "file": "ph_S_unit_y.wav",
+      "sym": "S",
+      "left": "#",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.24
+    },
+    "y_S_n": {
+      "file": "ph_y_S_n.wav",
+      "sym": "y",
+      "left": "S",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.29
+    },
+    "e_#_f": {
+      "file": "ph_e_unit_f.wav",
+      "sym": "e",
+      "left": "#",
+      "right": "f",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "f_e_e": {
+      "file": "ph_f_e_e.wav",
+      "sym": "f",
+      "left": "e",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "e_f_s": {
+      "file": "ph_e_f_s.wav",
+      "sym": "e",
+      "left": "f",
+      "right": "s",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "s_e_#": {
+      "file": "ph_s_e_unit.wav",
+      "sym": "s",
+      "left": "e",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "A_#_x": {
+      "file": "ph_A_unit_x.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "x",
+      "takes": 2,
+      "duration": 1.02
+    },
+    "x_A_a": {
+      "file": "ph_x_A_a.wav",
+      "sym": "x",
+      "left": "A",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.33
+    },
+    "a_x_t": {
+      "file": "ph_a_x_t.wav",
+      "sym": "a",
+      "left": "x",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.57
+    },
+    "t_a_#": {
+      "file": "ph_t_a_unit.wav",
+      "sym": "t",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.38
+    },
+    "S_#_e": {
+      "file": "ph_S_unit_e.wav",
+      "sym": "S",
+      "left": "#",
+      "right": "e",
+      "takes": 6,
+      "duration": 0.28
+    },
+    "e_S_t": {
+      "file": "ph_e_S_t.wav",
+      "sym": "e",
+      "left": "S",
+      "right": "t",
+      "takes": 2,
+      "duration": 0.16
+    },
+    "t_e_y": {
+      "file": "ph_t_e_y.wav",
+      "sym": "t",
+      "left": "e",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "y_t_y": {
+      "file": "ph_y_t_y.wav",
+      "sym": "y",
+      "left": "t",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.19
+    },
+    "y_y_m": {
+      "file": "ph_y_y_m.wav",
+      "sym": "y",
+      "left": "y",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "m_y_#": {
+      "file": "ph_m_y_unit.wav",
+      "sym": "m",
+      "left": "y",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.02
+    },
+    "e_S_l": {
+      "file": "ph_e_S_l.wav",
+      "sym": "e",
+      "left": "S",
+      "right": "l",
+      "takes": 2,
+      "duration": 0.48
+    },
+    "l_e_w": {
+      "file": "ph_l_e_w.wav",
+      "sym": "l",
+      "left": "e",
+      "right": "w",
+      "takes": 2,
+      "duration": 0.06
+    },
+    "w_l_S": {
+      "file": "ph_w_l_S.wav",
+      "sym": "w",
+      "left": "l",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "S_w_a": {
+      "file": "ph_S_w_a.wav",
+      "sym": "S",
+      "left": "w",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_S_#": {
+      "file": "ph_a_S_unit.wav",
+      "sym": "a",
+      "left": "S",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.07
+    },
+    "A_#_r": {
+      "file": "ph_A_unit_r.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.15
+    },
+    "r_A_v": {
+      "file": "ph_r_A_v.wav",
+      "sym": "r",
+      "left": "A",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "v_r_a": {
+      "file": "ph_v_r_a.wav",
+      "sym": "v",
+      "left": "r",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.34
+    },
+    "a_v_A": {
+      "file": "ph_a_v_A.wav",
+      "sym": "a",
+      "left": "v",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "A_a_#": {
+      "file": "ph_A_a_unit.wav",
+      "sym": "A",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "x_#_m": {
+      "file": "ph_x_unit_m.wav",
+      "sym": "x",
+      "left": "#",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "m_x_S": {
+      "file": "ph_m_x_S.wav",
+      "sym": "m",
+      "left": "x",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "S_m_a": {
+      "file": "ph_S_m_a.wav",
+      "sym": "S",
+      "left": "m",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.35
+    },
+    "S_#_S": {
+      "file": "ph_S_unit_S.wav",
+      "sym": "S",
+      "left": "#",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.33
+    },
+    "S_S_#": {
+      "file": "ph_S_S_unit.wav",
+      "sym": "S",
+      "left": "S",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.25
+    },
+    "S_#_v": {
+      "file": "ph_S_unit_v.wav",
+      "sym": "S",
+      "left": "#",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.19
+    },
+    "v_S_A": {
+      "file": "ph_v_S_A.wav",
+      "sym": "v",
+      "left": "S",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.46
+    },
+    "A_v_a": {
+      "file": "ph_A_v_a.wav",
+      "sym": "A",
+      "left": "v",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_A_#": {
+      "file": "ph_a_A_unit.wav",
+      "sym": "a",
+      "left": "A",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.09
+    },
+    "e_S_m": {
+      "file": "ph_e_S_m.wav",
+      "sym": "e",
+      "left": "S",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "m_e_w": {
+      "file": "ph_m_e_w.wav",
+      "sym": "m",
+      "left": "e",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "w_m_n": {
+      "file": "ph_w_m_n.wav",
+      "sym": "w",
+      "left": "m",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "n_w_a": {
+      "file": "ph_n_w_a.wav",
+      "sym": "n",
+      "left": "w",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_n_#": {
+      "file": "ph_a_n_unit.wav",
+      "sym": "a",
+      "left": "n",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "t_#_S": {
+      "file": "ph_t_unit_S.wav",
+      "sym": "t",
+      "left": "#",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "S_t_A": {
+      "file": "ph_S_t_A.wav",
+      "sym": "S",
+      "left": "t",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.33
+    },
+    "A_S_a": {
+      "file": "ph_A_S_a.wav",
+      "sym": "A",
+      "left": "S",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "e_#_s": {
+      "file": "ph_e_unit_s.wav",
+      "sym": "e",
+      "left": "#",
+      "right": "s",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "s_e_e": {
+      "file": "ph_s_e_e.wav",
+      "sym": "s",
+      "left": "e",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.28
+    },
+    "e_s_r": {
+      "file": "ph_e_s_r.wav",
+      "sym": "e",
+      "left": "s",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.28
+    },
+    "r_e_#": {
+      "file": "ph_r_e_unit.wav",
+      "sym": "r",
+      "left": "e",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.05
+    },
+    "A_#_S": {
+      "file": "ph_A_unit_S.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.34
+    },
+    "S_A_r": {
+      "file": "ph_S_A_r.wav",
+      "sym": "S",
+      "left": "A",
+      "right": "r",
+      "takes": 2,
+      "duration": 0.11
+    },
+    "r_S_y": {
+      "file": "ph_r_S_y.wav",
+      "sym": "r",
+      "left": "S",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "y_r_m": {
+      "file": "ph_y_r_m.wav",
+      "sym": "y",
+      "left": "r",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "m_#_e": {
+      "file": "ph_m_unit_e.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "e",
+      "takes": 4,
+      "duration": 0.07
+    },
+    "e_m_A": {
+      "file": "ph_e_m_A.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "A",
+      "takes": 2,
+      "duration": 0.3
+    },
+    "A_e_a": {
+      "file": "ph_A_e_a.wav",
+      "sym": "A",
+      "left": "e",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.11
+    },
+    "m_#_i": {
+      "file": "ph_m_unit_i.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "i",
+      "takes": 6,
+      "duration": 0.07
+    },
+    "i_m_l": {
+      "file": "ph_i_m_l.wav",
+      "sym": "i",
+      "left": "m",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "l_i_y": {
+      "file": "ph_l_i_y.wav",
+      "sym": "l",
+      "left": "i",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "y_l_w": {
+      "file": "ph_y_l_w.wav",
+      "sym": "y",
+      "left": "l",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_y_n": {
+      "file": "ph_w_y_n.wav",
+      "sym": "w",
+      "left": "y",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "x_A_u": {
+      "file": "ph_x_A_u.wav",
+      "sym": "x",
+      "left": "A",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.41
+    },
+    "u_x_z": {
+      "file": "ph_u_x_z.wav",
+      "sym": "u",
+      "left": "x",
+      "right": "z",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "z_u_#": {
+      "file": "ph_z_u_unit.wav",
+      "sym": "z",
+      "left": "u",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "i_m_A": {
+      "file": "ph_i_m_A.wav",
+      "sym": "i",
+      "left": "m",
+      "right": "A",
+      "takes": 2,
+      "duration": 0.09
+    },
+    "A_i_l": {
+      "file": "ph_A_i_l.wav",
+      "sym": "A",
+      "left": "i",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "l_A_w": {
+      "file": "ph_l_A_w.wav",
+      "sym": "l",
+      "left": "A",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_l_t": {
+      "file": "ph_w_l_t.wav",
+      "sym": "w",
+      "left": "l",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "t_w_a": {
+      "file": "ph_t_w_a.wav",
+      "sym": "t",
+      "left": "w",
+      "right": "a",
+      "takes": 3,
+      "duration": 0.07
+    },
+    "a_t_#": {
+      "file": "ph_a_t_unit.wav",
+      "sym": "a",
+      "left": "t",
+      "right": "#",
+      "takes": 4,
+      "duration": 0.1
+    },
+    "e_S_n": {
+      "file": "ph_e_S_n.wav",
+      "sym": "e",
+      "left": "S",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.33
+    },
+    "n_e_y": {
+      "file": "ph_n_e_y.wav",
+      "sym": "n",
+      "left": "e",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "y_n_w": {
+      "file": "ph_y_n_w.wav",
+      "sym": "y",
+      "left": "n",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "w_y_t": {
+      "file": "ph_w_y_t.wav",
+      "sym": "w",
+      "left": "y",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "a_d_Q": {
+      "file": "ph_a_d_Q.wav",
+      "sym": "a",
+      "left": "d",
+      "right": "Q",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "Q_a_u": {
+      "file": "ph_Q_a_u.wav",
+      "sym": "Q",
+      "left": "a",
+      "right": "u",
+      "takes": 2,
+      "duration": 0.04
+    },
+    "u_Q_t": {
+      "file": "ph_u_Q_t.wav",
+      "sym": "u",
+      "left": "Q",
+      "right": "t",
+      "takes": 2,
+      "duration": 0.12
+    },
+    "t_u_#": {
+      "file": "ph_t_u_unit.wav",
+      "sym": "t",
+      "left": "u",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "e_S_A": {
+      "file": "ph_e_S_A.wav",
+      "sym": "e",
+      "left": "S",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.24
+    },
+    "A_e_w": {
+      "file": "ph_A_e_w.wav",
+      "sym": "A",
+      "left": "e",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "w_A_t": {
+      "file": "ph_w_A_t.wav",
+      "sym": "w",
+      "left": "A",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_l_m": {
+      "file": "ph_w_l_m.wav",
+      "sym": "w",
+      "left": "l",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "m_w_#": {
+      "file": "ph_m_w_unit.wav",
+      "sym": "m",
+      "left": "w",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.06
+    },
+    "A_#_d": {
+      "file": "ph_A_unit_d.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "d_A_u": {
+      "file": "ph_d_A_u.wav",
+      "sym": "d",
+      "left": "A",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "u_d_n": {
+      "file": "ph_u_d_n.wav",
+      "sym": "u",
+      "left": "d",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "n_u_i": {
+      "file": "ph_n_u_i.wav",
+      "sym": "n",
+      "left": "u",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "i_n_#": {
+      "file": "ph_i_n_unit.wav",
+      "sym": "i",
+      "left": "n",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.23
+    },
+    "x_#_n": {
+      "file": "ph_x_unit_n.wav",
+      "sym": "x",
+      "left": "#",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "n_x_#": {
+      "file": "ph_n_x_unit.wav",
+      "sym": "n",
+      "left": "x",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.37
+    },
+    "l_#_u": {
+      "file": "ph_l_unit_u.wav",
+      "sym": "l",
+      "left": "#",
+      "right": "u",
+      "takes": 2,
+      "duration": 0.34
+    },
+    "u_l_A": {
+      "file": "ph_u_l_A.wav",
+      "sym": "u",
+      "left": "l",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "A_u_#": {
+      "file": "ph_A_u_unit.wav",
+      "sym": "A",
+      "left": "u",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "A_#_n": {
+      "file": "ph_A_unit_n.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.54
+    },
+    "n_A_i": {
+      "file": "ph_n_A_i.wav",
+      "sym": "n",
+      "left": "A",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "A_#_t": {
+      "file": "ph_A_unit_t.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "t_A_a": {
+      "file": "ph_t_A_a.wav",
+      "sym": "t",
+      "left": "A",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "e_#_t": {
+      "file": "ph_e_unit_t.wav",
+      "sym": "e",
+      "left": "#",
+      "right": "t",
+      "takes": 1,
+      "duration": 1.24
+    },
+    "m_#_a": {
+      "file": "ph_m_unit_a.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "a_m_#": {
+      "file": "ph_a_m_unit.wav",
+      "sym": "a",
+      "left": "m",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.53
+    },
+    "y_A_x": {
+      "file": "ph_y_A_x.wav",
+      "sym": "y",
+      "left": "A",
+      "right": "x",
+      "takes": 1,
+      "duration": 1.15
+    },
+    "x_y_a": {
+      "file": "ph_x_y_a.wav",
+      "sym": "x",
+      "left": "y",
+      "right": "a",
+      "takes": 3,
+      "duration": 0.13
+    },
+    "m_a_a": {
+      "file": "ph_m_a_a.wav",
+      "sym": "m",
+      "left": "a",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.67
+    },
+    "k_#_e": {
+      "file": "ph_k_unit_e.wav",
+      "sym": "k",
+      "left": "#",
+      "right": "e",
+      "takes": 2,
+      "duration": 0.41
+    },
+    "e_k_A": {
+      "file": "ph_e_k_A.wav",
+      "sym": "e",
+      "left": "k",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "A_e_S": {
+      "file": "ph_A_e_S.wav",
+      "sym": "A",
+      "left": "e",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "r_S_#": {
+      "file": "ph_r_S_unit.wav",
+      "sym": "r",
+      "left": "S",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "A_#_m": {
+      "file": "ph_A_unit_m.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "m_A_#": {
+      "file": "ph_m_A_unit.wav",
+      "sym": "m",
+      "left": "A",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "a_#_z": {
+      "file": "ph_a_unit_z.wav",
+      "sym": "a",
+      "left": "#",
+      "right": "z",
+      "takes": 1,
+      "duration": 0.32
+    },
+    "z_a_#": {
+      "file": "ph_z_a_unit.wav",
+      "sym": "z",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.49
+    },
+    "A_#_v": {
+      "file": "ph_A_unit_v.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "v_A_a": {
+      "file": "ph_v_A_a.wav",
+      "sym": "v",
+      "left": "A",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_v_l": {
+      "file": "ph_a_v_l.wav",
+      "sym": "a",
+      "left": "v",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.13
+    },
+    "l_a_#": {
+      "file": "ph_l_a_unit.wav",
+      "sym": "l",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.37
+    },
+    "Q_#_i": {
+      "file": "ph_Q_unit_i.wav",
+      "sym": "Q",
+      "left": "#",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.59
+    },
+    "i_Q_#": {
+      "file": "ph_i_Q_unit.wav",
+      "sym": "i",
+      "left": "Q",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "g_#_m": {
+      "file": "ph_g_unit_m.wav",
+      "sym": "g",
+      "left": "#",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.55
+    },
+    "m_g_#": {
+      "file": "ph_m_g_unit.wav",
+      "sym": "m",
+      "left": "g",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "r_#_a": {
+      "file": "ph_r_unit_a.wav",
+      "sym": "r",
+      "left": "#",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.53
+    },
+    "a_r_Q": {
+      "file": "ph_a_r_Q.wav",
+      "sym": "a",
+      "left": "r",
+      "right": "Q",
+      "takes": 1,
+      "duration": 0.13
+    },
+    "Q_a_#": {
+      "file": "ph_Q_a_unit.wav",
+      "sym": "Q",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "u_#_d": {
+      "file": "ph_u_unit_d.wav",
+      "sym": "u",
+      "left": "#",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.23
+    },
+    "e_k_v": {
+      "file": "ph_e_k_v.wav",
+      "sym": "e",
+      "left": "k",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "v_e_a": {
+      "file": "ph_v_e_a.wav",
+      "sym": "v",
+      "left": "e",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.11
+    },
+    "a_v_r": {
+      "file": "ph_a_v_r.wav",
+      "sym": "a",
+      "left": "v",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "r_a_#": {
+      "file": "ph_r_a_unit.wav",
+      "sym": "r",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "A_#_k": {
+      "file": "ph_A_unit_k.wav",
+      "sym": "A",
+      "left": "#",
+      "right": "k",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "k_A_S": {
+      "file": "ph_k_A_S.wav",
+      "sym": "k",
+      "left": "A",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.32
+    },
+    "S_k_a": {
+      "file": "ph_S_k_a.wav",
+      "sym": "S",
+      "left": "k",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.23
+    },
+    "a_S_w": {
+      "file": "ph_a_S_w.wav",
+      "sym": "a",
+      "left": "S",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.14
+    },
+    "h_#_a": {
+      "file": "ph_h_unit_a.wav",
+      "sym": "h",
+      "left": "#",
+      "right": "a",
+      "takes": 17,
+      "duration": 0.19
+    },
+    "a_h_y": {
+      "file": "ph_a_h_y.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.18
+    },
+    "y_a_w": {
+      "file": "ph_y_a_w.wav",
+      "sym": "y",
+      "left": "a",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_y_m": {
+      "file": "ph_w_y_m.wav",
+      "sym": "w",
+      "left": "y",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "t_#_m": {
+      "file": "ph_t_unit_m.wav",
+      "sym": "t",
+      "left": "#",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.26
+    },
+    "m_t_y": {
+      "file": "ph_m_t_y.wav",
+      "sym": "m",
+      "left": "t",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "y_m_d": {
+      "file": "ph_y_m_d.wav",
+      "sym": "y",
+      "left": "m",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "d_y_a": {
+      "file": "ph_d_y_a.wav",
+      "sym": "d",
+      "left": "y",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "a_d_#": {
+      "file": "ph_a_d_unit.wav",
+      "sym": "a",
+      "left": "d",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "a_h_m": {
+      "file": "ph_a_h_m.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "m",
+      "takes": 3,
+      "duration": 0.11
+    },
+    "a_m_A": {
+      "file": "ph_a_m_A.wav",
+      "sym": "a",
+      "left": "m",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "A_a_r": {
+      "file": "ph_A_a_r.wav",
+      "sym": "A",
+      "left": "a",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "r_A_e": {
+      "file": "ph_r_A_e.wav",
+      "sym": "r",
+      "left": "A",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "e_r_k": {
+      "file": "ph_e_r_k.wav",
+      "sym": "e",
+      "left": "r",
+      "right": "k",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "k_e_e": {
+      "file": "ph_k_e_e.wav",
+      "sym": "k",
+      "left": "e",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.66
+    },
+    "e_k_t": {
+      "file": "ph_e_k_t.wav",
+      "sym": "e",
+      "left": "k",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "m_a_u": {
+      "file": "ph_m_a_u.wav",
+      "sym": "m",
+      "left": "a",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "u_m_A": {
+      "file": "ph_u_m_A.wav",
+      "sym": "u",
+      "left": "m",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "A_u_x": {
+      "file": "ph_A_u_x.wav",
+      "sym": "A",
+      "left": "u",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "x_A_#": {
+      "file": "ph_x_A_unit.wav",
+      "sym": "x",
+      "left": "A",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.52
+    },
+    "a_h_z": {
+      "file": "ph_a_h_z.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "z",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "z_a_y": {
+      "file": "ph_z_a_y.wav",
+      "sym": "z",
+      "left": "a",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "y_z_x": {
+      "file": "ph_y_z_x.wav",
+      "sym": "y",
+      "left": "z",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "a_x_r": {
+      "file": "ph_a_x_r.wav",
+      "sym": "a",
+      "left": "x",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "r_a_w": {
+      "file": "ph_r_a_w.wav",
+      "sym": "r",
+      "left": "a",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_r_n": {
+      "file": "ph_w_r_n.wav",
+      "sym": "w",
+      "left": "r",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "a_h_Q": {
+      "file": "ph_a_h_Q.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "Q",
+      "takes": 2,
+      "duration": 0.13
+    },
+    "u_Q_d": {
+      "file": "ph_u_Q_d.wav",
+      "sym": "u",
+      "left": "Q",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "e_m_x": {
+      "file": "ph_e_m_x.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "x",
+      "takes": 2,
+      "duration": 0.31
+    },
+    "x_e_a": {
+      "file": "ph_x_e_a.wav",
+      "sym": "x",
+      "left": "e",
+      "right": "a",
+      "takes": 2,
+      "duration": 0.44
+    },
+    "a_x_S": {
+      "file": "ph_a_x_S.wav",
+      "sym": "a",
+      "left": "x",
+      "right": "S",
+      "takes": 2,
+      "duration": 0.12
+    },
+    "S_a_e": {
+      "file": "ph_S_a_e.wav",
+      "sym": "S",
+      "left": "a",
+      "right": "e",
+      "takes": 2,
+      "duration": 0.41
+    },
+    "e_S_v": {
+      "file": "ph_e_S_v.wav",
+      "sym": "e",
+      "left": "S",
+      "right": "v",
+      "takes": 3,
+      "duration": 0.12
+    },
+    "v_e_#": {
+      "file": "ph_v_e_unit.wav",
+      "sym": "v",
+      "left": "e",
+      "right": "#",
+      "takes": 4,
+      "duration": 0.1
+    },
+    "Q_a_w": {
+      "file": "ph_Q_a_w.wav",
+      "sym": "Q",
+      "left": "a",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "w_Q_v": {
+      "file": "ph_w_Q_v.wav",
+      "sym": "w",
+      "left": "Q",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "v_w_a": {
+      "file": "ph_v_w_a.wav",
+      "sym": "v",
+      "left": "w",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "a_v_T": {
+      "file": "ph_a_v_T.wav",
+      "sym": "a",
+      "left": "v",
+      "right": "T",
+      "takes": 2,
+      "duration": 0.11
+    },
+    "T_a_#": {
+      "file": "ph_T_a_unit.wav",
+      "sym": "T",
+      "left": "a",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "a_h_S": {
+      "file": "ph_a_h_S.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "S",
+      "takes": 2,
+      "duration": 0.17
+    },
+    "S_a_a": {
+      "file": "ph_S_a_a.wav",
+      "sym": "S",
+      "left": "a",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.2
+    },
+    "a_S_r": {
+      "file": "ph_a_S_r.wav",
+      "sym": "a",
+      "left": "S",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "r_a_e": {
+      "file": "ph_r_a_e.wav",
+      "sym": "r",
+      "left": "a",
+      "right": "e",
+      "takes": 2,
+      "duration": 0.06
+    },
+    "e_r_t": {
+      "file": "ph_e_r_t.wav",
+      "sym": "e",
+      "left": "r",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "a_h_r": {
+      "file": "ph_a_h_r.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "S_e_e": {
+      "file": "ph_S_e_e.wav",
+      "sym": "S",
+      "left": "e",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_h_x": {
+      "file": "ph_a_h_x.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "x_a_l": {
+      "file": "ph_x_a_l.wav",
+      "sym": "x",
+      "left": "a",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.61
+    },
+    "l_x_w": {
+      "file": "ph_l_x_w.wav",
+      "sym": "l",
+      "left": "x",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "w_l_n": {
+      "file": "ph_w_l_n.wav",
+      "sym": "w",
+      "left": "l",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_h_t": {
+      "file": "ph_a_h_t.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "t",
+      "takes": 3,
+      "duration": 0.11
+    },
+    "t_a_h": {
+      "file": "ph_t_a_h.wav",
+      "sym": "t",
+      "left": "a",
+      "right": "h",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "h_t_l": {
+      "file": "ph_h_t_l.wav",
+      "sym": "h",
+      "left": "t",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "l_h_y": {
+      "file": "ph_l_h_y.wav",
+      "sym": "l",
+      "left": "h",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.14
+    },
+    "y_l_x": {
+      "file": "ph_y_l_x.wav",
+      "sym": "y",
+      "left": "l",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "a_h_n": {
+      "file": "ph_a_h_n.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.26
+    },
+    "n_a_t": {
+      "file": "ph_n_a_t.wav",
+      "sym": "n",
+      "left": "a",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "t_n_w": {
+      "file": "ph_t_n_w.wav",
+      "sym": "t",
+      "left": "n",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "w_t_n": {
+      "file": "ph_w_t_n.wav",
+      "sym": "w",
+      "left": "t",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.15
+    },
+    "n_w_y": {
+      "file": "ph_n_w_y.wav",
+      "sym": "n",
+      "left": "w",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "y_n_m": {
+      "file": "ph_y_n_m.wav",
+      "sym": "y",
+      "left": "n",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_h_f": {
+      "file": "ph_a_h_f.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "f",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "f_a_A": {
+      "file": "ph_f_a_A.wav",
+      "sym": "f",
+      "left": "a",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.22
+    },
+    "A_f_w": {
+      "file": "ph_A_f_w.wav",
+      "sym": "A",
+      "left": "f",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.21
+    },
+    "w_A_l": {
+      "file": "ph_w_A_l.wav",
+      "sym": "w",
+      "left": "A",
+      "right": "l",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "l_w_a": {
+      "file": "ph_l_w_a.wav",
+      "sym": "l",
+      "left": "w",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "a_l_#": {
+      "file": "ph_a_l_unit.wav",
+      "sym": "a",
+      "left": "l",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "t_a_u": {
+      "file": "ph_t_a_u.wav",
+      "sym": "t",
+      "left": "a",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "u_t_T": {
+      "file": "ph_u_t_T.wav",
+      "sym": "u",
+      "left": "t",
+      "right": "T",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "T_u_a": {
+      "file": "ph_T_u_a.wav",
+      "sym": "T",
+      "left": "u",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_T_a": {
+      "file": "ph_a_T_a.wav",
+      "sym": "a",
+      "left": "T",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_a_#": {
+      "file": "ph_a_a_unit.wav",
+      "sym": "a",
+      "left": "a",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.1
+    },
+    "S_a_g": {
+      "file": "ph_S_a_g.wav",
+      "sym": "S",
+      "left": "a",
+      "right": "g",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "g_S_i": {
+      "file": "ph_g_S_i.wav",
+      "sym": "g",
+      "left": "S",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "i_g_a": {
+      "file": "ph_i_g_a.wav",
+      "sym": "i",
+      "left": "g",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_i_a": {
+      "file": "ph_a_i_a.wav",
+      "sym": "a",
+      "left": "i",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.05
+    },
+    "t_a_y": {
+      "file": "ph_t_a_y.wav",
+      "sym": "t",
+      "left": "a",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "y_t_Q": {
+      "file": "ph_y_t_Q.wav",
+      "sym": "y",
+      "left": "t",
+      "right": "Q",
+      "takes": 2,
+      "duration": 0.06
+    },
+    "Q_y_a": {
+      "file": "ph_Q_y_a.wav",
+      "sym": "Q",
+      "left": "y",
+      "right": "a",
+      "takes": 3,
+      "duration": 0.04
+    },
+    "a_Q_w": {
+      "file": "ph_a_Q_w.wav",
+      "sym": "a",
+      "left": "Q",
+      "right": "w",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "w_a_n": {
+      "file": "ph_w_a_n.wav",
+      "sym": "w",
+      "left": "a",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_h_b": {
+      "file": "ph_a_h_b.wav",
+      "sym": "a",
+      "left": "h",
+      "right": "b",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "b_a_e": {
+      "file": "ph_b_a_e.wav",
+      "sym": "b",
+      "left": "a",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "e_b_d": {
+      "file": "ph_e_b_d.wav",
+      "sym": "e",
+      "left": "b",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "d_e_i": {
+      "file": "ph_d_e_i.wav",
+      "sym": "d",
+      "left": "e",
+      "right": "i",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "Q_i_a": {
+      "file": "ph_Q_i_a.wav",
+      "sym": "Q",
+      "left": "i",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_Q_#": {
+      "file": "ph_a_Q_unit.wav",
+      "sym": "a",
+      "left": "Q",
+      "right": "#",
+      "takes": 3,
+      "duration": 0.02
+    },
+    "p_#_u": {
+      "file": "ph_p_unit_u.wav",
+      "sym": "p",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "u_p_t": {
+      "file": "ph_u_p_t.wav",
+      "sym": "u",
+      "left": "p",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "t_u_e": {
+      "file": "ph_t_u_e.wav",
+      "sym": "t",
+      "left": "u",
+      "right": "e",
+      "takes": 2,
+      "duration": 0.23
+    },
+    "e_t_A": {
+      "file": "ph_e_t_A.wav",
+      "sym": "e",
+      "left": "t",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "A_e_x": {
+      "file": "ph_A_e_x.wav",
+      "sym": "A",
+      "left": "e",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "s_#_u": {
+      "file": "ph_s_unit_u.wav",
+      "sym": "s",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.66
+    },
+    "u_s_g": {
+      "file": "ph_u_s_g.wav",
+      "sym": "u",
+      "left": "s",
+      "right": "g",
+      "takes": 1,
+      "duration": 0.33
+    },
+    "g_u_e": {
+      "file": "ph_g_u_e.wav",
+      "sym": "g",
+      "left": "u",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "e_g_r": {
+      "file": "ph_e_g_r.wav",
+      "sym": "e",
+      "left": "g",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "b_#_u": {
+      "file": "ph_b_unit_u.wav",
+      "sym": "b",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "u_b_d": {
+      "file": "ph_u_b_d.wav",
+      "sym": "u",
+      "left": "b",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "d_u_e": {
+      "file": "ph_d_u_e.wav",
+      "sym": "d",
+      "left": "u",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "e_d_Q": {
+      "file": "ph_e_d_Q.wav",
+      "sym": "e",
+      "left": "d",
+      "right": "Q",
+      "takes": 1,
+      "duration": 0.18
+    },
+    "Q_e_#": {
+      "file": "ph_Q_e_unit.wav",
+      "sym": "Q",
+      "left": "e",
+      "right": "#",
+      "takes": 2,
+      "duration": 0.03
+    },
+    "i_m_r": {
+      "file": "ph_i_m_r.wav",
+      "sym": "i",
+      "left": "m",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "r_i_y": {
+      "file": "ph_r_i_y.wav",
+      "sym": "r",
+      "left": "i",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "y_r_T": {
+      "file": "ph_y_r_T.wav",
+      "sym": "y",
+      "left": "r",
+      "right": "T",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "T_y_a": {
+      "file": "ph_T_y_a.wav",
+      "sym": "T",
+      "left": "y",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_T_#": {
+      "file": "ph_a_T_unit.wav",
+      "sym": "a",
+      "left": "T",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.21
+    },
+    "Q_#_u": {
+      "file": "ph_Q_unit_u.wav",
+      "sym": "Q",
+      "left": "#",
+      "right": "u",
+      "takes": 2,
+      "duration": 0.78
+    },
+    "e_t_v": {
+      "file": "ph_e_t_v.wav",
+      "sym": "e",
+      "left": "t",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "u_Q_r": {
+      "file": "ph_u_Q_r.wav",
+      "sym": "u",
+      "left": "Q",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "r_u_e": {
+      "file": "ph_r_u_e.wav",
+      "sym": "r",
+      "left": "u",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.08
+    },
+    "e_r_#": {
+      "file": "ph_e_r_unit.wav",
+      "sym": "e",
+      "left": "r",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "m_#_x": {
+      "file": "ph_m_unit_x.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "a_x_p": {
+      "file": "ph_a_x_p.wav",
+      "sym": "a",
+      "left": "x",
+      "right": "p",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "p_a_e": {
+      "file": "ph_p_a_e.wav",
+      "sym": "p",
+      "left": "a",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "e_p_S": {
+      "file": "ph_e_p_S.wav",
+      "sym": "e",
+      "left": "p",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "S_#_u": {
+      "file": "ph_S_unit_u.wav",
+      "sym": "S",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.14
+    },
+    "u_S_m": {
+      "file": "ph_u_S_m.wav",
+      "sym": "u",
+      "left": "S",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.76
+    },
+    "m_u_e": {
+      "file": "ph_m_u_e.wav",
+      "sym": "m",
+      "left": "u",
+      "right": "e",
+      "takes": 2,
+      "duration": 0.07
+    },
+    "e_m_r": {
+      "file": "ph_e_m_r.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "m_#_u": {
+      "file": "ph_m_unit_u.wav",
+      "sym": "m",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "u_m_x": {
+      "file": "ph_u_m_x.wav",
+      "sym": "u",
+      "left": "m",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.23
+    },
+    "x_u_e": {
+      "file": "ph_x_u_e.wav",
+      "sym": "x",
+      "left": "u",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.16
+    },
+    "e_x_Q": {
+      "file": "ph_e_x_Q.wav",
+      "sym": "e",
+      "left": "x",
+      "right": "Q",
+      "takes": 1,
+      "duration": 0.03
+    },
+    "A_i_t": {
+      "file": "ph_A_i_t.wav",
+      "sym": "A",
+      "left": "i",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.43
+    },
+    "t_A_y": {
+      "file": "ph_t_A_y.wav",
+      "sym": "t",
+      "left": "A",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "i_m_d": {
+      "file": "ph_i_m_d.wav",
+      "sym": "i",
+      "left": "m",
+      "right": "d",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "d_i_v": {
+      "file": "ph_d_i_v.wav",
+      "sym": "d",
+      "left": "i",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.02
+    },
+    "v_d_y": {
+      "file": "ph_v_d_y.wav",
+      "sym": "v",
+      "left": "d",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "y_v_Q": {
+      "file": "ph_y_v_Q.wav",
+      "sym": "y",
+      "left": "v",
+      "right": "Q",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "x_#_u": {
+      "file": "ph_x_unit_u.wav",
+      "sym": "x",
+      "left": "#",
+      "right": "u",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "u_x_S": {
+      "file": "ph_u_x_S.wav",
+      "sym": "u",
+      "left": "x",
+      "right": "S",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "S_u_e": {
+      "file": "ph_S_u_e.wav",
+      "sym": "S",
+      "left": "u",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.13
+    },
+    "i_m_t": {
+      "file": "ph_i_m_t.wav",
+      "sym": "i",
+      "left": "m",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.09
+    },
+    "t_i_x": {
+      "file": "ph_t_i_x.wav",
+      "sym": "t",
+      "left": "i",
+      "right": "x",
+      "takes": 1,
+      "duration": 0.19
+    },
+    "x_t_n": {
+      "file": "ph_x_t_n.wav",
+      "sym": "x",
+      "left": "t",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "n_x_n": {
+      "file": "ph_n_x_n.wav",
+      "sym": "n",
+      "left": "x",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "n_n_#": {
+      "file": "ph_n_n_unit.wav",
+      "sym": "n",
+      "left": "n",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.06
+    },
+    "e_m_v": {
+      "file": "ph_e_m_v.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "v",
+      "takes": 1,
+      "duration": 0.1
+    },
+    "T_a_e": {
+      "file": "ph_T_a_e.wav",
+      "sym": "T",
+      "left": "a",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.16
+    },
+    "e_T_A": {
+      "file": "ph_e_T_A.wav",
+      "sym": "e",
+      "left": "T",
+      "right": "A",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "a_A_m": {
+      "file": "ph_a_A_m.wav",
+      "sym": "a",
+      "left": "A",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "e_m_t": {
+      "file": "ph_e_m_t.wav",
+      "sym": "e",
+      "left": "m",
+      "right": "t",
+      "takes": 1,
+      "duration": 0.12
+    },
+    "u_#_n": {
+      "file": "ph_u_unit_n.wav",
+      "sym": "u",
+      "left": "#",
+      "right": "n",
+      "takes": 1,
+      "duration": 0.3
+    },
+    "n_u_e": {
+      "file": "ph_n_u_e.wav",
+      "sym": "n",
+      "left": "u",
+      "right": "e",
+      "takes": 1,
+      "duration": 0.07
+    },
+    "e_n_#": {
+      "file": "ph_e_n_unit.wav",
+      "sym": "e",
+      "left": "n",
+      "right": "#",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "u_l_m": {
+      "file": "ph_u_l_m.wav",
+      "sym": "u",
+      "left": "l",
+      "right": "m",
+      "takes": 1,
+      "duration": 0.1
+    }
+  },
+  "coverage": {
+    "phones_needed": 29,
+    "phones_covered": 26,
+    "words": 118,
+    "phone_units": 381,
+    "missing_phones": [
+      "CH",
+      "J",
+      "o"
+    ]
+  }
+}

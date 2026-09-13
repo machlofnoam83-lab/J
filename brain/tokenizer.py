@@ -59,6 +59,7 @@ FINAL_FORMS = {"ך": "כ", "ם": "מ", "ן": "נ", "ץ": "צ", "ף": "פ"}
 # Niqqud marks are stripped by default but can be preserved via keep_niqqud.
 NIQQUD = re.compile(r"[\u0591-\u05bd\u05bf-\u05c5\u05c7\u05c4\u05b0-\u05bc]")
 HEBREW_GERESH = re.compile(r"[\u05f3\u05f4\u0591-\u05af]|[׳״]")
+_SPECIAL_RE = re.compile("(" + "|".join(re.escape(t) for t in SPECIAL_TOKENS) + ")")
 
 # Pre-tokenizer: Hebrew runs | Latin words | numbers | newlines+indent | other
 _PAT = re.compile(
@@ -97,7 +98,8 @@ class Tokenizer:
     ) -> None:
         self.vocab = vocab
         self.inverse = {i: t for t, i in vocab.items()}
-        self.merges = {tuple(m.split(" ")): i for i, m in enumerate(merges)}
+        self.merges = list(merges)                       # JSON-serialisable
+        self._rank = {tuple(m.split(" ")): i for i, m in enumerate(self.merges)}
         self.keep_niqqud = keep_niqqud
         self._special_re = re.compile(
             "(" + "|".join(re.escape(s) for s in SPECIAL_TOKENS) + ")"
@@ -114,46 +116,87 @@ class Tokenizer:
         min_frequency: int = 2,
         progress: bool = True,
     ) -> "Tokenizer":
-        """Learn merges from a corpus of raw strings."""
+        """Learn merges from a corpus of raw strings.
+
+        Uses an incremental pair-heap: after each merge only the affected words
+        are re-scanned, so training is ~O(total symbols * merges_touched)
+        instead of re-counting every pair in the corpus each round.
+        """
         counts: Counter = Counter()
         for raw in texts:
-            norm = normalize(raw, keep_niqqud=keep_niqqud)
+            # Special tokens are atomic — they must never be split into byte
+            # pieces and fed to the merge learner, or they swamp the counts.
+            norm = normalize(_SPECIAL_RE.sub(" ", raw), keep_niqqud=keep_niqqud)
             for piece in _PAT.findall(norm):
                 word = "".join(BYTE_ENC[b] for b in piece.encode("utf-8"))
                 counts[word] += 1
 
-        # base vocabulary = 256 byte symbols + specials
         vocab: Dict[str, int] = {t: i for i, t in enumerate(SPECIAL_TOKENS)}
         for b in range(256):
             vocab[BYTE_ENC[b]] = len(vocab)
 
-        # word -> tuple(symbols), weighted by frequency
         words: Dict[Tuple[str, ...], int] = {
             tuple(w): c for w, c in counts.items() if c >= min_frequency
         }
-        merges: List[str] = []
-        target_merges = vocab_size - len(vocab)
+        if not words:
+            return cls(vocab, [], keep_niqqud=keep_niqqud)
 
-        while len(merges) < target_merges and words:
-            pairs: Counter = Counter()
-            for word, freq in words.items():
-                for a, b in zip(word, word[1:]):
-                    pairs[(a, b)] += freq
-            if not pairs:
-                break
-            best, best_freq = max(pairs.items(), key=lambda kv: kv[1])
+        pairs: Counter = Counter()
+        for word, freq in words.items():
+            for p in set(zip(word, word[1:])):
+                pairs[p] += freq
+
+        merges: List[str] = []
+        target_merges = max(0, vocab_size - len(vocab))
+
+        # symbol -> set(words containing it): keeps each merge step near O(1)
+        sym_words: Dict[str, set] = defaultdict(set)
+        for w in words:
+            for s in w:
+                sym_words[s].add(w)
+
+        while len(merges) < target_merges and pairs:
+            best, best_freq = max(pairs.items(), key=lambda kv: (kv[1], kv[0]))
             if best_freq < min_frequency:
                 break
             merged = best[0] + best[1]
+            if merged in vocab:
+                # stale/duplicate pair: drop it and keep searching
+                pairs.pop(best, None)
+                continue
             merges.append(f"{best[0]} {best[1]}")
             vocab[merged] = len(vocab)
+            if len(vocab) >= vocab_size:
+                break
 
-            new_words: Dict[Tuple[str, ...], int] = {}
-            for word, freq in words.items():
-                new_words[_merge_word(word, best)] = new_words.get(_merge_word(word, best), 0) + freq
-            words = new_words
-            if progress and len(merges) % 500 == 0:
-                print(f"  [bpe] merges={len(merges)}/{target_merges} vocab={len(vocab)}")
+            affected = sym_words.get(best[0], set()) & sym_words.get(best[1], set())
+            affected = {w for w in affected if w in words}
+            for w in affected:
+                f = words[w]
+                for p in set(zip(w, w[1:])):
+                    pairs[p] -= f
+                    if pairs[p] <= 0:
+                        pairs.pop(p, None)
+                nw = _merge_word(w, best)
+                del words[w]
+                for s in w:
+                    sym_words[s].discard(w)
+                words[nw] = words.get(nw, 0) + f
+                for s in nw:
+                    sym_words[s].add(nw)
+                for p in set(zip(nw, nw[1:])):
+                    pairs[p] += f
+            # NOTE: never unconditionally drop sym_words[best[0]] / [best[1]].
+            # Those symbols still occur inside `merged` and inside every word
+            # that was not rewritten. Deleting the keys starves all future pairs
+            # containing them and freezes vocabulary growth at ~650 merges.
+            for key in (best[0], best[1]):
+                if not sym_words.get(key):
+                    sym_words.pop(key, None)
+
+            if progress and len(merges) % 1000 == 0:
+                print(f"  [bpe] merges={len(merges)}/{target_merges} vocab={len(vocab)} "
+                      f"words={len(words)}")
 
         return cls(vocab, merges, keep_niqqud=keep_niqqud)
 
@@ -167,7 +210,7 @@ class Tokenizer:
             return list(word)
         while True:
             candidates = [
-                (self.merges[p], i) for i, p in enumerate(zip(word, word[1:])) if p in self.merges
+                (self._rank[p], i) for i, p in enumerate(zip(word, word[1:])) if p in self._rank
             ]
             if not candidates:
                 break
@@ -198,7 +241,8 @@ class Tokenizer:
             if part in self.vocab and part.startswith("<|"):
                 ids.append(self.vocab[part])
                 continue
-            for piece in _PAT.findall(normalize(part, keep_niqqud=self.keep_niqqud)):
+            clean = _SPECIAL_RE.sub(" ", part)   # never feed atomic specials to BPE
+            for piece in _PAT.findall(normalize(clean, keep_niqqud=self.keep_niqqud)):
                 sym = "".join(BYTE_ENC[b] for b in piece.encode("utf-8"))
                 for unit in self._bpe(sym):
                     if unit in self.vocab:
