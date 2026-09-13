@@ -1475,7 +1475,11 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
     });
     document.addEventListener('keydown', e => {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.key === 'v' || e.key === 'ו')) {
+      // e.code, not e.key — on a Hebrew layout physical V reports 'ה' (and 'ו'
+      // lives on U), so the old key-based match silently failed for the very
+      // users this Hebrew voice assistant is for.  Accelerators in Electron are
+      // already physical-key based; this brings the in-page handler in line.
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && e.code === 'KeyV') {
         e.preventDefault();
         Talk.on ? Talk.stop() : Talk.start();
       }
@@ -1567,6 +1571,97 @@
     document.addEventListener('pointerdown', unlock);
   }
 
+  // ══════════════════════════ view: מערכות ⇄ צ׳אט ══════════════════════════
+  // A pure *view* switch.  Chat mode hides the instrument rails and gives the
+  // conversation the whole window; it does not touch the voice pipeline, the
+  // composer, the WebSocket or any shortcut.  Everything that already works in
+  // the HUD keeps working here — the mic, the wake word, spoken answers.
+  const View = (() => {
+    const KEY = 'jarvis.view';
+    let cur = 'hud';
+
+    function label() {
+      const el = $('#cs-state'); if (!el) return;
+      const b = document.body, st = b.dataset.state || 'idle';
+      if (st === 'killed')   { el.textContent = 'KILL — כל הפעולות חסומות'; return; }
+      if (st === 'offline')  { el.textContent = 'אין קשר למוח — מנסה להתחבר מחדש'; return; }
+      if (st === 'booting')  { el.textContent = 'מאתחל…'; return; }
+      if (b.classList.contains('talking')) {
+        el.textContent = st === 'speaking' ? 'מדבר — המיקרופון מושתק בזמן התשובה'
+                       : st === 'thinking' ? 'שומע אותך, מעבד…'
+                       : 'מקשיב — פשוט דבר, לא צריך ללחוץ';
+        return;
+      }
+      if (st === 'speaking') { el.textContent = 'מדבר'; return; }
+      if (st === 'thinking') { el.textContent = 'חושב…'; return; }
+      el.textContent = 'ממתין — כתוב למטה, או לחץ 🗣 שיחה קולית ודבר';
+    }
+
+    function apply(next, opts) {
+      cur = (next === 'chat') ? 'chat' : 'hud';
+      const b = document.body;
+      b.classList.toggle('chat-mode', cur === 'chat');
+
+      const vh = $('#view-hud'), vc = $('#view-chat');
+      if (vh) { vh.classList.toggle('active', cur === 'hud');  vh.setAttribute('aria-selected', String(cur === 'hud')); }
+      if (vc) { vc.classList.toggle('active', cur === 'chat'); vc.setAttribute('aria-selected', String(cur === 'chat')); }
+      if (b.dataset) b.dataset.view = cur;
+
+      const cs = $('#cs-talk');
+      if (cs) cs.classList.toggle('on', b.classList.contains('talking'));
+
+      try { localStorage.setItem(KEY, cur); } catch (_) {}
+
+      // the transcript is now the main event — keep the latest line in view
+      const t = $('#transcript');
+      if (t) requestAnimationFrame(() => { t.scrollTop = t.scrollHeight; });
+      if (cur === 'chat' && !(opts && opts.silent)) { const i = $('#input'); if (i) i.focus(); }
+      label();
+    }
+
+    function toggle() { apply(cur === 'chat' ? 'hud' : 'chat'); }
+
+    function init() {
+      let saved = null;
+      try { saved = localStorage.getItem(KEY); } catch (_) {}
+      apply(saved === 'chat' ? 'chat' : 'hud', { silent: true });
+
+      const vh = $('#view-hud'), vc = $('#view-chat');
+      if (vh) vh.onclick = () => apply('hud');
+      if (vc) vc.onclick = () => apply('chat');
+
+      const xt = $('#cs-exit'); if (xt) xt.onclick = () => apply('hud');
+      const tk = $('#cs-talk');
+      if (tk) tk.onclick = () => {
+        if (typeof Talk !== 'undefined' && Talk.available) { Talk.on ? Talk.stop() : Talk.start(); }
+        else { toast('הדפדפן לא נותן גישה למיקרופון', 'err'); }
+      };
+
+      // Keep the strip honest without touching the state machine: JARVIS
+      // already writes body.talking (Talk.paint) and body[data-state]
+      // (recomputeState), so just watch those two attributes.
+      try {
+        new MutationObserver(() => {
+          const cs = $('#cs-talk');
+          if (cs) cs.classList.toggle('on', document.body.classList.contains('talking'));
+          label();
+        }).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-state'] });
+      } catch (_) { setInterval(label, 900); }
+
+      // Match on e.code, never e.key: on a Hebrew layout the physical C key
+      // reports 'ב' and H reports 'י', so a key-based match would break for
+      // exactly the audience this app is written for.  e.code is the physical
+      // key and is layout-independent.
+      document.addEventListener('keydown', e => {
+        if (!(e.ctrlKey || e.metaKey) || !e.shiftKey || e.altKey) return;
+        if (e.code === 'KeyC') { e.preventDefault(); apply('chat'); }
+        else if (e.code === 'KeyH') { e.preventDefault(); apply('hud'); }
+      });
+    }
+
+    return { init, apply, toggle, label, get current() { return cur; } };
+  })();
+
   async function doKill(reason) {
     busy.killed = true;
     $('#kill-reason').textContent = reason;
@@ -1628,6 +1723,7 @@
   // ══════════════════════════ boot ══════════════════════════
   async function main() {
     HUD.init();
+    View.init();
     Voice.startMeter();
     Voice.onState(on => {
       busy.speaking = on ? Date.now() : 0;

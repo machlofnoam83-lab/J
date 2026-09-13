@@ -48,3 +48,4 @@ Thumbs.db
 
 # download bundle built on demand for the sandbox preview — never committed
 ui/*.zip
+samples/

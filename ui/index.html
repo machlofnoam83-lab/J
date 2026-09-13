@@ -44,6 +44,13 @@
     <div id="clock-date">—</div>
   </div>
 
+  <div id="view-toggle" role="tablist" aria-label="תצוגה">
+    <button id="view-hud" class="vt active" role="tab" aria-selected="true"
+            title="לוח המכשירים המלא (Ctrl+Shift+H)">מערכות</button>
+    <button id="view-chat" class="vt" role="tab" aria-selected="false"
+            title="מסך שיחה בלבד — הכול חוץ מהפאנלים מוסתר (Ctrl+Shift+C)">צ׳אט</button>
+  </div>
+
   <a id="btn-download" href="#" download="JARVIS-full.zip"
      title="הורדת הפרויקט המלא (ZIP): קוד, מודלים, בנק הקול וה־HUD — בלי שום דבר חיצוני">⬇ הורדה</a>
 
@@ -142,6 +149,16 @@
       </div>
     </div>
 
+    <!-- ── chat mode only: a one-line readout of who is talking and how ── -->
+    <div id="chat-strip" aria-live="polite">
+      <span class="cs-dot" aria-hidden="true"></span>
+      <b id="cs-who">JARVIS</b>
+      <span id="cs-state">ממתין — כתוב למטה, או פתח את המיקרופון</span>
+      <span class="cs-spacer"></span>
+      <button id="cs-talk" class="cs-act" title="שיחה חופשית: מיקרופון פתוח, מילת השכמה, תשובות בקול (Ctrl+Shift+V)">🗣 שיחה קולית</button>
+      <button id="cs-exit" class="cs-act" title="חזרה ללוח המכשירים (Ctrl+Shift+H)">⇤ מערכות</button>
+    </div>
+
     <div id="transcript-head">
       <span class="th-title">שיחה</span>
       <span class="th-sub" id="th-count">—</span>
@@ -190,6 +207,8 @@
         <span class="kbd">Enter</span> שליחה
         <span class="kbd">Ctrl+Shift+Space</span> דיבור
         <span class="kbd">Ctrl+Shift+V</span> שיחה חופשית
+        <span class="kbd">Ctrl+Shift+C</span> מסך צ׳אט
+        <span class="kbd">Ctrl+Shift+H</span> מערכות
         <span class="kbd">Ctrl+Shift+J</span> נעיצה
         <span class="kbd">Ctrl+Shift+Esc</span> <b class="danger">KILL SWITCH</b>
         <label id="mic-pick" title="מיקרופון קלט">🎚

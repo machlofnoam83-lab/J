@@ -668,3 +668,106 @@ body.talking #composer { border-color: rgba(82,255,154,.28); }
                    color: rgba(255, 140, 140, .85); border-radius: 5px; padding: 0 5px;
                    cursor: pointer; font-size: 10px; line-height: 16px; }
 #face-list .fdel:hover { background: rgba(255, 110, 110, .16); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   view toggle + chat mode
+   ──────────────────────────────────────────────────────────────────────
+   Two ways to look at JARVIS:
+     • "מערכות" — the full instrument panel (rails, gauges, reactor).
+     • "צ׳אט"    — a conversation screen.  The rails collapse, the reactor
+                   becomes a thin ambient strip, and the transcript gets
+                   the whole window with readable typography.
+   Chat mode is a *view* change only: the voice pipeline, the composer and
+   every keyboard shortcut keep working exactly as before.
+   ══════════════════════════════════════════════════════════════════════ */
+
+#view-toggle {
+  display: flex; gap: 2px; padding: 3px;
+  border: 1px solid var(--edge); background: rgba(0,0,0,.30);
+  clip-path: var(--clip-sm);
+}
+.vt {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+  padding: 5px 14px; cursor: pointer; transition: .18s;
+  background: transparent; border: none; color: var(--text-faint);
+}
+.vt:hover { color: var(--ice); background: rgba(94,231,255,.07); }
+.vt.active {
+  color: var(--void); background: var(--cyan); font-weight: 700;
+  box-shadow: var(--glow-cyan);
+}
+
+/* ── rails collapse ── */
+body.chat-mode #grid { grid-template-columns: minmax(0, 1fr); }
+body.chat-mode #rail-left,
+body.chat-mode #rail-right { display: none; }
+
+/* ── reactor becomes a slim ambient strip ── */
+body.chat-mode #reactor-wrap {
+  flex: 0 0 96px; height: 96px;
+  border-bottom: 1px solid var(--edge);
+}
+body.chat-mode #reactor { opacity: .55; }
+body.chat-mode .ring-labels { display: none; }
+body.chat-mode #reactor-center { transform: scale(.72); }
+body.chat-mode #reactor-sub { display: none; }
+
+/* ── the conversation gets the room ── */
+body.chat-mode #stage { max-width: 1120px; width: 100%; margin: 0 auto; }
+body.chat-mode #transcript {
+  padding: 18px 26px; gap: 16px;
+  background: linear-gradient(180deg, rgba(9,20,34,.46), rgba(9,20,34,.20));
+}
+body.chat-mode .msg { max-width: 78%; font-size: 17px; line-height: 1.62; }
+body.chat-mode .msg .bubble { padding: 13px 18px; }
+body.chat-mode .msg pre, body.chat-mode .msg code { font-size: 14.5px; }
+body.chat-mode #transcript-head { padding: 4px 6px; }
+body.chat-mode #transcript-head .th-title { font-size: 15px; letter-spacing: .14em; }
+
+/* ── composer breathes ── */
+body.chat-mode #composer { padding: 14px 16px 11px; }
+body.chat-mode #input { padding: 14px 18px; font-size: 16px; }
+body.chat-mode #composer-foot { font-size: 11px; }
+
+/* ── a strip that only chat mode shows: who's talking, and how to talk ── */
+#chat-strip { display: none; }
+body.chat-mode #chat-strip {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 14px;
+  padding: 9px 14px; margin-bottom: 2px;
+  border: 1px solid var(--edge); background: rgba(0,0,0,.26);
+  clip-path: var(--clip-sm); font-size: 12px; color: var(--text-dim);
+}
+#chat-strip .cs-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+  background: var(--text-faint); box-shadow: 0 0 0 3px rgba(255,255,255,.05);
+  transition: .25s;
+}
+/* Driven entirely by classes JARVIS already maintains — body.talking comes
+   from Talk.paint(), body[data-state] from recomputeState().  Nothing here
+   needs new JS to stay honest. */
+body.talking #chat-strip .cs-dot {
+  background: var(--cyan); box-shadow: var(--glow-cyan);
+  animation: cs-pulse 1.6s ease-in-out infinite;
+}
+body[data-state="speaking"] #chat-strip .cs-dot {
+  background: var(--amber); box-shadow: 0 0 14px rgba(255,180,84,.7);
+}
+body[data-state="thinking"] #chat-strip .cs-dot { background: var(--violet); }
+body[data-state="killed"]   #chat-strip .cs-dot { background: var(--red); box-shadow: var(--glow-red); }
+body[data-state="offline"]  #chat-strip .cs-dot { background: var(--red); opacity: .5; }
+@keyframes cs-pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+#chat-strip b { color: var(--ice); font-weight: 600; }
+#chat-strip .cs-spacer { flex: 1 1 auto; }
+#chat-strip .cs-act {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em;
+  padding: 5px 12px; cursor: pointer; transition: .18s;
+  background: transparent; border: 1px solid var(--edge); color: var(--text-dim);
+}
+#chat-strip .cs-act:hover { color: var(--ice); border-color: var(--edge-hot); background: rgba(94,231,255,.07); }
+#chat-strip .cs-act.on { color: var(--void); background: var(--cyan); border-color: var(--cyan); font-weight: 700; }
+
+/* ── narrow windows: stack rather than squeeze ── */
+@media (max-width: 1080px) {
+  body:not(.chat-mode) #grid { grid-template-columns: 260px minmax(0,1fr); }
+  body:not(.chat-mode) #rail-right { display: none; }
+}
