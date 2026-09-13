@@ -1,6 +1,5 @@
 # --- JARVIS artifacts (regenerable, keep repo lean) ---
 voicebank_raw/
-brain/voicebank/*.wav
 models/checkpoints/
 models/exports/
 models/*.onnx
@@ -40,3 +39,12 @@ Thumbs.db
 # --- Keep trained production weights so the app runs offline out-of-the-box ---
 !models/jarvis_nano.pt
 !models/tokenizer.json
+
+# The 499 cut voice units (8.1MB) are the actual recorded voice: without them the
+# TTS silently degrades to the robotic formant synth. They ship with the repo.
+# The six raw source recordings ship too, so the bank can be rebuilt or extended.
+!brain/voicebank/*.wav
+!voice/recordings/*.wav
+
+# download bundle built on demand for the sandbox preview — never committed
+ui/*.zip

@@ -36,7 +36,10 @@ from voice.dsp import (VAD, crossfade, dtw_distance, fade_in_out, mfcc,  # noqa:
 from voice.tts.formant import synthesize_units, units_from_g2p, SR_DEFAULT  # noqa: E402
 from voice.tts.g2p import convert, Phoneme  # noqa: E402
 
-DEFAULT_RAW = Path.home() / "voicebank_raw"
+# The six source recordings ship with the repo so the voicebank can be rebuilt
+# anywhere; a personal ~/voicebank_raw (e.g. your own re-recorded voice) wins.
+_REPO_RAW = Path(__file__).resolve().parent.parent / "voice" / "recordings"
+DEFAULT_RAW = (Path.home() / "voicebank_raw") if (Path.home() / "voicebank_raw").exists() else _REPO_RAW
 OUT_DIR = ROOT / "brain" / "voicebank"
 MANIFEST = ROOT / "voice/tts/voicebank_manifest.json"
 
