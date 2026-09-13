@@ -100,6 +100,7 @@ class ConcatEngine:
         if sr != self.sr:
             x = resample(x, sr, self.sr)
         x = normalize(to_mono(x), 0.92)
+        original = x
         # second-line trim: never let a unit carry dead air into the sentence
         segs = VAD(self.sr, hangover=4, threshold_scale=2.6).segments(x, min_ms=40.0, pad_ms=10.0)
         if segs:
@@ -125,6 +126,21 @@ class ConcatEngine:
                     x = out
             else:
                 x = x[segs[0][0]: segs[-1][1]]
+
+        # This trim exists to drop dead air, not to shorten speech. The detector
+        # runs at 2.6x the noise floor, which is right for an isolated phone and
+        # wrong for a whole word: the unstressed parts of a short word fall under
+        # it. Measured, `word_כן.wav` held 0.622 s of a real "ken" and came back
+        # as 0.108 s — 83% of the word discarded, and too short for the
+        # recogniser to extract a single MFCC frame from, which made `yes`
+        # unsayable. That is the command that answers a permission prompt.
+        # A trim that removes most of a unit, or that leaves less than a spoken
+        # syllable where there was more, is a misdetection: keep the original.
+        if original.size > 0:
+            kept = x.size / float(original.size)
+            too_short = x.size < int(self.sr * 0.12) < original.size
+            if kept < 0.35 or too_short:
+                x = original
         self._cache[filename] = x
         return x
 

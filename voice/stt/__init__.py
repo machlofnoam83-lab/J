@@ -52,13 +52,22 @@ MAX_FRAMES = 220
 BANK_DIR = ROOT / "voice" / "stt" / "bank"
 
 # Bump this whenever anything changes that would make an existing bank disagree
-# with the voice that has to match it — the DSP, the augmentation grid, or the
-# confidence ramp. The bank is gitignored and rebuilt on first use, but
-# `ensure_bank` only builds when one is *missing*, so a listener upgrading in
+# with the voice that has to match it — the DSP, the voicebank, the augmentation
+# grid, or the confidence ramp. The bank is gitignored and rebuilt on first use,
+# but `ensure_bank` only builds when one is *missing*, so a listener upgrading in
 # place would otherwise keep templates synthesised by the old voice and recognise
-# nothing: 2 fixed `time_stretch` and `pitch_shift`, which changed every waveform
-# the bank is made of, and moved the ramp from the facing tails to the means.
-BANK_FORMAT = 2
+# nothing.
+#   2 — fixed `time_stretch` and `pitch_shift`, which changed every waveform the
+#       bank is made of, and moved the confidence ramp to the means.
+#   3 — the voicebank was re-aligned. The old builder zipped tokens to VAD
+#       segments positionally, so `word_אדוני.wav` held 104 ms and `word_את.wav`
+#       held 1.44 s; templates built from that voice do not match the corrected
+#       one, and the two must not be mixed.
+#   4 — `trim_silence` now cuts relative to the utterance's own speech level,
+#       read from the frames that carry energy so a sparse recording is not
+#       mistaken for silence. Every template and every query passes through it,
+#       so both feature trajectories changed shape.
+BANK_FORMAT = 4
 
 # Used only when a bank carries no measurement of its own. Every bank built here
 # measures the gap between correct and incorrect recognitions and stores the
@@ -206,26 +215,61 @@ def hop_seconds() -> float:
 
 
 def trim_silence(x: np.ndarray, sr: int, pad_ms: float = 60.0) -> np.ndarray:
+    """Cut the near-silence off both ends of an utterance.
+
+    Recognition is sensitive to this far more than it looks. The endpointer hands
+    over a span that includes the quiet run which triggered it, so the same word
+    arrives as 0.478 s of speech when synthesised clean and 0.530 s with ~170 ms
+    of trailing near-silence when it comes off a microphone. Those extra frames
+    are matched against the template like any other and cost real distance:
+    measured on `עצור`, DTW went 2.62 -> 4.62 and confidence 1.00 -> 0.68, which
+    is below the acceptance threshold. A command that works on a clean clip and
+    fails on a real one is the whole problem enrolment is supposed to solve, so
+    the trim has to be measured against the utterance's own level rather than
+    against an absolute gate.
+
+    The VAD span is used first, then refined: any 10 ms frame whose RMS is under
+    18% of the utterance's own speech level is treated as silence, and only a
+    short pad is kept so plosive onsets are not clipped.
+    """
     x = to_mono(np.asarray(x, dtype=np.float32))
     if len(x) < int(sr * 0.05):
         return x
+
+    a, b = 0, len(x)
     try:
         segs = VAD(sr).segments(x, min_ms=90.0, pad_ms=pad_ms)
     except Exception:
         segs = []
-    if not segs:
-        # fall back to a plain energy gate
-        win = max(1, int(sr * 0.02))
-        n = len(x) // win
-        if n == 0:
-            return x
-        e = np.sqrt((x[: n * win].reshape(n, win) ** 2).mean(axis=1))
-        thr = max(float(e.max()) * 0.08, 1e-4)
-        idx = np.flatnonzero(e > thr)
-        if len(idx) == 0:
-            return x[:0]                      # nothing voiced: hand back silence-free empty
-        return x[idx[0] * win: (idx[-1] + 1) * win]
-    return x[segs[0][0]:segs[-1][1]]
+    if segs:
+        a, b = int(segs[0][0]), int(segs[-1][1])
+
+    win = max(1, int(sr * 0.010))
+    n = (b - a) // win
+    if n < 3:
+        return x[a:b] if b > a else x
+    seg = x[a:a + n * win]
+    e = np.sqrt((seg.reshape(n, win).astype(np.float64) ** 2).mean(axis=1))
+    # The speech level has to be taken from frames that actually carry energy.
+    # A plain 70th percentile of *all* frames reads as zero whenever the
+    # utterance is mostly silence — the formant engine renders sparse audio with
+    # exact-zero gaps between units, measured 26 voiced frames out of 141 — and
+    # the trim then returned an empty array, so a 1.24 s recording was rejected
+    # as "too short" and could not be taught to the bank.
+    nz = e[e > 1e-7]
+    if nz.size == 0:
+        return x[:0]                          # nothing but digital silence
+    ref = float(np.percentile(nz, 70))
+    if ref <= 1e-7:
+        return x[:0]
+    thr = max(ref * 0.18, float(e.max()) * 0.02, 1e-5)
+    voiced = np.flatnonzero(e > thr)
+    if voiced.size == 0:
+        return x[:0]
+    pad = max(1, int(round(min(pad_ms, 30.0) / 10.0)))      # frames, capped at 30 ms
+    lo = max(0, int(voiced[0]) - pad)
+    hi = min(n, int(voiced[-1]) + 1 + pad)
+    return x[a + lo * win: a + hi * win]
 
 
 def features(x: np.ndarray, sr: int = SR, hop_ms: float = HOP_MS) -> np.ndarray:

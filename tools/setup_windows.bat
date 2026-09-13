@@ -50,7 +50,7 @@ if %ERRORLEVEL%==1 (
 REM ---- 3. optional extras that make the desktop skills work ---------
 echo.
 echo [*] installing optional desktop integrations
-%PY% -m pip install pyperclip mss pyautogui pillow pynput
+%PY% -m pip install pyperclip mss pyautogui pillow pynput sounddevice comtypes
 echo     (if any of these fail JARVIS still runs - the matching skills
 echo      simply report that the component is unavailable)
 

@@ -1,713 +1,705 @@
 {
   "sample_rate": 24000,
   "words": {
-    "בו": {
-      "file": "word_בו.wav",
-      "samples": 43776,
-      "duration": 1.824,
-      "kind": "syllables"
-    },
-    "גו": {
-      "file": "word_גו.wav",
-      "samples": 16416,
-      "duration": 0.684,
-      "kind": "syllables"
-    },
-    "דו": {
-      "file": "word_דו.wav",
-      "samples": 16416,
-      "duration": 0.684,
-      "kind": "syllables"
-    },
-    "הו": {
-      "file": "word_הו.wav",
-      "samples": 15888,
-      "duration": 0.662,
-      "kind": "syllables"
-    },
-    "וו": {
-      "file": "word_וו.wav",
-      "samples": 6096,
-      "duration": 0.254,
-      "kind": "letters"
-    },
-    "זו": {
-      "file": "word_זו.wav",
-      "samples": 16608,
-      "duration": 0.692,
-      "kind": "syllables"
-    },
-    "חו": {
-      "file": "word_חו.wav",
-      "samples": 11568,
-      "duration": 0.482,
-      "kind": "syllables"
-    },
-    "טו": {
-      "file": "word_טו.wav",
-      "samples": 15936,
-      "duration": 0.664,
-      "kind": "syllables"
-    },
-    "יו": {
-      "file": "word_יו.wav",
-      "samples": 13488,
-      "duration": 0.562,
-      "kind": "syllables"
-    },
-    "כו": {
-      "file": "word_כו.wav",
-      "samples": 14928,
-      "duration": 0.622,
-      "kind": "syllables"
-    },
-    "לו": {
-      "file": "word_לו.wav",
-      "samples": 15168,
-      "duration": 0.632,
-      "kind": "syllables"
-    },
-    "מו": {
-      "file": "word_מו.wav",
-      "samples": 14928,
-      "duration": 0.622,
-      "kind": "syllables"
-    },
-    "נו": {
-      "file": "word_נו.wav",
-      "samples": 16896,
-      "duration": 0.704,
-      "kind": "syllables"
-    },
-    "סו": {
-      "file": "word_סו.wav",
-      "samples": 12048,
-      "duration": 0.502,
-      "kind": "syllables"
-    },
-    "עו": {
-      "file": "word_עו.wav",
-      "samples": 12768,
-      "duration": 0.532,
-      "kind": "syllables"
-    },
-    "פו": {
-      "file": "word_פו.wav",
-      "samples": 14976,
-      "duration": 0.624,
-      "kind": "syllables"
-    },
-    "צו": {
-      "file": "word_צו.wav",
-      "samples": 13248,
-      "duration": 0.552,
-      "kind": "syllables"
-    },
-    "קו": {
-      "file": "word_קו.wav",
-      "samples": 15456,
-      "duration": 0.644,
-      "kind": "syllables"
-    },
-    "רו": {
-      "file": "word_רו.wav",
-      "samples": 16608,
-      "duration": 0.692,
-      "kind": "syllables"
-    },
-    "שו": {
-      "file": "word_שו.wav",
-      "samples": 12048,
-      "duration": 0.502,
-      "kind": "syllables"
-    },
-    "תו": {
-      "file": "word_תו.wav",
-      "samples": 11136,
-      "duration": 0.464,
-      "kind": "letters"
-    },
-    "או": {
-      "file": "word_או.wav",
-      "samples": 16128,
-      "duration": 0.672,
-      "kind": "syllables"
-    },
-    "זה": {
-      "file": "word_זה.wav",
-      "samples": 4176,
-      "duration": 0.174,
-      "kind": "words"
-    },
     "אלף": {
       "file": "word_אלף.wav",
-      "samples": 4656,
-      "duration": 0.194,
-      "kind": "digits"
+      "samples": 10896,
+      "duration": 0.454,
+      "kind": "digits",
+      "spp": 0.1135
     },
     "בית": {
       "file": "word_בית.wav",
-      "samples": 16416,
-      "duration": 0.684,
-      "kind": "letters"
+      "samples": 36528,
+      "duration": 1.522,
+      "kind": "letters",
+      "spp": 0.3044
     },
     "גימל": {
       "file": "word_גימל.wav",
-      "samples": 38928,
-      "duration": 1.622,
-      "kind": "letters"
+      "samples": 35376,
+      "duration": 1.474,
+      "kind": "letters",
+      "spp": 0.2948
     },
     "דלת": {
       "file": "word_דלת.wav",
-      "samples": 32688,
-      "duration": 1.362,
-      "kind": "letters"
+      "samples": 41328,
+      "duration": 1.722,
+      "kind": "letters",
+      "spp": 0.3444
     },
     "הא": {
       "file": "word_הא.wav",
-      "samples": 8736,
-      "duration": 0.364,
-      "kind": "letters"
+      "samples": 20256,
+      "duration": 0.844,
+      "kind": "letters",
+      "spp": 0.2813
+    },
+    "וו": {
+      "file": "word_וו.wav",
+      "samples": 22896,
+      "duration": 0.954,
+      "kind": "letters",
+      "spp": 0.318
     },
     "זין": {
       "file": "word_זין.wav",
-      "samples": 15456,
-      "duration": 0.644,
-      "kind": "letters"
+      "samples": 12048,
+      "duration": 0.502,
+      "kind": "letters",
+      "spp": 0.1673
     },
     "חית": {
       "file": "word_חית.wav",
-      "samples": 17136,
-      "duration": 0.714,
-      "kind": "letters"
+      "samples": 15216,
+      "duration": 0.634,
+      "kind": "letters",
+      "spp": 0.2113
     },
     "טית": {
       "file": "word_טית.wav",
-      "samples": 12816,
-      "duration": 0.534,
-      "kind": "letters"
+      "samples": 13776,
+      "duration": 0.574,
+      "kind": "letters",
+      "spp": 0.1913
     },
     "יוד": {
       "file": "word_יוד.wav",
-      "samples": 12816,
-      "duration": 0.534,
-      "kind": "letters"
+      "samples": 23616,
+      "duration": 0.984,
+      "kind": "letters",
+      "spp": 0.328
     },
     "כף": {
       "file": "word_כף.wav",
-      "samples": 15456,
-      "duration": 0.644,
-      "kind": "letters"
+      "samples": 3408,
+      "duration": 0.142,
+      "kind": "letters",
+      "spp": 0.071
     },
     "למד": {
       "file": "word_למד.wav",
-      "samples": 13968,
-      "duration": 0.582,
-      "kind": "letters"
+      "samples": 40656,
+      "duration": 1.694,
+      "kind": "letters",
+      "spp": 0.3388
     },
     "מם": {
       "file": "word_מם.wav",
-      "samples": 4656,
-      "duration": 0.194,
-      "kind": "letters"
+      "samples": 5616,
+      "duration": 0.234,
+      "kind": "letters",
+      "spp": 0.117
     },
     "נון": {
       "file": "word_נון.wav",
-      "samples": 5760,
-      "duration": 0.24,
-      "kind": "letters"
+      "samples": 19776,
+      "duration": 0.824,
+      "kind": "letters",
+      "spp": 0.2747
     },
     "סמך": {
       "file": "word_סמך.wav",
-      "samples": 17376,
-      "duration": 0.724,
-      "kind": "letters"
+      "samples": 17856,
+      "duration": 0.744,
+      "kind": "letters",
+      "spp": 0.186
     },
     "עין": {
       "file": "word_עין.wav",
-      "samples": 12528,
-      "duration": 0.522,
-      "kind": "letters"
+      "samples": 11856,
+      "duration": 0.494,
+      "kind": "letters",
+      "spp": 0.1647
     },
     "פא": {
       "file": "word_פא.wav",
-      "samples": 13488,
-      "duration": 0.562,
-      "kind": "letters"
+      "samples": 4896,
+      "duration": 0.204,
+      "kind": "letters",
+      "spp": 0.068
     },
     "צדיק": {
       "file": "word_צדיק.wav",
-      "samples": 16416,
-      "duration": 0.684,
-      "kind": "letters"
+      "samples": 37296,
+      "duration": 1.554,
+      "kind": "letters",
+      "spp": 0.3108
     },
     "קוף": {
       "file": "word_קוף.wav",
-      "samples": 12816,
-      "duration": 0.534,
-      "kind": "letters"
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "letters",
+      "spp": 0.161
     },
     "ריש": {
       "file": "word_ריש.wav",
-      "samples": 15456,
-      "duration": 0.644,
-      "kind": "letters"
+      "samples": 18576,
+      "duration": 0.774,
+      "kind": "letters",
+      "spp": 0.258
     },
     "שין": {
       "file": "word_שין.wav",
-      "samples": 14688,
-      "duration": 0.612,
-      "kind": "letters"
+      "samples": 6096,
+      "duration": 0.254,
+      "kind": "letters",
+      "spp": 0.0847
+    },
+    "תו": {
+      "file": "word_תו.wav",
+      "samples": 26016,
+      "duration": 1.084,
+      "kind": "letters",
+      "spp": 0.3613
     },
     "אפס": {
       "file": "word_אפס.wav",
-      "samples": 2688,
-      "duration": 0.112,
-      "kind": "digits"
+      "samples": 14976,
+      "duration": 0.624,
+      "kind": "digits",
+      "spp": 0.156
     },
     "אחת": {
       "file": "word_אחת.wav",
-      "samples": 62736,
-      "duration": 2.614,
-      "kind": "digits"
+      "samples": 15936,
+      "duration": 0.664,
+      "kind": "digits",
+      "spp": 0.166
     },
     "שתיים": {
       "file": "word_שתיים.wav",
-      "samples": 17616,
-      "duration": 0.734,
-      "kind": "digits"
+      "samples": 22176,
+      "duration": 0.924,
+      "kind": "digits",
+      "spp": 0.154
     },
     "שלוש": {
       "file": "word_שלוש.wav",
-      "samples": 13776,
-      "duration": 0.574,
-      "kind": "digits"
+      "samples": 26496,
+      "duration": 1.104,
+      "kind": "digits",
+      "spp": 0.184
     },
     "ארבע": {
       "file": "word_ארבע.wav",
-      "samples": 17136,
-      "duration": 0.714,
-      "kind": "digits"
+      "samples": 23328,
+      "duration": 0.972,
+      "kind": "digits",
+      "spp": 0.1944
     },
     "חמש": {
       "file": "word_חמש.wav",
-      "samples": 15456,
-      "duration": 0.644,
-      "kind": "digits"
+      "samples": 14448,
+      "duration": 0.602,
+      "kind": "digits",
+      "spp": 0.1505
     },
     "שש": {
       "file": "word_שש.wav",
-      "samples": 14736,
-      "duration": 0.614,
-      "kind": "digits"
+      "samples": 7296,
+      "duration": 0.304,
+      "kind": "digits",
+      "spp": 0.152
     },
     "שבע": {
       "file": "word_שבע.wav",
-      "samples": 16368,
-      "duration": 0.682,
-      "kind": "digits"
+      "samples": 18816,
+      "duration": 0.784,
+      "kind": "digits",
+      "spp": 0.196
     },
     "שמונה": {
       "file": "word_שמונה.wav",
-      "samples": 13536,
-      "duration": 0.564,
-      "kind": "digits"
+      "samples": 24768,
+      "duration": 1.032,
+      "kind": "digits",
+      "spp": 0.172
     },
     "תשע": {
       "file": "word_תשע.wav",
-      "samples": 13776,
-      "duration": 0.574,
-      "kind": "digits"
+      "samples": 15216,
+      "duration": 0.634,
+      "kind": "digits",
+      "spp": 0.1585
     },
     "עשר": {
       "file": "word_עשר.wav",
-      "samples": 18336,
-      "duration": 0.764,
-      "kind": "digits"
+      "samples": 17616,
+      "duration": 0.734,
+      "kind": "digits",
+      "spp": 0.1835
     },
     "עשרים": {
       "file": "word_עשרים.wav",
-      "samples": 14736,
-      "duration": 0.614,
-      "kind": "digits"
+      "samples": 12576,
+      "duration": 0.524,
+      "kind": "digits",
+      "spp": 0.1048
     },
     "מאה": {
       "file": "word_מאה.wav",
-      "samples": 14496,
-      "duration": 0.604,
-      "kind": "digits"
+      "samples": 15696,
+      "duration": 0.654,
+      "kind": "digits",
+      "spp": 0.1635
     },
     "מיליון": {
       "file": "word_מיליון.wav",
-      "samples": 9648,
-      "duration": 0.402,
-      "kind": "digits"
+      "samples": 28608,
+      "duration": 1.192,
+      "kind": "digits",
+      "spp": 0.1987
     },
     "אחוז": {
       "file": "word_אחוז.wav",
-      "samples": 15408,
-      "duration": 0.642,
-      "kind": "digits"
+      "samples": 8976,
+      "duration": 0.374,
+      "kind": "digits",
+      "spp": 0.0935
     },
     "מעלות": {
       "file": "word_מעלות.wav",
-      "samples": 19248,
-      "duration": 0.802,
-      "kind": "digits"
+      "samples": 32928,
+      "duration": 1.372,
+      "kind": "digits",
+      "spp": 0.196
     },
     "שניות": {
       "file": "word_שניות.wav",
-      "samples": 18816,
-      "duration": 0.784,
-      "kind": "digits"
+      "samples": 20256,
+      "duration": 0.844,
+      "kind": "digits",
+      "spp": 0.1206
     },
     "דקות": {
       "file": "word_דקות.wav",
-      "samples": 16896,
-      "duration": 0.704,
-      "kind": "digits"
+      "samples": 19056,
+      "duration": 0.794,
+      "kind": "digits",
+      "spp": 0.1588
     },
     "שעות": {
       "file": "word_שעות.wav",
-      "samples": 15648,
-      "duration": 0.652,
-      "kind": "digits"
+      "samples": 26976,
+      "duration": 1.124,
+      "kind": "digits",
+      "spp": 0.1873
     },
     "שלום": {
       "file": "word_שלום.wav",
-      "samples": 26016,
-      "duration": 1.084,
-      "kind": "words"
+      "samples": 41088,
+      "duration": 1.712,
+      "kind": "words",
+      "spp": 0.3424
     },
     "אדוני": {
       "file": "word_אדוני.wav",
-      "samples": 2496,
-      "duration": 0.104,
-      "kind": "words"
+      "samples": 42048,
+      "duration": 1.752,
+      "kind": "words",
+      "spp": 0.3504
     },
     "כן": {
       "file": "word_כן.wav",
-      "samples": 12288,
-      "duration": 0.512,
-      "kind": "words"
+      "samples": 14928,
+      "duration": 0.622,
+      "kind": "words",
+      "spp": 0.311
     },
     "לא": {
       "file": "word_לא.wav",
-      "samples": 13776,
-      "duration": 0.574,
-      "kind": "words"
+      "samples": 24528,
+      "duration": 1.022,
+      "kind": "words",
+      "spp": 0.3407
     },
     "אני": {
       "file": "word_אני.wav",
-      "samples": 20688,
-      "duration": 0.862,
-      "kind": "words"
+      "samples": 23136,
+      "duration": 0.964,
+      "kind": "words",
+      "spp": 0.3213
     },
     "אתה": {
       "file": "word_אתה.wav",
-      "samples": 6576,
-      "duration": 0.274,
-      "kind": "words"
+      "samples": 23376,
+      "duration": 0.974,
+      "kind": "words",
+      "spp": 0.3247
     },
     "את": {
       "file": "word_את.wav",
-      "samples": 34608,
-      "duration": 1.442,
-      "kind": "words"
+      "samples": 5856,
+      "duration": 0.244,
+      "kind": "words",
+      "spp": 0.122
+    },
+    "זה": {
+      "file": "word_זה.wav",
+      "samples": 14976,
+      "duration": 0.624,
+      "kind": "words",
+      "spp": 0.208
     },
     "מה": {
       "file": "word_מה.wav",
-      "samples": 14976,
-      "duration": 0.624,
-      "kind": "words"
+      "samples": 4416,
+      "duration": 0.184,
+      "kind": "words",
+      "spp": 0.092
     },
     "איך": {
       "file": "word_איך.wav",
-      "samples": 46416,
-      "duration": 1.934,
-      "kind": "words"
+      "samples": 31056,
+      "duration": 1.294,
+      "kind": "words",
+      "spp": 0.3235
     },
     "למה": {
       "file": "word_למה.wav",
-      "samples": 24336,
-      "duration": 1.014,
-      "kind": "words"
+      "samples": 33408,
+      "duration": 1.392,
+      "kind": "words",
+      "spp": 0.348
     },
     "כאשר": {
       "file": "word_כאשר.wav",
-      "samples": 5040,
-      "duration": 0.21,
-      "kind": "words"
+      "samples": 42048,
+      "duration": 1.752,
+      "kind": "words",
+      "spp": 0.3504
     },
     "אם": {
       "file": "word_אם.wav",
-      "samples": 2016,
-      "duration": 0.084,
-      "kind": "words"
+      "samples": 2496,
+      "duration": 0.104,
+      "kind": "words",
+      "spp": 0.052
     },
     "אז": {
       "file": "word_אז.wav",
-      "samples": 20256,
-      "duration": 0.844,
-      "kind": "words"
+      "samples": 3216,
+      "duration": 0.134,
+      "kind": "words",
+      "spp": 0.067
     },
     "אבל": {
       "file": "word_אבל.wav",
-      "samples": 20208,
-      "duration": 0.842,
-      "kind": "words"
+      "samples": 22896,
+      "duration": 0.954,
+      "kind": "words",
+      "spp": 0.2385
     },
     "כי": {
       "file": "word_כי.wav",
-      "samples": 17328,
-      "duration": 0.722,
-      "kind": "words"
+      "samples": 6096,
+      "duration": 0.254,
+      "kind": "words",
+      "spp": 0.127
     },
     "גם": {
       "file": "word_גם.wav",
-      "samples": 15216,
-      "duration": 0.634,
-      "kind": "words"
+      "samples": 6576,
+      "duration": 0.274,
+      "kind": "words",
+      "spp": 0.137
     },
     "רק": {
       "file": "word_רק.wav",
-      "samples": 17376,
-      "duration": 0.724,
-      "kind": "words"
+      "samples": 15696,
+      "duration": 0.654,
+      "kind": "words",
+      "spp": 0.218
     },
     "עוד": {
       "file": "word_עוד.wav",
-      "samples": 14448,
-      "duration": 0.602,
-      "kind": "words"
+      "samples": 2256,
+      "duration": 0.094,
+      "kind": "words",
+      "spp": 0.047
     },
     "כבר": {
       "file": "word_כבר.wav",
-      "samples": 19248,
-      "duration": 0.802,
-      "kind": "words"
+      "samples": 39456,
+      "duration": 1.644,
+      "kind": "words",
+      "spp": 0.3288
     },
     "עכשיו": {
       "file": "word_עכשיו.wav",
-      "samples": 20256,
-      "duration": 0.844,
-      "kind": "words"
+      "samples": 19776,
+      "duration": 0.824,
+      "kind": "words",
+      "spp": 0.1648
     },
     "היום": {
       "file": "word_היום.wav",
-      "samples": 18288,
-      "duration": 0.762,
-      "kind": "words"
+      "samples": 36576,
+      "duration": 1.524,
+      "kind": "words",
+      "spp": 0.3048
     },
     "תמיד": {
       "file": "word_תמיד.wav",
-      "samples": 14208,
-      "duration": 0.592,
-      "kind": "words"
+      "samples": 41088,
+      "duration": 1.712,
+      "kind": "words",
+      "spp": 0.3424
     },
     "המערכת": {
       "file": "word_המערכת.wav",
-      "samples": 51936,
-      "duration": 2.164,
-      "kind": "words"
+      "samples": 39888,
+      "duration": 1.662,
+      "kind": "words",
+      "spp": 0.1662
     },
     "המוח": {
       "file": "word_המוח.wav",
-      "samples": 23136,
-      "duration": 0.964,
-      "kind": "words"
+      "samples": 23856,
+      "duration": 0.994,
+      "kind": "words",
+      "spp": 0.1657
     },
     "הזיכרון": {
       "file": "word_הזיכרון.wav",
-      "samples": 17136,
-      "duration": 0.714,
-      "kind": "words"
+      "samples": 35136,
+      "duration": 1.464,
+      "kind": "words",
+      "spp": 0.1627
     },
     "הקוד": {
       "file": "word_הקוד.wav",
-      "samples": 16176,
-      "duration": 0.674,
-      "kind": "words"
+      "samples": 18816,
+      "duration": 0.784,
+      "kind": "words",
+      "spp": 0.1568
     },
     "המחשב": {
       "file": "word_המחשב.wav",
-      "samples": 21696,
-      "duration": 0.904,
-      "kind": "words"
+      "samples": 34608,
+      "duration": 1.442,
+      "kind": "words",
+      "spp": 0.1602
     },
     "הקובץ": {
       "file": "word_הקובץ.wav",
-      "samples": 19776,
-      "duration": 0.824,
-      "kind": "words"
+      "samples": 26736,
+      "duration": 1.114,
+      "kind": "words",
+      "spp": 0.1591
     },
     "השרת": {
       "file": "word_השרת.wav",
-      "samples": 20016,
-      "duration": 0.834,
-      "kind": "words"
+      "samples": 26448,
+      "duration": 1.102,
+      "kind": "words",
+      "spp": 0.1574
     },
     "הרשת": {
       "file": "word_הרשת.wav",
-      "samples": 19248,
-      "duration": 0.802,
-      "kind": "words"
+      "samples": 25056,
+      "duration": 1.044,
+      "kind": "words",
+      "spp": 0.1491
     },
     "החלון": {
       "file": "word_החלון.wav",
-      "samples": 22656,
-      "duration": 0.944,
-      "kind": "words"
+      "samples": 16848,
+      "duration": 0.702,
+      "kind": "words",
+      "spp": 0.117
     },
     "התהליך": {
       "file": "word_התהליך.wav",
-      "samples": 22656,
-      "duration": 0.944,
-      "kind": "words"
+      "samples": 22896,
+      "duration": 0.954,
+      "kind": "words",
+      "spp": 0.1192
     },
     "הנתונים": {
       "file": "word_הנתונים.wav",
-      "samples": 19056,
-      "duration": 0.794,
-      "kind": "words"
+      "samples": 24096,
+      "duration": 1.004,
+      "kind": "words",
+      "spp": 0.1255
     },
     "הפעולה": {
       "file": "word_הפעולה.wav",
-      "samples": 21216,
-      "duration": 0.884,
-      "kind": "words"
+      "samples": 20016,
+      "duration": 0.834,
+      "kind": "words",
+      "spp": 0.1191
     },
     "התוצאה": {
       "file": "word_התוצאה.wav",
-      "samples": 18768,
-      "duration": 0.782,
-      "kind": "words"
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "words",
+      "spp": 0.092
     },
     "השגיאה": {
       "file": "word_השגיאה.wav",
-      "samples": 13056,
-      "duration": 0.544,
-      "kind": "words"
+      "samples": 27216,
+      "duration": 1.134,
+      "kind": "words",
+      "spp": 0.162
     },
     "התיקון": {
       "file": "word_התיקון.wav",
-      "samples": 1536,
-      "duration": 0.064,
-      "kind": "words"
+      "samples": 31008,
+      "duration": 1.292,
+      "kind": "words",
+      "spp": 0.1615
     },
     "הבדיקה": {
       "file": "word_הבדיקה.wav",
-      "samples": 16848,
-      "duration": 0.702,
-      "kind": "words"
+      "samples": 26496,
+      "duration": 1.104,
+      "kind": "words",
+      "spp": 0.138
     },
     "פותח": {
       "file": "word_פותח.wav",
-      "samples": 6816,
-      "duration": 0.284,
-      "kind": "words"
+      "samples": 19296,
+      "duration": 0.804,
+      "kind": "words",
+      "spp": 0.134
     },
     "סוגר": {
       "file": "word_סוגר.wav",
-      "samples": 30336,
-      "duration": 1.264,
-      "kind": "words"
+      "samples": 14736,
+      "duration": 0.614,
+      "kind": "words",
+      "spp": 0.1228
     },
     "בודק": {
       "file": "word_בודק.wav",
-      "samples": 12336,
-      "duration": 0.514,
-      "kind": "words"
+      "samples": 16416,
+      "duration": 0.684,
+      "kind": "words",
+      "spp": 0.1368
     },
     "מריץ": {
       "file": "word_מריץ.wav",
       "samples": 15216,
       "duration": 0.634,
-      "kind": "words"
+      "kind": "words",
+      "spp": 0.1057
     },
     "כותב": {
       "file": "word_כותב.wav",
-      "samples": 16128,
-      "duration": 0.672,
-      "kind": "words"
+      "samples": 12096,
+      "duration": 0.504,
+      "kind": "words",
+      "spp": 0.1008
     },
     "קורא": {
       "file": "word_קורא.wav",
-      "samples": 26256,
-      "duration": 1.094,
-      "kind": "words"
+      "samples": 11568,
+      "duration": 0.482,
+      "kind": "words",
+      "spp": 0.1205
     },
     "מחפש": {
       "file": "word_מחפש.wav",
-      "samples": 11040,
-      "duration": 0.46,
-      "kind": "words"
+      "samples": 13296,
+      "duration": 0.554,
+      "kind": "words",
+      "spp": 0.0923
     },
     "שומר": {
       "file": "word_שומר.wav",
-      "samples": 28176,
-      "duration": 1.174,
-      "kind": "words"
+      "samples": 12096,
+      "duration": 0.504,
+      "kind": "words",
+      "spp": 0.1008
     },
     "מוחק": {
       "file": "word_מוחק.wav",
-      "samples": 12576,
-      "duration": 0.524,
-      "kind": "words"
+      "samples": 16368,
+      "duration": 0.682,
+      "kind": "words",
+      "spp": 0.1364
     },
     "מעתיק": {
       "file": "word_מעתיק.wav",
-      "samples": 23136,
-      "duration": 0.964,
-      "kind": "words"
+      "samples": 21216,
+      "duration": 0.884,
+      "kind": "words",
+      "spp": 0.1263
     },
     "מדביק": {
       "file": "word_מדביק.wav",
-      "samples": 4320,
-      "duration": 0.18,
-      "kind": "words"
+      "samples": 23136,
+      "duration": 0.964,
+      "kind": "words",
+      "spp": 0.1377
     },
     "מחשב": {
       "file": "word_מחשב.wav",
-      "samples": 37296,
-      "duration": 1.554,
-      "kind": "words"
+      "samples": 18096,
+      "duration": 0.754,
+      "kind": "words",
+      "spp": 0.1077
     },
     "חושב": {
       "file": "word_חושב.wav",
-      "samples": 13776,
-      "duration": 0.574,
-      "kind": "words"
+      "samples": 15216,
+      "duration": 0.634,
+      "kind": "words",
+      "spp": 0.1268
     },
     "מתכנן": {
       "file": "word_מתכנן.wav",
-      "samples": 16176,
-      "duration": 0.674,
-      "kind": "words"
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "words",
+      "spp": 0.1073
     },
     "מבצע": {
       "file": "word_מבצע.wav",
-      "samples": 16896,
-      "duration": 0.704,
-      "kind": "words"
+      "samples": 22656,
+      "duration": 0.944,
+      "kind": "words",
+      "spp": 0.1349
     },
     "מאמת": {
       "file": "word_מאמת.wav",
-      "samples": 40656,
-      "duration": 1.694,
-      "kind": "words"
+      "samples": 23616,
+      "duration": 0.984,
+      "kind": "words",
+      "spp": 0.1406
+    },
+    "מאזין": {
+      "file": "word_מאזין.wav",
+      "samples": 14496,
+      "duration": 0.604,
+      "kind": "words",
+      "spp": 0.1007
+    },
+    "מדבר": {
+      "file": "word_מדבר.wav",
+      "samples": 22176,
+      "duration": 0.924,
+      "kind": "words",
+      "spp": 0.132
     },
     "עונה": {
       "file": "word_עונה.wav",
-      "samples": 12336,
-      "duration": 0.514,
-      "kind": "words"
+      "samples": 7536,
+      "duration": 0.314,
+      "kind": "words",
+      "spp": 0.1047
     },
     "לומד": {
       "file": "word_לומד.wav",
-      "samples": 17328,
-      "duration": 0.722,
-      "kind": "words"
+      "samples": 15456,
+      "duration": 0.644,
+      "kind": "words",
+      "spp": 0.1288
     }
   },
   "phones": {
@@ -717,7 +709,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 1.29
+      "duration": 1.15
     },
     "w_v_#": {
       "file": "ph_w_v_unit.wav",
@@ -725,7 +717,7 @@
       "left": "v",
       "right": "#",
       "takes": 1,
-      "duration": 0.5
+      "duration": 0.05
     },
     "g_#_w": {
       "file": "ph_g_unit_w.wav",
@@ -733,7 +725,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.18
+      "duration": 1.07
     },
     "w_g_#": {
       "file": "ph_w_g_unit.wav",
@@ -741,7 +733,7 @@
       "left": "g",
       "right": "#",
       "takes": 1,
-      "duration": 0.47
+      "duration": 0.09
     },
     "d_#_w": {
       "file": "ph_d_unit_w.wav",
@@ -757,7 +749,7 @@
       "left": "d",
       "right": "#",
       "takes": 1,
-      "duration": 0.59
+      "duration": 1.2
     },
     "h_#_w": {
       "file": "ph_h_unit_w.wav",
@@ -765,7 +757,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.06
     },
     "w_h_#": {
       "file": "ph_w_h_unit.wav",
@@ -773,7 +765,7 @@
       "left": "h",
       "right": "#",
       "takes": 1,
-      "duration": 0.58
+      "duration": 1.17
     },
     "v_#_a": {
       "file": "ph_v_unit_a.wav",
@@ -781,7 +773,7 @@
       "left": "#",
       "right": "a",
       "takes": 2,
-      "duration": 0.2
+      "duration": 1.06
     },
     "a_v_w": {
       "file": "ph_a_v_w.wav",
@@ -837,7 +829,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.56
+      "duration": 0.57
     },
     "w_t_#": {
       "file": "ph_w_t_unit.wav",
@@ -845,7 +837,7 @@
       "left": "t",
       "right": "#",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.06
     },
     "y_#_w": {
       "file": "ph_y_unit_w.wav",
@@ -861,7 +853,7 @@
       "left": "y",
       "right": "#",
       "takes": 1,
-      "duration": 0.48
+      "duration": 0.47
     },
     "l_#_w": {
       "file": "ph_l_unit_w.wav",
@@ -877,7 +869,7 @@
       "left": "l",
       "right": "#",
       "takes": 1,
-      "duration": 0.55
+      "duration": 0.56
     },
     "m_#_w": {
       "file": "ph_m_unit_w.wav",
@@ -893,7 +885,7 @@
       "left": "m",
       "right": "#",
       "takes": 1,
-      "duration": 0.53
+      "duration": 0.42
     },
     "n_#_w": {
       "file": "ph_n_unit_w.wav",
@@ -901,7 +893,7 @@
       "left": "#",
       "right": "w",
       "takes": 2,
-      "duration": 0.1
+      "duration": 0.62
     },
     "w_n_#": {
       "file": "ph_w_n_unit.wav",
@@ -909,7 +901,7 @@
       "left": "n",
       "right": "#",
       "takes": 1,
-      "duration": 0.61
+      "duration": 0.87
     },
     "s_#_w": {
       "file": "ph_s_unit_w.wav",
@@ -917,7 +909,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.36
+      "duration": 0.29
     },
     "w_s_#": {
       "file": "ph_w_s_unit.wav",
@@ -933,7 +925,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.45
+      "duration": 0.41
     },
     "w_A_#": {
       "file": "ph_w_A_unit.wav",
@@ -949,7 +941,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.19
+      "duration": 0.39
     },
     "w_f_#": {
       "file": "ph_w_f_unit.wav",
@@ -957,7 +949,7 @@
       "left": "f",
       "right": "#",
       "takes": 1,
-      "duration": 0.4
+      "duration": 0.1
     },
     "T_#_w": {
       "file": "ph_T_unit_w.wav",
@@ -965,7 +957,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.42
+      "duration": 0.19
     },
     "w_T_#": {
       "file": "ph_w_T_unit.wav",
@@ -973,7 +965,7 @@
       "left": "T",
       "right": "#",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.4
     },
     "Q_#_w": {
       "file": "ph_Q_unit_w.wav",
@@ -981,7 +973,7 @@
       "left": "#",
       "right": "w",
       "takes": 2,
-      "duration": 0.57
+      "duration": 0.48
     },
     "w_Q_#": {
       "file": "ph_w_Q_unit.wav",
@@ -997,7 +989,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.56
+      "duration": 0.51
     },
     "w_r_#": {
       "file": "ph_w_r_unit.wav",
@@ -1005,7 +997,7 @@
       "left": "r",
       "right": "#",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.11
     },
     "S_#_w": {
       "file": "ph_S_unit_w.wav",
@@ -1013,7 +1005,7 @@
       "left": "#",
       "right": "w",
       "takes": 1,
-      "duration": 0.16
+      "duration": 0.55
     },
     "w_S_#": {
       "file": "ph_w_S_unit.wav",
@@ -1021,7 +1013,7 @@
       "left": "S",
       "right": "#",
       "takes": 1,
-      "duration": 0.31
+      "duration": 0.11
     },
     "t_#_a": {
       "file": "ph_t_unit_a.wav",
@@ -1029,7 +1021,7 @@
       "left": "#",
       "right": "a",
       "takes": 2,
-      "duration": 0.34
+      "duration": 0.32
     },
     "a_t_w": {
       "file": "ph_a_t_w.wav",
@@ -1037,7 +1029,7 @@
       "left": "t",
       "right": "w",
       "takes": 2,
-      "duration": 0.13
+      "duration": 0.92
     },
     "u_#_#": {
       "file": "ph_u_unit_unit.wav",
@@ -1045,7 +1037,7 @@
       "left": "#",
       "right": "#",
       "takes": 2,
-      "duration": 0.64
+      "duration": 1.68
     },
     "z_#_e": {
       "file": "ph_z_unit_e.wav",
@@ -1053,7 +1045,7 @@
       "left": "#",
       "right": "e",
       "takes": 2,
-      "duration": 0.11
+      "duration": 1.16
     },
     "e_z_h": {
       "file": "ph_e_z_h.wav",
@@ -1077,7 +1069,7 @@
       "left": "#",
       "right": "l",
       "takes": 2,
-      "duration": 0.09
+      "duration": 0.04
     },
     "l_A_f": {
       "file": "ph_l_A_f.wav",
@@ -1085,7 +1077,7 @@
       "left": "A",
       "right": "f",
       "takes": 2,
-      "duration": 0.06
+      "duration": 0.07
     },
     "f_l_a": {
       "file": "ph_f_l_a.wav",
@@ -1093,7 +1085,7 @@
       "left": "l",
       "right": "a",
       "takes": 2,
-      "duration": 0.42
+      "duration": 0.3
     },
     "a_f_#": {
       "file": "ph_a_f_unit.wav",
@@ -1101,7 +1093,7 @@
       "left": "f",
       "right": "#",
       "takes": 3,
-      "duration": 0.25
+      "duration": 0.26
     },
     "b_#_a": {
       "file": "ph_b_unit_a.wav",
@@ -1109,7 +1101,7 @@
       "left": "#",
       "right": "a",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.58
     },
     "a_b_y": {
       "file": "ph_a_b_y.wav",
@@ -1141,7 +1133,7 @@
       "left": "i",
       "right": "#",
       "takes": 3,
-      "duration": 0.13
+      "duration": 0.14
     },
     "g_#_i": {
       "file": "ph_g_unit_i.wav",
@@ -1149,7 +1141,7 @@
       "left": "#",
       "right": "i",
       "takes": 1,
-      "duration": 0.35
+      "duration": 0.34
     },
     "i_g_m": {
       "file": "ph_i_g_m.wav",
@@ -1157,7 +1149,7 @@
       "left": "g",
       "right": "m",
       "takes": 1,
-      "duration": 0.91
+      "duration": 0.15
     },
     "m_i_e": {
       "file": "ph_m_i_e.wav",
@@ -1173,7 +1165,7 @@
       "left": "m",
       "right": "l",
       "takes": 1,
-      "duration": 0.21
+      "duration": 0.12
     },
     "l_e_#": {
       "file": "ph_l_e_unit.wav",
@@ -1181,7 +1173,7 @@
       "left": "e",
       "right": "#",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.76
     },
     "d_#_a": {
       "file": "ph_d_unit_a.wav",
@@ -1189,7 +1181,7 @@
       "left": "#",
       "right": "a",
       "takes": 2,
-      "duration": 0.51
+      "duration": 0.87
     },
     "a_d_l": {
       "file": "ph_a_d_l.wav",
@@ -1221,7 +1213,7 @@
       "left": "e",
       "right": "#",
       "takes": 6,
-      "duration": 0.06
+      "duration": 0.38
     },
     "h_#_e": {
       "file": "ph_h_unit_e.wav",
@@ -1229,7 +1221,7 @@
       "left": "#",
       "right": "e",
       "takes": 1,
-      "duration": 0.19
+      "duration": 0.05
     },
     "e_h_A": {
       "file": "ph_e_h_A.wav",
@@ -1237,7 +1229,7 @@
       "left": "h",
       "right": "A",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.73
     },
     "A_e_#": {
       "file": "ph_A_e_unit.wav",
@@ -1253,22 +1245,22 @@
       "left": "#",
       "right": "y",
       "takes": 1,
-      "duration": 0.5
+      "duration": 0.36
     },
     "y_z_n": {
       "file": "ph_y_z_n.wav",
       "sym": "y",
       "left": "z",
       "right": "n",
-      "takes": 1,
-      "duration": 0.06
+      "takes": 2,
+      "duration": 0.16
     },
     "n_y_#": {
       "file": "ph_n_y_unit.wav",
       "sym": "n",
       "left": "y",
       "right": "#",
-      "takes": 3,
+      "takes": 4,
       "duration": 0.05
     },
     "x_#_i": {
@@ -1277,7 +1269,7 @@
       "left": "#",
       "right": "i",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.25
     },
     "i_x_t": {
       "file": "ph_i_x_t.wav",
@@ -1285,7 +1277,7 @@
       "left": "x",
       "right": "t",
       "takes": 1,
-      "duration": 0.47
+      "duration": 0.2
     },
     "t_#_i": {
       "file": "ph_t_unit_i.wav",
@@ -1293,7 +1285,7 @@
       "left": "#",
       "right": "i",
       "takes": 1,
-      "duration": 0.26
+      "duration": 0.29
     },
     "i_t_t": {
       "file": "ph_i_t_t.wav",
@@ -1309,7 +1301,7 @@
       "left": "#",
       "right": "u",
       "takes": 1,
-      "duration": 0.29
+      "duration": 0.06
     },
     "u_y_d": {
       "file": "ph_u_y_d.wav",
@@ -1325,7 +1317,7 @@
       "left": "u",
       "right": "#",
       "takes": 3,
-      "duration": 0.09
+      "duration": 0.06
     },
     "x_#_f": {
       "file": "ph_x_unit_f.wav",
@@ -1333,7 +1325,7 @@
       "left": "#",
       "right": "f",
       "takes": 1,
-      "duration": 0.52
+      "duration": 0.03
     },
     "f_x_#": {
       "file": "ph_f_x_unit.wav",
@@ -1341,7 +1333,7 @@
       "left": "x",
       "right": "#",
       "takes": 1,
-      "duration": 0.09
+      "duration": 0.08
     },
     "l_#_a": {
       "file": "ph_l_unit_a.wav",
@@ -1349,7 +1341,7 @@
       "left": "#",
       "right": "a",
       "takes": 2,
-      "duration": 0.19
+      "duration": 0.7
     },
     "a_l_m": {
       "file": "ph_a_l_m.wav",
@@ -1357,7 +1349,7 @@
       "left": "l",
       "right": "m",
       "takes": 2,
-      "duration": 0.16
+      "duration": 0.95
     },
     "m_a_e": {
       "file": "ph_m_a_e.wav",
@@ -1372,7 +1364,7 @@
       "sym": "e",
       "left": "m",
       "right": "d",
-      "takes": 2,
+      "takes": 3,
       "duration": 0.12
     },
     "d_e_#": {
@@ -1381,7 +1373,7 @@
       "left": "e",
       "right": "#",
       "takes": 2,
-      "duration": 0.06
+      "duration": 0.26
     },
     "m_#_m": {
       "file": "ph_m_unit_m.wav",
@@ -1389,7 +1381,7 @@
       "left": "#",
       "right": "m",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.14
     },
     "m_m_#": {
       "file": "ph_m_m_unit.wav",
@@ -1397,7 +1389,7 @@
       "left": "m",
       "right": "#",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.06
     },
     "w_n_n": {
       "file": "ph_w_n_n.wav",
@@ -1413,7 +1405,7 @@
       "left": "w",
       "right": "#",
       "takes": 5,
-      "duration": 0.05
+      "duration": 0.06
     },
     "s_#_m": {
       "file": "ph_s_unit_m.wav",
@@ -1421,7 +1413,7 @@
       "left": "#",
       "right": "m",
       "takes": 1,
-      "duration": 0.19
+      "duration": 0.2
     },
     "m_s_x": {
       "file": "ph_m_s_x.wav",
@@ -1437,7 +1429,7 @@
       "left": "m",
       "right": "a",
       "takes": 2,
-      "duration": 0.24
+      "duration": 0.27
     },
     "a_x_#": {
       "file": "ph_a_x_unit.wav",
@@ -1445,7 +1437,7 @@
       "left": "x",
       "right": "#",
       "takes": 3,
-      "duration": 0.1
+      "duration": 0.14
     },
     "A_#_y": {
       "file": "ph_A_unit_y.wav",
@@ -1461,7 +1453,7 @@
       "left": "A",
       "right": "n",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.07
     },
     "p_#_e": {
       "file": "ph_p_unit_e.wav",
@@ -1469,7 +1461,7 @@
       "left": "#",
       "right": "e",
       "takes": 1,
-      "duration": 0.38
+      "duration": 0.06
     },
     "e_p_A": {
       "file": "ph_e_p_A.wav",
@@ -1477,7 +1469,7 @@
       "left": "p",
       "right": "A",
       "takes": 1,
-      "duration": 0.12
+      "duration": 0.08
     },
     "T_#_a": {
       "file": "ph_T_unit_a.wav",
@@ -1493,7 +1485,7 @@
       "left": "T",
       "right": "d",
       "takes": 1,
-      "duration": 0.32
+      "duration": 1.19
     },
     "d_a_i": {
       "file": "ph_d_a_i.wav",
@@ -1533,7 +1525,7 @@
       "left": "w",
       "right": "a",
       "takes": 1,
-      "duration": 0.15
+      "duration": 0.22
     },
     "r_#_e": {
       "file": "ph_r_unit_e.wav",
@@ -1541,7 +1533,7 @@
       "left": "#",
       "right": "e",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.06
     },
     "e_r_S": {
       "file": "ph_e_r_S.wav",
@@ -1549,7 +1541,7 @@
       "left": "r",
       "right": "S",
       "takes": 2,
-      "duration": 0.1
+      "duration": 0.12
     },
     "S_e_#": {
       "file": "ph_S_e_unit.wav",
@@ -1557,7 +1549,7 @@
       "left": "e",
       "right": "#",
       "takes": 2,
-      "duration": 0.54
+      "duration": 0.56
     },
     "S_#_y": {
       "file": "ph_S_unit_y.wav",
@@ -1565,7 +1557,7 @@
       "left": "#",
       "right": "y",
       "takes": 1,
-      "duration": 0.24
+      "duration": 0.11
     },
     "y_S_n": {
       "file": "ph_y_S_n.wav",
@@ -1573,7 +1565,7 @@
       "left": "S",
       "right": "n",
       "takes": 1,
-      "duration": 0.29
+      "duration": 0.06
     },
     "e_#_f": {
       "file": "ph_e_unit_f.wav",
@@ -1581,7 +1573,7 @@
       "left": "#",
       "right": "f",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.1
     },
     "f_e_e": {
       "file": "ph_f_e_e.wav",
@@ -1589,7 +1581,7 @@
       "left": "e",
       "right": "e",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.11
     },
     "e_f_s": {
       "file": "ph_e_f_s.wav",
@@ -1597,7 +1589,7 @@
       "left": "f",
       "right": "s",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.12
     },
     "s_e_#": {
       "file": "ph_s_e_unit.wav",
@@ -1605,7 +1597,7 @@
       "left": "e",
       "right": "#",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.26
     },
     "A_#_x": {
       "file": "ph_A_unit_x.wav",
@@ -1613,7 +1605,7 @@
       "left": "#",
       "right": "x",
       "takes": 2,
-      "duration": 1.02
+      "duration": 0.08
     },
     "x_A_a": {
       "file": "ph_x_A_a.wav",
@@ -1621,7 +1613,7 @@
       "left": "A",
       "right": "a",
       "takes": 1,
-      "duration": 0.33
+      "duration": 0.3
     },
     "a_x_t": {
       "file": "ph_a_x_t.wav",
@@ -1629,7 +1621,7 @@
       "left": "x",
       "right": "t",
       "takes": 1,
-      "duration": 0.57
+      "duration": 0.16
     },
     "t_a_#": {
       "file": "ph_t_a_unit.wav",
@@ -1637,7 +1629,7 @@
       "left": "a",
       "right": "#",
       "takes": 1,
-      "duration": 0.38
+      "duration": 0.09
     },
     "S_#_e": {
       "file": "ph_S_unit_e.wav",
@@ -1645,7 +1637,7 @@
       "left": "#",
       "right": "e",
       "takes": 6,
-      "duration": 0.28
+      "duration": 0.14
     },
     "e_S_t": {
       "file": "ph_e_S_t.wav",
@@ -1653,7 +1645,7 @@
       "left": "S",
       "right": "t",
       "takes": 2,
-      "duration": 0.16
+      "duration": 0.12
     },
     "t_e_y": {
       "file": "ph_t_e_y.wav",
@@ -1661,7 +1653,7 @@
       "left": "e",
       "right": "y",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.48
     },
     "y_t_y": {
       "file": "ph_y_t_y.wav",
@@ -1669,7 +1661,7 @@
       "left": "t",
       "right": "y",
       "takes": 1,
-      "duration": 0.19
+      "duration": 0.06
     },
     "y_y_m": {
       "file": "ph_y_y_m.wav",
@@ -1677,7 +1669,7 @@
       "left": "y",
       "right": "m",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.06
     },
     "m_y_#": {
       "file": "ph_m_y_unit.wav",
@@ -1685,7 +1677,7 @@
       "left": "y",
       "right": "#",
       "takes": 3,
-      "duration": 0.02
+      "duration": 0.06
     },
     "e_S_l": {
       "file": "ph_e_S_l.wav",
@@ -1693,7 +1685,7 @@
       "left": "S",
       "right": "l",
       "takes": 2,
-      "duration": 0.48
+      "duration": 1.11
     },
     "l_e_w": {
       "file": "ph_l_e_w.wav",
@@ -1717,7 +1709,7 @@
       "left": "w",
       "right": "a",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.21
     },
     "a_S_#": {
       "file": "ph_a_S_unit.wav",
@@ -1725,7 +1717,7 @@
       "left": "S",
       "right": "#",
       "takes": 2,
-      "duration": 0.07
+      "duration": 0.39
     },
     "A_#_r": {
       "file": "ph_A_unit_r.wav",
@@ -1733,7 +1725,7 @@
       "left": "#",
       "right": "r",
       "takes": 1,
-      "duration": 0.15
+      "duration": 0.07
     },
     "r_A_v": {
       "file": "ph_r_A_v.wav",
@@ -1749,7 +1741,7 @@
       "left": "r",
       "right": "a",
       "takes": 1,
-      "duration": 0.34
+      "duration": 0.16
     },
     "a_v_A": {
       "file": "ph_a_v_A.wav",
@@ -1765,7 +1757,7 @@
       "left": "a",
       "right": "#",
       "takes": 1,
-      "duration": 0.03
+      "duration": 0.07
     },
     "x_#_m": {
       "file": "ph_x_unit_m.wav",
@@ -1773,7 +1765,7 @@
       "left": "#",
       "right": "m",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.12
     },
     "m_x_S": {
       "file": "ph_m_x_S.wav",
@@ -1781,7 +1773,7 @@
       "left": "x",
       "right": "S",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.18
     },
     "S_m_a": {
       "file": "ph_S_m_a.wav",
@@ -1789,7 +1781,7 @@
       "left": "m",
       "right": "a",
       "takes": 1,
-      "duration": 0.35
+      "duration": 0.22
     },
     "S_#_S": {
       "file": "ph_S_unit_S.wav",
@@ -1797,7 +1789,7 @@
       "left": "#",
       "right": "S",
       "takes": 1,
-      "duration": 0.33
+      "duration": 0.16
     },
     "S_S_#": {
       "file": "ph_S_S_unit.wav",
@@ -1805,7 +1797,7 @@
       "left": "S",
       "right": "#",
       "takes": 1,
-      "duration": 0.25
+      "duration": 0.11
     },
     "S_#_v": {
       "file": "ph_S_unit_v.wav",
@@ -1813,7 +1805,7 @@
       "left": "#",
       "right": "v",
       "takes": 1,
-      "duration": 0.19
+      "duration": 0.24
     },
     "v_S_A": {
       "file": "ph_v_S_A.wav",
@@ -1821,7 +1813,7 @@
       "left": "S",
       "right": "A",
       "takes": 1,
-      "duration": 0.46
+      "duration": 0.38
     },
     "A_v_a": {
       "file": "ph_A_v_a.wav",
@@ -1829,7 +1821,7 @@
       "left": "v",
       "right": "a",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.04
     },
     "a_A_#": {
       "file": "ph_a_A_unit.wav",
@@ -1845,7 +1837,7 @@
       "left": "S",
       "right": "m",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.56
     },
     "m_e_w": {
       "file": "ph_m_e_w.wav",
@@ -1869,7 +1861,7 @@
       "left": "w",
       "right": "a",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.07
     },
     "a_n_#": {
       "file": "ph_a_n_unit.wav",
@@ -1877,7 +1869,7 @@
       "left": "n",
       "right": "#",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.1
     },
     "t_#_S": {
       "file": "ph_t_unit_S.wav",
@@ -1885,7 +1877,7 @@
       "left": "#",
       "right": "S",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.07
     },
     "S_t_A": {
       "file": "ph_S_t_A.wav",
@@ -1893,7 +1885,7 @@
       "left": "t",
       "right": "A",
       "takes": 1,
-      "duration": 0.33
+      "duration": 0.11
     },
     "A_S_a": {
       "file": "ph_A_S_a.wav",
@@ -1901,7 +1893,7 @@
       "left": "S",
       "right": "a",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.33
     },
     "e_#_s": {
       "file": "ph_e_unit_s.wav",
@@ -1909,7 +1901,7 @@
       "left": "#",
       "right": "s",
       "takes": 1,
-      "duration": 0.12
+      "duration": 0.1
     },
     "s_e_e": {
       "file": "ph_s_e_e.wav",
@@ -1917,7 +1909,7 @@
       "left": "e",
       "right": "e",
       "takes": 1,
-      "duration": 0.28
+      "duration": 0.15
     },
     "e_s_r": {
       "file": "ph_e_s_r.wav",
@@ -1925,14 +1917,14 @@
       "left": "s",
       "right": "r",
       "takes": 1,
-      "duration": 0.28
+      "duration": 0.4
     },
     "r_e_#": {
       "file": "ph_r_e_unit.wav",
       "sym": "r",
       "left": "e",
       "right": "#",
-      "takes": 3,
+      "takes": 4,
       "duration": 0.05
     },
     "A_#_S": {
@@ -1941,7 +1933,7 @@
       "left": "#",
       "right": "S",
       "takes": 1,
-      "duration": 0.34
+      "duration": 0.04
     },
     "S_A_r": {
       "file": "ph_S_A_r.wav",
@@ -1957,7 +1949,7 @@
       "left": "S",
       "right": "y",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.23
     },
     "y_r_m": {
       "file": "ph_y_r_m.wav",
@@ -1965,14 +1957,14 @@
       "left": "r",
       "right": "m",
       "takes": 1,
-      "duration": 0.03
+      "duration": 0.06
     },
     "m_#_e": {
       "file": "ph_m_unit_e.wav",
       "sym": "m",
       "left": "#",
       "right": "e",
-      "takes": 4,
+      "takes": 5,
       "duration": 0.07
     },
     "e_m_A": {
@@ -1981,7 +1973,7 @@
       "left": "m",
       "right": "A",
       "takes": 2,
-      "duration": 0.3
+      "duration": 0.12
     },
     "A_e_a": {
       "file": "ph_A_e_a.wav",
@@ -1989,15 +1981,15 @@
       "left": "e",
       "right": "a",
       "takes": 2,
-      "duration": 0.11
+      "duration": 0.04
     },
     "m_#_i": {
       "file": "ph_m_unit_i.wav",
       "sym": "m",
       "left": "#",
       "right": "i",
-      "takes": 6,
-      "duration": 0.07
+      "takes": 7,
+      "duration": 0.08
     },
     "i_m_l": {
       "file": "ph_i_m_l.wav",
@@ -2005,7 +1997,7 @@
       "left": "m",
       "right": "l",
       "takes": 1,
-      "duration": 0.09
+      "duration": 0.13
     },
     "l_i_y": {
       "file": "ph_l_i_y.wav",
@@ -2013,7 +2005,7 @@
       "left": "i",
       "right": "y",
       "takes": 1,
-      "duration": 0.06
+      "duration": 0.4
     },
     "y_l_w": {
       "file": "ph_y_l_w.wav",
@@ -2021,7 +2013,7 @@
       "left": "l",
       "right": "w",
       "takes": 1,
-      "duration": 0.06
+      "duration": 0.27
     },
     "w_y_n": {
       "file": "ph_w_y_n.wav",
@@ -2029,7 +2021,7 @@
       "left": "y",
       "right": "n",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.19
     },
     "x_A_u": {
       "file": "ph_x_A_u.wav",
@@ -2037,7 +2029,7 @@
       "left": "A",
       "right": "u",
       "takes": 1,
-      "duration": 0.41
+      "duration": 0.08
     },
     "u_x_z": {
       "file": "ph_u_x_z.wav",
@@ -2053,14 +2045,14 @@
       "left": "u",
       "right": "#",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.1
     },
     "i_m_A": {
       "file": "ph_i_m_A.wav",
       "sym": "i",
       "left": "m",
       "right": "A",
-      "takes": 2,
+      "takes": 3,
       "duration": 0.09
     },
     "A_i_l": {
@@ -2101,7 +2093,7 @@
       "left": "t",
       "right": "#",
       "takes": 4,
-      "duration": 0.1
+      "duration": 0.45
     },
     "e_S_n": {
       "file": "ph_e_S_n.wav",
@@ -2109,7 +2101,7 @@
       "left": "S",
       "right": "n",
       "takes": 1,
-      "duration": 0.33
+      "duration": 0.41
     },
     "n_e_y": {
       "file": "ph_n_e_y.wav",
@@ -2117,7 +2109,7 @@
       "left": "e",
       "right": "y",
       "takes": 1,
-      "duration": 0.06
+      "duration": 0.07
     },
     "y_n_w": {
       "file": "ph_y_n_w.wav",
@@ -2165,7 +2157,7 @@
       "left": "u",
       "right": "#",
       "takes": 1,
-      "duration": 0.12
+      "duration": 0.42
     },
     "e_S_A": {
       "file": "ph_e_S_A.wav",
@@ -2173,7 +2165,7 @@
       "left": "S",
       "right": "A",
       "takes": 1,
-      "duration": 0.24
+      "duration": 0.35
     },
     "A_e_w": {
       "file": "ph_A_e_w.wav",
@@ -2181,7 +2173,7 @@
       "left": "e",
       "right": "w",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.02
     },
     "w_A_t": {
       "file": "ph_w_A_t.wav",
@@ -2213,7 +2205,7 @@
       "left": "#",
       "right": "d",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.86
     },
     "d_A_u": {
       "file": "ph_d_A_u.wav",
@@ -2221,7 +2213,7 @@
       "left": "A",
       "right": "u",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.07
     },
     "u_d_n": {
       "file": "ph_u_d_n.wav",
@@ -2229,7 +2221,7 @@
       "left": "d",
       "right": "n",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.34
     },
     "n_u_i": {
       "file": "ph_n_u_i.wav",
@@ -2237,7 +2229,7 @@
       "left": "u",
       "right": "i",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.07
     },
     "i_n_#": {
       "file": "ph_i_n_unit.wav",
@@ -2245,7 +2237,7 @@
       "left": "n",
       "right": "#",
       "takes": 2,
-      "duration": 0.23
+      "duration": 0.38
     },
     "x_#_n": {
       "file": "ph_x_unit_n.wav",
@@ -2253,7 +2245,7 @@
       "left": "#",
       "right": "n",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.12
     },
     "n_x_#": {
       "file": "ph_n_x_unit.wav",
@@ -2261,7 +2253,7 @@
       "left": "x",
       "right": "#",
       "takes": 1,
-      "duration": 0.37
+      "duration": 0.47
     },
     "l_#_u": {
       "file": "ph_l_unit_u.wav",
@@ -2269,7 +2261,7 @@
       "left": "#",
       "right": "u",
       "takes": 2,
-      "duration": 0.34
+      "duration": 0.84
     },
     "u_l_A": {
       "file": "ph_u_l_A.wav",
@@ -2293,7 +2285,7 @@
       "left": "#",
       "right": "n",
       "takes": 1,
-      "duration": 0.54
+      "duration": 0.77
     },
     "n_A_i": {
       "file": "ph_n_A_i.wav",
@@ -2309,7 +2301,7 @@
       "left": "#",
       "right": "t",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.07
     },
     "t_A_a": {
       "file": "ph_t_A_a.wav",
@@ -2317,7 +2309,7 @@
       "left": "A",
       "right": "a",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.08
     },
     "e_#_t": {
       "file": "ph_e_unit_t.wav",
@@ -2325,7 +2317,7 @@
       "left": "#",
       "right": "t",
       "takes": 1,
-      "duration": 1.24
+      "duration": 0.11
     },
     "m_#_a": {
       "file": "ph_m_unit_a.wav",
@@ -2341,7 +2333,7 @@
       "left": "m",
       "right": "#",
       "takes": 2,
-      "duration": 0.53
+      "duration": 0.1
     },
     "y_A_x": {
       "file": "ph_y_A_x.wav",
@@ -2349,7 +2341,7 @@
       "left": "A",
       "right": "x",
       "takes": 1,
-      "duration": 1.15
+      "duration": 0.13
     },
     "x_y_a": {
       "file": "ph_x_y_a.wav",
@@ -2357,7 +2349,7 @@
       "left": "y",
       "right": "a",
       "takes": 3,
-      "duration": 0.13
+      "duration": 0.14
     },
     "m_a_a": {
       "file": "ph_m_a_a.wav",
@@ -2365,7 +2357,7 @@
       "left": "a",
       "right": "a",
       "takes": 2,
-      "duration": 0.67
+      "duration": 0.26
     },
     "k_#_e": {
       "file": "ph_k_unit_e.wav",
@@ -2373,7 +2365,7 @@
       "left": "#",
       "right": "e",
       "takes": 2,
-      "duration": 0.41
+      "duration": 0.4
     },
     "e_k_A": {
       "file": "ph_e_k_A.wav",
@@ -2381,7 +2373,7 @@
       "left": "k",
       "right": "A",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.68
     },
     "A_e_S": {
       "file": "ph_A_e_S.wav",
@@ -2389,7 +2381,7 @@
       "left": "e",
       "right": "S",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.42
     },
     "r_S_#": {
       "file": "ph_r_S_unit.wav",
@@ -2397,7 +2389,7 @@
       "left": "S",
       "right": "#",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.11
     },
     "A_#_m": {
       "file": "ph_A_unit_m.wav",
@@ -2405,7 +2397,7 @@
       "left": "#",
       "right": "m",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.03
     },
     "m_A_#": {
       "file": "ph_m_A_unit.wav",
@@ -2421,7 +2413,7 @@
       "left": "#",
       "right": "z",
       "takes": 1,
-      "duration": 0.32
+      "duration": 0.07
     },
     "z_a_#": {
       "file": "ph_z_a_unit.wav",
@@ -2429,7 +2421,7 @@
       "left": "a",
       "right": "#",
       "takes": 1,
-      "duration": 0.49
+      "duration": 0.03
     },
     "A_#_v": {
       "file": "ph_A_unit_v.wav",
@@ -2437,7 +2429,7 @@
       "left": "#",
       "right": "v",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.04
     },
     "v_A_a": {
       "file": "ph_v_A_a.wav",
@@ -2445,7 +2437,7 @@
       "left": "A",
       "right": "a",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.13
     },
     "a_v_l": {
       "file": "ph_a_v_l.wav",
@@ -2453,7 +2445,7 @@
       "left": "v",
       "right": "l",
       "takes": 1,
-      "duration": 0.13
+      "duration": 0.19
     },
     "l_a_#": {
       "file": "ph_l_a_unit.wav",
@@ -2461,7 +2453,7 @@
       "left": "a",
       "right": "#",
       "takes": 1,
-      "duration": 0.37
+      "duration": 0.42
     },
     "Q_#_i": {
       "file": "ph_Q_unit_i.wav",
@@ -2469,7 +2461,7 @@
       "left": "#",
       "right": "i",
       "takes": 1,
-      "duration": 0.59
+      "duration": 0.12
     },
     "i_Q_#": {
       "file": "ph_i_Q_unit.wav",
@@ -2485,7 +2477,7 @@
       "left": "#",
       "right": "m",
       "takes": 1,
-      "duration": 0.55
+      "duration": 0.19
     },
     "m_g_#": {
       "file": "ph_m_g_unit.wav",
@@ -2501,7 +2493,7 @@
       "left": "#",
       "right": "a",
       "takes": 1,
-      "duration": 0.53
+      "duration": 0.46
     },
     "a_r_Q": {
       "file": "ph_a_r_Q.wav",
@@ -2525,7 +2517,7 @@
       "left": "#",
       "right": "d",
       "takes": 1,
-      "duration": 0.23
+      "duration": 0.02
     },
     "e_k_v": {
       "file": "ph_e_k_v.wav",
@@ -2533,7 +2525,7 @@
       "left": "k",
       "right": "v",
       "takes": 1,
-      "duration": 0.12
+      "duration": 0.98
     },
     "v_e_a": {
       "file": "ph_v_e_a.wav",
@@ -2541,7 +2533,7 @@
       "left": "e",
       "right": "a",
       "takes": 2,
-      "duration": 0.11
+      "duration": 0.12
     },
     "a_v_r": {
       "file": "ph_a_v_r.wav",
@@ -2557,7 +2549,7 @@
       "left": "a",
       "right": "#",
       "takes": 1,
-      "duration": 0.03
+      "duration": 0.05
     },
     "A_#_k": {
       "file": "ph_A_unit_k.wav",
@@ -2565,7 +2557,7 @@
       "left": "#",
       "right": "k",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.08
     },
     "k_A_S": {
       "file": "ph_k_A_S.wav",
@@ -2573,7 +2565,7 @@
       "left": "A",
       "right": "S",
       "takes": 1,
-      "duration": 0.32
+      "duration": 0.41
     },
     "S_k_a": {
       "file": "ph_S_k_a.wav",
@@ -2581,7 +2573,7 @@
       "left": "k",
       "right": "a",
       "takes": 1,
-      "duration": 0.23
+      "duration": 0.11
     },
     "a_S_w": {
       "file": "ph_a_S_w.wav",
@@ -2597,7 +2589,7 @@
       "left": "#",
       "right": "a",
       "takes": 17,
-      "duration": 0.19
+      "duration": 0.18
     },
     "a_h_y": {
       "file": "ph_a_h_y.wav",
@@ -2605,7 +2597,7 @@
       "left": "h",
       "right": "y",
       "takes": 1,
-      "duration": 0.18
+      "duration": 0.62
     },
     "y_a_w": {
       "file": "ph_y_a_w.wav",
@@ -2629,7 +2621,7 @@
       "left": "#",
       "right": "m",
       "takes": 1,
-      "duration": 0.26
+      "duration": 0.53
     },
     "m_t_y": {
       "file": "ph_m_t_y.wav",
@@ -2637,7 +2629,7 @@
       "left": "t",
       "right": "y",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.92
     },
     "y_m_d": {
       "file": "ph_y_m_d.wav",
@@ -2669,7 +2661,7 @@
       "left": "h",
       "right": "m",
       "takes": 3,
-      "duration": 0.11
+      "duration": 0.14
     },
     "a_m_A": {
       "file": "ph_a_m_A.wav",
@@ -2693,7 +2685,7 @@
       "left": "A",
       "right": "e",
       "takes": 1,
-      "duration": 0.06
+      "duration": 0.04
     },
     "e_r_k": {
       "file": "ph_e_r_k.wav",
@@ -2701,7 +2693,7 @@
       "left": "r",
       "right": "k",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.06
     },
     "k_e_e": {
       "file": "ph_k_e_e.wav",
@@ -2709,7 +2701,7 @@
       "left": "e",
       "right": "e",
       "takes": 1,
-      "duration": 0.66
+      "duration": 0.07
     },
     "e_k_t": {
       "file": "ph_e_k_t.wav",
@@ -2717,7 +2709,7 @@
       "left": "k",
       "right": "t",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.24
     },
     "m_a_u": {
       "file": "ph_m_a_u.wav",
@@ -2733,7 +2725,7 @@
       "left": "m",
       "right": "A",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.1
     },
     "A_u_x": {
       "file": "ph_A_u_x.wav",
@@ -2749,7 +2741,7 @@
       "left": "A",
       "right": "#",
       "takes": 2,
-      "duration": 0.52
+      "duration": 0.42
     },
     "a_h_z": {
       "file": "ph_a_h_z.wav",
@@ -2757,7 +2749,7 @@
       "left": "h",
       "right": "z",
       "takes": 1,
-      "duration": 0.06
+      "duration": 0.22
     },
     "z_a_y": {
       "file": "ph_z_a_y.wav",
@@ -2765,7 +2757,7 @@
       "left": "a",
       "right": "y",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.21
     },
     "y_z_x": {
       "file": "ph_y_z_x.wav",
@@ -2773,7 +2765,7 @@
       "left": "z",
       "right": "x",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.07
     },
     "a_x_r": {
       "file": "ph_a_x_r.wav",
@@ -2781,7 +2773,7 @@
       "left": "x",
       "right": "r",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.14
     },
     "r_a_w": {
       "file": "ph_r_a_w.wav",
@@ -2805,7 +2797,7 @@
       "left": "h",
       "right": "Q",
       "takes": 2,
-      "duration": 0.13
+      "duration": 0.5
     },
     "u_Q_d": {
       "file": "ph_u_Q_d.wav",
@@ -2821,7 +2813,7 @@
       "left": "m",
       "right": "x",
       "takes": 2,
-      "duration": 0.31
+      "duration": 0.1
     },
     "x_e_a": {
       "file": "ph_x_e_a.wav",
@@ -2829,7 +2821,7 @@
       "left": "e",
       "right": "a",
       "takes": 2,
-      "duration": 0.44
+      "duration": 0.11
     },
     "a_x_S": {
       "file": "ph_a_x_S.wav",
@@ -2837,7 +2829,7 @@
       "left": "x",
       "right": "S",
       "takes": 2,
-      "duration": 0.12
+      "duration": 0.5
     },
     "S_a_e": {
       "file": "ph_S_a_e.wav",
@@ -2845,7 +2837,7 @@
       "left": "a",
       "right": "e",
       "takes": 2,
-      "duration": 0.41
+      "duration": 0.11
     },
     "e_S_v": {
       "file": "ph_e_S_v.wav",
@@ -2885,7 +2877,7 @@
       "left": "w",
       "right": "a",
       "takes": 1,
-      "duration": 0.09
+      "duration": 0.11
     },
     "a_v_T": {
       "file": "ph_a_v_T.wav",
@@ -2893,7 +2885,7 @@
       "left": "v",
       "right": "T",
       "takes": 2,
-      "duration": 0.11
+      "duration": 0.14
     },
     "T_a_#": {
       "file": "ph_T_a_unit.wav",
@@ -2901,7 +2893,7 @@
       "left": "a",
       "right": "#",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.18
     },
     "a_h_S": {
       "file": "ph_a_h_S.wav",
@@ -2909,7 +2901,7 @@
       "left": "h",
       "right": "S",
       "takes": 2,
-      "duration": 0.17
+      "duration": 0.53
     },
     "S_a_a": {
       "file": "ph_S_a_a.wav",
@@ -2917,7 +2909,7 @@
       "left": "a",
       "right": "a",
       "takes": 1,
-      "duration": 0.2
+      "duration": 0.11
     },
     "a_S_r": {
       "file": "ph_a_S_r.wav",
@@ -2925,7 +2917,7 @@
       "left": "S",
       "right": "r",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.24
     },
     "r_a_e": {
       "file": "ph_r_a_e.wav",
@@ -2941,7 +2933,7 @@
       "left": "r",
       "right": "t",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.1
     },
     "a_h_r": {
       "file": "ph_a_h_r.wav",
@@ -2949,7 +2941,7 @@
       "left": "h",
       "right": "r",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.39
     },
     "S_e_e": {
       "file": "ph_S_e_e.wav",
@@ -2965,7 +2957,7 @@
       "left": "h",
       "right": "x",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.25
     },
     "x_a_l": {
       "file": "ph_x_a_l.wav",
@@ -2973,7 +2965,7 @@
       "left": "a",
       "right": "l",
       "takes": 1,
-      "duration": 0.61
+      "duration": 0.11
     },
     "l_x_w": {
       "file": "ph_l_x_w.wav",
@@ -2989,7 +2981,7 @@
       "left": "l",
       "right": "n",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.06
     },
     "a_h_t": {
       "file": "ph_a_h_t.wav",
@@ -3005,7 +2997,7 @@
       "left": "a",
       "right": "h",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.17
     },
     "h_t_l": {
       "file": "ph_h_t_l.wav",
@@ -3037,7 +3029,7 @@
       "left": "h",
       "right": "n",
       "takes": 1,
-      "duration": 0.26
+      "duration": 0.11
     },
     "n_a_t": {
       "file": "ph_n_a_t.wav",
@@ -3053,7 +3045,7 @@
       "left": "n",
       "right": "w",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.34
     },
     "w_t_n": {
       "file": "ph_w_t_n.wav",
@@ -3061,7 +3053,7 @@
       "left": "t",
       "right": "n",
       "takes": 1,
-      "duration": 0.15
+      "duration": 0.06
     },
     "n_w_y": {
       "file": "ph_n_w_y.wav",
@@ -3069,7 +3061,7 @@
       "left": "w",
       "right": "y",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.07
     },
     "y_n_m": {
       "file": "ph_y_n_m.wav",
@@ -3077,7 +3069,7 @@
       "left": "n",
       "right": "m",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.06
     },
     "a_h_f": {
       "file": "ph_a_h_f.wav",
@@ -3085,7 +3077,7 @@
       "left": "h",
       "right": "f",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.11
     },
     "f_a_A": {
       "file": "ph_f_a_A.wav",
@@ -3093,7 +3085,7 @@
       "left": "a",
       "right": "A",
       "takes": 1,
-      "duration": 0.22
+      "duration": 0.32
     },
     "A_f_w": {
       "file": "ph_A_f_w.wav",
@@ -3101,7 +3093,7 @@
       "left": "f",
       "right": "w",
       "takes": 1,
-      "duration": 0.21
+      "duration": 0.08
     },
     "w_A_l": {
       "file": "ph_w_A_l.wav",
@@ -3125,7 +3117,7 @@
       "left": "l",
       "right": "#",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.02
     },
     "t_a_u": {
       "file": "ph_t_a_u.wav",
@@ -3133,7 +3125,7 @@
       "left": "a",
       "right": "u",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.07
     },
     "u_t_T": {
       "file": "ph_u_t_T.wav",
@@ -3141,7 +3133,7 @@
       "left": "t",
       "right": "T",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.08
     },
     "T_u_a": {
       "file": "ph_T_u_a.wav",
@@ -3157,7 +3149,7 @@
       "left": "T",
       "right": "a",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.08
     },
     "a_a_#": {
       "file": "ph_a_a_unit.wav",
@@ -3165,7 +3157,7 @@
       "left": "a",
       "right": "#",
       "takes": 2,
-      "duration": 0.1
+      "duration": 0.04
     },
     "S_a_g": {
       "file": "ph_S_a_g.wav",
@@ -3173,7 +3165,7 @@
       "left": "a",
       "right": "g",
       "takes": 1,
-      "duration": 0.09
+      "duration": 0.17
     },
     "g_S_i": {
       "file": "ph_g_S_i.wav",
@@ -3181,7 +3173,7 @@
       "left": "S",
       "right": "i",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.1
     },
     "i_g_a": {
       "file": "ph_i_g_a.wav",
@@ -3189,7 +3181,7 @@
       "left": "g",
       "right": "a",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.09
     },
     "a_i_a": {
       "file": "ph_a_i_a.wav",
@@ -3197,7 +3189,7 @@
       "left": "i",
       "right": "a",
       "takes": 1,
-      "duration": 0.05
+      "duration": 0.11
     },
     "t_a_y": {
       "file": "ph_t_a_y.wav",
@@ -3205,7 +3197,7 @@
       "left": "a",
       "right": "y",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.16
     },
     "y_t_Q": {
       "file": "ph_y_t_Q.wav",
@@ -3213,7 +3205,7 @@
       "left": "t",
       "right": "Q",
       "takes": 2,
-      "duration": 0.06
+      "duration": 0.13
     },
     "Q_y_a": {
       "file": "ph_Q_y_a.wav",
@@ -3229,7 +3221,7 @@
       "left": "Q",
       "right": "w",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.11
     },
     "w_a_n": {
       "file": "ph_w_a_n.wav",
@@ -3237,7 +3229,7 @@
       "left": "a",
       "right": "n",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.06
     },
     "a_h_b": {
       "file": "ph_a_h_b.wav",
@@ -3245,15 +3237,15 @@
       "left": "h",
       "right": "b",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.53
     },
     "b_a_e": {
       "file": "ph_b_a_e.wav",
       "sym": "b",
       "left": "a",
       "right": "e",
-      "takes": 1,
-      "duration": 0.07
+      "takes": 2,
+      "duration": 0.08
     },
     "e_b_d": {
       "file": "ph_e_b_d.wav",
@@ -3277,7 +3269,7 @@
       "left": "i",
       "right": "a",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.04
     },
     "a_Q_#": {
       "file": "ph_a_Q_unit.wav",
@@ -3285,7 +3277,7 @@
       "left": "Q",
       "right": "#",
       "takes": 3,
-      "duration": 0.02
+      "duration": 0.1
     },
     "p_#_u": {
       "file": "ph_p_unit_u.wav",
@@ -3293,7 +3285,7 @@
       "left": "#",
       "right": "u",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.07
     },
     "u_p_t": {
       "file": "ph_u_p_t.wav",
@@ -3301,7 +3293,7 @@
       "left": "p",
       "right": "t",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.1
     },
     "t_u_e": {
       "file": "ph_t_u_e.wav",
@@ -3309,7 +3301,7 @@
       "left": "u",
       "right": "e",
       "takes": 2,
-      "duration": 0.23
+      "duration": 0.07
     },
     "e_t_A": {
       "file": "ph_e_t_A.wav",
@@ -3325,7 +3317,7 @@
       "left": "e",
       "right": "x",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.04
     },
     "s_#_u": {
       "file": "ph_s_unit_u.wav",
@@ -3333,7 +3325,7 @@
       "left": "#",
       "right": "u",
       "takes": 1,
-      "duration": 0.66
+      "duration": 0.11
     },
     "u_s_g": {
       "file": "ph_u_s_g.wav",
@@ -3341,7 +3333,7 @@
       "left": "s",
       "right": "g",
       "takes": 1,
-      "duration": 0.33
+      "duration": 0.23
     },
     "g_u_e": {
       "file": "ph_g_u_e.wav",
@@ -3365,7 +3357,7 @@
       "left": "#",
       "right": "u",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.2
     },
     "u_b_d": {
       "file": "ph_u_b_d.wav",
@@ -3381,7 +3373,7 @@
       "left": "u",
       "right": "e",
       "takes": 1,
-      "duration": 0.1
+      "duration": 0.16
     },
     "e_d_Q": {
       "file": "ph_e_d_Q.wav",
@@ -3389,7 +3381,7 @@
       "left": "d",
       "right": "Q",
       "takes": 1,
-      "duration": 0.18
+      "duration": 0.17
     },
     "Q_e_#": {
       "file": "ph_Q_e_unit.wav",
@@ -3445,7 +3437,7 @@
       "left": "#",
       "right": "u",
       "takes": 2,
-      "duration": 0.78
+      "duration": 0.19
     },
     "e_t_v": {
       "file": "ph_e_t_v.wav",
@@ -3469,7 +3461,7 @@
       "left": "u",
       "right": "e",
       "takes": 1,
-      "duration": 0.08
+      "duration": 0.06
     },
     "e_r_#": {
       "file": "ph_e_r_unit.wav",
@@ -3485,7 +3477,7 @@
       "left": "#",
       "right": "x",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.04
     },
     "a_x_p": {
       "file": "ph_a_x_p.wav",
@@ -3493,7 +3485,7 @@
       "left": "x",
       "right": "p",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.1
     },
     "p_a_e": {
       "file": "ph_p_a_e.wav",
@@ -3501,7 +3493,7 @@
       "left": "a",
       "right": "e",
       "takes": 1,
-      "duration": 0.07
+      "duration": 0.16
     },
     "e_p_S": {
       "file": "ph_e_p_S.wav",
@@ -3509,7 +3501,7 @@
       "left": "p",
       "right": "S",
       "takes": 1,
-      "duration": 0.12
+      "duration": 0.11
     },
     "S_#_u": {
       "file": "ph_S_unit_u.wav",
@@ -3517,7 +3509,7 @@
       "left": "#",
       "right": "u",
       "takes": 1,
-      "duration": 0.14
+      "duration": 0.13
     },
     "u_S_m": {
       "file": "ph_u_S_m.wav",
@@ -3525,7 +3517,7 @@
       "left": "S",
       "right": "m",
       "takes": 1,
-      "duration": 0.76
+      "duration": 0.1
     },
     "m_u_e": {
       "file": "ph_m_u_e.wav",
@@ -3557,7 +3549,7 @@
       "left": "m",
       "right": "x",
       "takes": 1,
-      "duration": 0.23
+      "duration": 0.1
     },
     "x_u_e": {
       "file": "ph_x_u_e.wav",
@@ -3565,7 +3557,7 @@
       "left": "u",
       "right": "e",
       "takes": 1,
-      "duration": 0.16
+      "duration": 0.18
     },
     "e_x_Q": {
       "file": "ph_e_x_Q.wav",
@@ -3573,7 +3565,7 @@
       "left": "x",
       "right": "Q",
       "takes": 1,
-      "duration": 0.03
+      "duration": 0.27
     },
     "A_i_t": {
       "file": "ph_A_i_t.wav",
@@ -3581,7 +3573,7 @@
       "left": "i",
       "right": "t",
       "takes": 1,
-      "duration": 0.43
+      "duration": 0.35
     },
     "t_A_y": {
       "file": "ph_t_A_y.wav",
@@ -3589,7 +3581,7 @@
       "left": "A",
       "right": "y",
       "takes": 1,
-      "duration": 0.12
+      "duration": 0.07
     },
     "i_m_d": {
       "file": "ph_i_m_d.wav",
@@ -3597,7 +3589,7 @@
       "left": "m",
       "right": "d",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.09
     },
     "d_i_v": {
       "file": "ph_d_i_v.wav",
@@ -3605,7 +3597,7 @@
       "left": "i",
       "right": "v",
       "takes": 1,
-      "duration": 0.02
+      "duration": 0.07
     },
     "v_d_y": {
       "file": "ph_v_d_y.wav",
@@ -3613,7 +3605,7 @@
       "left": "d",
       "right": "y",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.38
     },
     "y_v_Q": {
       "file": "ph_y_v_Q.wav",
@@ -3621,7 +3613,7 @@
       "left": "v",
       "right": "Q",
       "takes": 1,
-      "duration": 0.04
+      "duration": 0.12
     },
     "x_#_u": {
       "file": "ph_x_unit_u.wav",
@@ -3629,7 +3621,7 @@
       "left": "#",
       "right": "u",
       "takes": 1,
-      "duration": 0.09
+      "duration": 0.11
     },
     "u_x_S": {
       "file": "ph_u_x_S.wav",
@@ -3645,7 +3637,7 @@
       "left": "u",
       "right": "e",
       "takes": 1,
-      "duration": 0.13
+      "duration": 0.17
     },
     "i_m_t": {
       "file": "ph_i_m_t.wav",
@@ -3661,7 +3653,7 @@
       "left": "i",
       "right": "x",
       "takes": 1,
-      "duration": 0.19
+      "duration": 0.17
     },
     "x_t_n": {
       "file": "ph_x_t_n.wav",
@@ -3669,7 +3661,7 @@
       "left": "t",
       "right": "n",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.14
     },
     "n_x_n": {
       "file": "ph_n_x_n.wav",
@@ -3677,7 +3669,7 @@
       "left": "x",
       "right": "n",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.07
     },
     "n_n_#": {
       "file": "ph_n_n_unit.wav",
@@ -3701,7 +3693,7 @@
       "left": "a",
       "right": "e",
       "takes": 1,
-      "duration": 0.16
+      "duration": 0.19
     },
     "e_T_A": {
       "file": "ph_e_T_A.wav",
@@ -3709,7 +3701,7 @@
       "left": "T",
       "right": "A",
       "takes": 1,
-      "duration": 0.11
+      "duration": 0.3
     },
     "a_A_m": {
       "file": "ph_a_A_m.wav",
@@ -3727,13 +3719,53 @@
       "takes": 1,
       "duration": 0.12
     },
+    "A_i_z": {
+      "file": "ph_A_i_z.wav",
+      "sym": "A",
+      "left": "i",
+      "right": "z",
+      "takes": 1,
+      "duration": 0.04
+    },
+    "z_A_y": {
+      "file": "ph_z_A_y.wav",
+      "sym": "z",
+      "left": "A",
+      "right": "y",
+      "takes": 1,
+      "duration": 0.11
+    },
+    "d_e_a": {
+      "file": "ph_d_e_a.wav",
+      "sym": "d",
+      "left": "e",
+      "right": "a",
+      "takes": 1,
+      "duration": 0.27
+    },
+    "a_d_b": {
+      "file": "ph_a_d_b.wav",
+      "sym": "a",
+      "left": "d",
+      "right": "b",
+      "takes": 1,
+      "duration": 0.21
+    },
+    "e_b_r": {
+      "file": "ph_e_b_r.wav",
+      "sym": "e",
+      "left": "b",
+      "right": "r",
+      "takes": 1,
+      "duration": 0.12
+    },
     "u_#_n": {
       "file": "ph_u_unit_n.wav",
       "sym": "u",
       "left": "#",
       "right": "n",
       "takes": 1,
-      "duration": 0.3
+      "duration": 0.1
     },
     "n_u_e": {
       "file": "ph_n_u_e.wav",
@@ -3763,8 +3795,8 @@
   "coverage": {
     "phones_needed": 29,
     "phones_covered": 26,
-    "words": 118,
-    "phone_units": 381,
+    "words": 100,
+    "phone_units": 386,
     "missing_phones": [
       "CH",
       "J",
