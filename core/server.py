@@ -461,7 +461,17 @@ def _dispatch_inner(agent, data: Dict[str, Any]) -> Dict[str, Any]:
     if kind == "revive":
         return {"type": "control", "action": kind, **agent.revive()}
     if kind == "set_level":
-        return {"type": "control", "action": kind, **agent.set_level(str(data.get("level", "write")))}
+        level = str(data.get("level", "write"))
+        out = agent.set_level(level)
+        # A level chosen by hand is also the level to fall back to when nobody is
+        # in front of the camera. Without this the presence gate keeps restoring
+        # whatever the firewall happened to be at the moment vision started up.
+        gate = FACE_STATE.get("gate")
+        if gate is not None:
+            gate.default_level = level.upper()
+            if gate.identity is None:
+                gate.poll()
+        return {"type": "control", "action": kind, **out}
     if kind == "set_dry_run":
         return {"type": "control", "action": kind, **agent.set_dry_run(bool(data.get("on", False)))}
     if kind == "set_theme":
