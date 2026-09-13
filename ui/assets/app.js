@@ -580,6 +580,342 @@
   }
 
   // ══════════════════════════ local speech capture ══════════════════════════
+  // ══════════════════════ microphone selection ══════════════════════
+  // A desk usually has several inputs (headset, webcam mic, line-in) and the
+  // browser picks one silently — JARVIS then listens to the wrong room. The
+  // choice is explicit, remembered across runs, and falls back to the default
+  // when the remembered device is unplugged. Device labels are blank until
+  // permission has been granted once, so acquire() refreshes the list.
+  const Mic = (() => {
+    const KEY = 'jarvis.mic.deviceId';
+    const CAMKEY = 'jarvis.cam.deviceId';
+    let devices = [], chosen = '';
+    let cams = [], camChosen = '';
+    try { chosen = localStorage.getItem(KEY) || ''; } catch (_) {}
+    try { camChosen = localStorage.getItem(CAMKEY) || ''; } catch (_) {}
+
+    function persist() {
+      try { chosen ? localStorage.setItem(KEY, chosen) : localStorage.removeItem(KEY); } catch (_) {}
+    }
+
+    function constraints() {
+      const audio = { channelCount: 1, echoCancellation: true,
+                      noiseSuppression: true, autoGainControl: true };
+      if (chosen) audio.deviceId = devices.some(d => d.deviceId === chosen)
+        ? { exact: chosen } : { ideal: chosen };
+      return { audio };
+    }
+
+    async function acquire() {
+      const gum = c => navigator.mediaDevices.getUserMedia(c);
+      let stream;
+      try {
+        stream = await gum(constraints());
+      } catch (e) {
+        if (chosen && /Overconstrained|NotFound|NotReadable/.test(e.name || '')) {
+          chosen = ''; persist(); render();
+          toast('המיקרופון שנבחר אינו מחובר — עברתי לברירת המחדל', 'warn');
+          stream = await gum(constraints());
+        } else throw e;
+      }
+      refresh();
+      return stream;
+    }
+
+    function render() {
+      const sel = document.getElementById('mic-select');
+      if (!sel) return;
+      sel.innerHTML = '';
+      (devices.length ? devices : [{ deviceId: '', label: 'ברירת מחדל' }]).forEach((d, i) => {
+        const o = document.createElement('option');
+        o.value = d.deviceId || '';
+        o.textContent = d.label || `מיקרופון ${i + 1}`;
+        sel.appendChild(o);
+      });
+      sel.value = devices.some(d => d.deviceId === chosen) ? chosen : '';
+      sel.disabled = devices.length < 2;
+      sel.title = devices.length < 2
+        ? 'מיקרופון אחד מזוהה. חבר מכשיר נוסף כדי לבחור ביניהם.'
+        : 'המיקרופון לדיבור, לשיחה החופשית ולאישון הקול';
+    }
+
+    function renderCams() {
+      const sel = document.getElementById('cam-select');
+      if (!sel) return;
+      sel.innerHTML = '';
+      (cams.length ? cams : [{ deviceId: '', label: 'ברירת מחדל' }]).forEach((d, i) => {
+        const o = document.createElement('option');
+        o.value = d.deviceId || '';
+        o.textContent = d.label || `מצלמה ${i + 1}`;
+        sel.appendChild(o);
+      });
+      sel.value = cams.some(d => d.deviceId === camChosen) ? camChosen : '';
+      sel.disabled = cams.length < 2;
+      sel.title = cams.length < 2 ? 'מצלמה אחת מזוהה' : 'המצלמה לזיהוי פנים';
+    }
+
+    function videoConstraints() {
+      const video = { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' };
+      if (camChosen) video.deviceId = cams.some(d => d.deviceId === camChosen)
+        ? { exact: camChosen } : { ideal: camChosen };
+      return { video, audio: false };
+    }
+
+    async function refresh() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return devices;
+      try {
+        const all = await navigator.mediaDevices.enumerateDevices();
+        devices = all.filter(d => d.kind === 'audioinput' && d.deviceId);
+        cams = all.filter(d => d.kind === 'videoinput' && d.deviceId);
+      } catch (_) { devices = []; cams = []; }
+      render();
+      renderCams();
+      return devices;
+    }
+
+    function init() {
+      const sel = document.getElementById('mic-select');
+      if (!sel) return;
+      sel.onchange = () => {
+        chosen = sel.value; persist();
+        toast(chosen ? 'המיקרופון נשמר — ההקלטה הבאה תשתמש בו' : 'חזרתי למיקרופון ברירת המחדל', 'ok');
+      };
+      const cam = document.getElementById('cam-select');
+      if (cam) cam.onchange = () => {
+        camChosen = cam.value;
+        try { camChosen ? localStorage.setItem(CAMKEY, camChosen) : localStorage.removeItem(CAMKEY); } catch (_) {}
+        toast(camChosen ? 'המצלמה נשמרה' : 'מצלמת ברירת המחדל', 'ok');
+        if (typeof Vision !== 'undefined' && Vision.on) Vision.restart();
+      };
+      if (navigator.mediaDevices && navigator.mediaDevices.addEventListener)
+        navigator.mediaDevices.addEventListener('devicechange', () => refresh());
+      refresh();
+    }
+
+    return { init, refresh, acquire, constraints, videoConstraints,
+             get chosen() { return chosen; }, get count() { return devices.length; },
+             get camCount() { return cams.length; } };
+  })();
+
+  // ══════════════════ sight — who is sitting at the machine ══════════════════
+  // Frames go to the brain as raw RGB pixels read straight off a canvas, so there
+  // is no image codec anywhere in the path. The brain detects, aligns on the eyes,
+  // matches against the enrolled gallery and answers with the permission level
+  // that person holds — a grant that expires the moment they leave the frame.
+  const Vision = (() => {
+    const GRAB_W = 320;        // what we ship; enough for a face, small to send
+    const INTERVAL = 1200;     // ms between looks
+    let stream = null, timer = null, busy = false, on = false, last = null;
+
+    const el = id => document.getElementById(id);
+
+    function stat(rows) {
+      const box = el('vision-stats');
+      if (box) box.innerHTML = rows.map(([k, v, good]) =>
+        `<div class="kv-row"><span>${k}</span><b class="${good === true ? 'ok' : good === false ? 'bad' : ''}">${v}</b></div>`).join('');
+    }
+
+    function badge(match, gate) {
+      const b = el('who-badge'), nm = el('who-name'), lv = el('who-level'), bar = el('bar-who');
+      if (!b) return;
+      const known = match && match.known;
+      b.className = 'who ' + (known ? 'known lvl-' + (match.level || 'SAFE').toLowerCase()
+                                    : (match && match.faces ? 'stranger' : 'empty'));
+      nm.textContent = known ? match.name : (match && match.faces ? 'לא מזוהה' : 'אין איש מול המצלמה');
+      lv.textContent = (gate && gate.level) || (match && match.level) || 'SAFE';
+      const conf = (match && match.confidence) || 0;
+      if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, conf)) * 100) + '%';
+      b.title = known
+        ? `זוהה בוודאות ${(conf * 100).toFixed(0)}% · הרשאה ${match.level}`
+        : `ביטחון ${(conf * 100).toFixed(0)}% — מתחת לסף, ולכן SAFE`;
+    }
+
+    function drawBoxes(res) {
+      const cv = el('cam-boxes'), v = el('cam-view');
+      if (!cv || !v) return;
+      const w = v.clientWidth || 320, h = v.clientHeight || 240;
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      const g = cv.getContext('2d');
+      g.clearRect(0, 0, w, h);
+      const fw = (res.frame && res.frame.w) || GRAB_W;
+      const fh = (res.frame && res.frame.h) || 1;
+      const sx = w / fw, sy = h / fh;
+      const known = res.match && res.match.known;
+      (res.boxes || []).forEach((b, i) => {
+        g.strokeStyle = i === 0 ? (known ? '#5dffb0' : '#ffb45d') : 'rgba(127,233,255,.5)';
+        g.lineWidth = i === 0 ? 2 : 1;
+        g.strokeRect(b.x * sx, b.y * sy, b.w * sx, b.h * sy);
+      });
+    }
+
+    function grab() {
+      const v = el('cam-view');
+      if (!v || !v.videoWidth) return null;
+      const w = GRAB_W, h = Math.max(1, Math.round(GRAB_W * v.videoHeight / v.videoWidth));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const g = cv.getContext('2d', { willReadFrequently: true });
+      g.drawImage(v, 0, 0, w, h);
+      const d = g.getImageData(0, 0, w, h).data;
+      const rgb = new Uint8Array(w * h * 3);
+      for (let i = 0, j = 0; i < d.length; i += 4) { rgb[j++] = d[i]; rgb[j++] = d[i + 1]; rgb[j++] = d[i + 2]; }
+      let bin = '';
+      const CH = 0x8000;
+      for (let i = 0; i < rgb.length; i += CH) bin += String.fromCharCode.apply(null, rgb.subarray(i, i + CH));
+      return { w, h, rgb: btoa(bin) };
+    }
+
+    async function look(silent) {
+      if (busy || !on) return;
+      const frame = grab();
+      if (!frame) return;
+      busy = true;
+      try {
+        const r = await fetch('/api/faces/recognize', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(frame)
+        });
+        const res = await r.json();
+        if (!res.ok) { if (!silent) toast(res.error || 'הזיהוי נכשל', 'err'); return; }
+        last = res;
+        badge(res.match, res.gate);
+        drawBoxes(res);
+        stat([['זוהו', `${res.match.faces} פנים`, res.match.faces > 0],
+              ['ביטחון', `${Math.round((res.match.confidence || 0) * 100)}%`, res.match.known],
+              ['הרשאה פעילה', res.gate.level, res.gate.level !== 'SAFE'],
+              ['מנוע', res.gate.armed ? 'מחובר לחומת האש' : 'מנותק', res.gate.armed]]);
+        if (res.gate.identity && res.match.known) {
+          const who = res.match.name;
+          if (!Vision._said || Vision._said !== who) {
+            Vision._said = who;
+            pushEvent({ topic: 'vision.identity', data: { name: who, level: res.gate.level,
+                        confidence: res.match.confidence }, ts: Date.now() / 1000 });
+          }
+        } else Vision._said = null;
+      } catch (e) {
+        if (!silent) toast('אין חיבור למוח לזיהוי פנים', 'err');
+      } finally { busy = false; }
+    }
+
+    async function refresh() {
+      try {
+        const res = await (await fetch('/api/faces')).json();
+        const gate = res.gate || {};
+        const chk = el('chk-gate');
+        if (chk) chk.checked = !!gate.armed;
+        stat([['אנשים רשומים', res.people ? res.people.length : 0, (res.people || []).length > 0],
+              ['סף זיהוי', res.threshold || '—', null],
+              ['הרשאה פעילה', gate.level || 'SAFE', (gate.level || 'SAFE') !== 'SAFE'],
+              ['מנוע', gate.armed ? 'מחובר לחומת האש' : 'מנותק', gate.armed]]);
+        const list = el('face-list');
+        if (list) {
+          list.innerHTML = (res.people || []).map(p =>
+            `<li><span class="fname">${p.name}</span>` +
+            `<select class="flevel" data-id="${p.id}">` +
+            ['SAFE', 'WRITE', 'CRITICAL'].map(l =>
+              `<option value="${l}"${l === p.level ? ' selected' : ''}>${l}</option>`).join('') +
+            `</select><span class="fsamp">${p.samples} דגימות</span>` +
+            `<button class="fdel" data-id="${p.id}" title="מחק">✕</button></li>`).join('')
+            || '<li class="dim">אף אחד לא רשום — JARVIS לא יכיר איש</li>';
+          list.querySelectorAll('.flevel').forEach(sel => sel.onchange = async () => {
+            const r = await admin('set_level', { id: sel.dataset.id, level: sel.value });
+            toast(r.ok ? `ההרשאה עודכנה ל־${sel.value}` : (r.error || 'נכשל'), r.ok ? 'ok' : 'err');
+            refresh();
+          });
+          list.querySelectorAll('.fdel').forEach(b => b.onclick = async () => {
+            const r = await admin('remove', { id: b.dataset.id });
+            toast(r.ok ? 'הפנים נמחקו' : (r.error || 'נכשל'), r.ok ? 'ok' : 'err');
+            refresh();
+          });
+        }
+      } catch (e) { stat([['ראייה', 'לא זמינה', false]]); }
+    }
+
+    async function admin(action, extra) {
+      try {
+        const r = await fetch('/api/faces/admin', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Object.assign({ action }, extra || {}))
+        });
+        return await r.json();
+      } catch (e) { return { ok: false, error: String(e) }; }
+    }
+
+    async function start() {
+      if (on) return stop();
+      const v = el('cam-view');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast('אין גישה למצלמה בסביבה זו', 'err'); return false;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(Mic.videoConstraints());
+      } catch (e) { toast('המצלמה נדחתה: ' + e.message, 'err'); return false; }
+      if (v) { v.srcObject = stream; try { await v.play(); } catch (_) {} }
+      const off = el('cam-off'); if (off) off.classList.add('hidden');
+      const btn = el('btn-cam'); if (btn) { btn.textContent = '⏹ כבה מצלמה'; btn.classList.add('live'); }
+      on = true;
+      Mic.refresh();                       // permission granted → real camera names
+      await look(true);
+      timer = setInterval(() => look(true), INTERVAL);
+      // the grant decays even between frames
+      setInterval(() => { if (on) admin('poll').then(r => { if (r && r.gate) badge((last || {}).match, r.gate); }); }, 4000);
+      toast('המצלמה פתוחה — JARVIS מסתכל', 'ok');
+      return true;
+    }
+
+    async function stop() {
+      on = false;
+      if (timer) { clearInterval(timer); timer = null; }
+      try { stream && stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+      stream = null;
+      const v = el('cam-view'); if (v) v.srcObject = null;
+      const off = el('cam-off'); if (off) off.classList.remove('hidden');
+      const btn = el('btn-cam'); if (btn) { btn.textContent = '📷 מצלמה'; btn.classList.remove('live'); }
+      const cv = el('cam-boxes'); if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+      badge(null, null);
+      stat([['מצלמה', 'כבויה', false]]);
+    }
+
+    async function restart() { if (on) { await stop(); await start(); } }
+
+    async function enroll() {
+      const nameEl = el('enroll-name'), lvlEl = el('enroll-level');
+      const name = (nameEl && nameEl.value || '').trim();
+      if (!name) { toast('כתוב שם לפני שרושמים פנים', 'warn'); if (nameEl) nameEl.focus(); return; }
+      if (!on) { const s = await start(); if (!s) return; }
+      const frame = grab();
+      if (!frame) { toast('עדיין אין תמונה מהמצלמה', 'warn'); return; }
+      const cnt = el('enroll-count');
+      try {
+        const r = await (await fetch('/api/faces/enroll', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Object.assign({ name, level: (lvlEl && lvlEl.value) || 'SAFE' }, frame))
+        })).json();
+        if (!r.ok) { toast(r.error || 'הרישום נכשל', 'err'); return; }
+        toast(`הפנים של ${r.person.name} נשמרו (${r.person.samples} דגימות, הרשאה ${r.person.level})`, 'ok');
+        if (r.warning) toast(r.warning, 'warn', 6000);
+        if (cnt) cnt.textContent = r.person.samples;
+        refresh(); look(true);
+      } catch (e) { toast('אין חיבור למוח לרישום פנים', 'err'); }
+    }
+
+    function init() {
+      const b = el('btn-cam'); if (b) b.onclick = () => start();
+      const s = el('btn-cam-shot'); if (s) s.onclick = () => { if (!on) start(); else look(false); };
+      const e = el('btn-enroll'); if (e) e.onclick = () => enroll();
+      const chk = el('chk-gate');
+      if (chk) chk.onchange = async () => {
+        const r = await admin(chk.checked ? 'arm' : 'disarm');
+        toast(chk.checked ? 'המצלמה קובעת הרשאות' : 'המצלמה לא משנה הרשאות — הזיהוי רק מדווח',
+              r.ok ? 'ok' : 'err');
+        refresh();
+      };
+      refresh();
+    }
+
+    return { init, start, stop, restart, look, refresh, enroll, admin,
+             get on() { return on; } };
+  })();
+
   const Rec = (() => {
     let ac = null, proc = null, stream = null, chunks = [], recording = false, t0 = 0;
 
@@ -607,9 +943,7 @@
         toast('אין גישה למיקרופון בסביבה זו', 'err'); return false;
       }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
+        stream = await Mic.acquire();
       } catch (e) { toast('המיקרופון נדחה: ' + e.message, 'err'); return false; }
       const AC = window.AudioContext || window.webkitAudioContext;
       ac = new AC();
@@ -741,8 +1075,7 @@
         toast('אין גישה למיקרופון בסביבה זו', 'err'); return false;
       }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: {
-          channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        stream = await Mic.acquire();
       } catch (e) { toast('המיקרופון נדחה: ' + e.message, 'err'); return false; }
 
       // Asking the browser for 16 kHz outright avoids resampling altogether; if it
@@ -858,7 +1191,8 @@
     }
 
     return { start, stop, setState, setLevel, hint, paint, ship, resample, toInt16,
-             get on() { return on; }, get sid() { return sid; } };
+             get on() { return on; }, get sid() { return sid; },
+             get available() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia); } };
   })();
 
   // ══════════ voice enrolment — teach JARVIS the voice in the room ══════════
@@ -932,8 +1266,7 @@
       }
       let stream, ac, proc, src, chunks = [], sr = 16000, stopped = false;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: {
-          channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        stream = await Mic.acquire();
       } catch (e) {
         st.className = 'tr-state bad'; st.textContent = 'המיקרופון נדחה';
         const d = pendingDone; pendingDone = null; if (d) d(); return;
@@ -1153,9 +1486,24 @@
     $('#btn-kill-revive').onclick = () => send({ type: 'revive' });
     $('#btn-clear-events').onclick = () => { $('#event-stream').innerHTML = ''; };
 
+    // F5 — bring the conversation to him: focus the composer and open the
+    // microphone, so talking to JARVIS never requires standing up. Electron sends
+    // this as a global hotkey too, so it works while the HUD is in the background.
+    function summonChat() {
+      try { window.focus(); } catch (_) {}
+      const el = document.getElementById('input');
+      if (el) { el.focus(); if (el.select) el.select(); }
+      if (Talk.on || Rec.recording) return;
+      if (Talk.available) Talk.start(); else Rec.start();
+    }
+
+    Mic.init();
+    Vision.init();
+
     // hotkeys from Electron main
     if (win && win.onHotkey) win.onHotkey(h => {
       if (h.name === 'push-to-talk') { Rec.recording ? Rec.stop() : Rec.start(); }
+      if (h.name === 'summon-chat') summonChat();
       if (h.name === 'kill-switch') doKill('KILL SWITCH — מקש קיצור');
     });
     if (win && win.onBrainState) win.onBrainState(s => {
@@ -1164,6 +1512,7 @@
 
     document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Escape') { e.preventDefault(); doKill('KILL SWITCH'); }
+      if (e.key === 'F5' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); summonChat(); }
       if (e.key === 'Escape' && Rec.recording) Rec.stop();
       if (e.key === 'Escape') { const tp = $('#train-panel'); if (tp && !tp.classList.contains('hidden')) Train.close(); }
     });

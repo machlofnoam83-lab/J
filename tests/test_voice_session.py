@@ -378,7 +378,7 @@ def part_live() -> None:
         _shutil.copytree(src_bank, tmp_bank)
     proc = subprocess.Popen(
         [sys.executable, "-m", "core.server", "--host", "127.0.0.1", "--port", str(port)],
-        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace",
         env={**_os.environ, "PYTHONUNBUFFERED": "1", "JARVIS_STT_BANK": str(tmp_bank)},
     )
     sid = "pytest-rest"

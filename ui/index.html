@@ -82,6 +82,43 @@
       <p class="hint">לחץ על 🎙 ואמור אחת מהפקודות. הזיהוי מקומי לגמרי — תבניות MFCC+DTW שהמערכת בנתה לעצמה.</p>
     </section>
 
+    <section class="panel" id="panel-vision">
+      <header><h2>ראייה · מי מולי</h2><span class="panel-tag">VISION</span></header>
+      <div id="cam-stage">
+        <video id="cam-view" autoplay playsinline muted></video>
+        <canvas id="cam-boxes"></canvas>
+        <div id="cam-off">המצלמה כבויה</div>
+      </div>
+      <div id="who-badge" class="who unknown">
+        <div class="who-line"><span id="who-name">—</span><span id="who-level" class="lvl">SAFE</span></div>
+        <div class="bar-wrap"><div class="bar" id="bar-who"></div></div>
+      </div>
+      <div id="vision-stats" class="kv"></div>
+      <div class="row">
+        <button id="btn-cam" title="פתח או סגור את המצלמה">📷 מצלמה</button>
+        <button id="btn-cam-shot" title="זהה עכשיו">זהה</button>
+        <label class="toggle" title="הזיהוי קובע את רמת ההרשאה">
+          <input type="checkbox" id="chk-gate" checked><span>הרשאה לפי פנים</span>
+        </label>
+      </div>
+      <div id="enroll-row">
+        <input id="enroll-name" type="text" placeholder="שם האדם" autocomplete="off">
+        <select id="enroll-level" title="מה מותר לאדם הזה">
+          <option value="SAFE">SAFE · צפייה</option>
+          <option value="WRITE" selected>WRITE · כתיבה</option>
+          <option value="CRITICAL">CRITICAL · שליטה</option>
+        </select>
+        <button id="btn-enroll" title="שמור את הפנים הנראות עכשיו">רשום</button>
+      </div>
+      <div id="enroll-more">
+        <label>מצלמה <select id="cam-select"><option>ברירת מחדל</option></select></label>
+        <label>דגימות <span id="enroll-count">0</span></label>
+      </div>
+      <ul id="face-list" class="ticker"></ul>
+      <p class="hint">הזיהוי מקומי לגמרי: עור ב־YCbCr, יישור לפי העיניים ו־eigenfaces — בלי OpenCV ובלי ענן.
+        ההרשאה ניתנת רק כל עוד הפנים מול המצלמה: מי שיוצא מהחדר מאבד אותה.</p>
+    </section>
+
     <section class="panel" id="panel-memory">
       <header><h2>ארמון זיכרון</h2><span class="panel-tag">MEMORY</span></header>
       <div id="memory-stats" class="kv"></div>
@@ -149,11 +186,15 @@
         <button id="btn-send">שגר ➤</button>
       </div>
       <div id="composer-foot">
+        <span class="kbd">F5</span> שיחה מיידית
         <span class="kbd">Enter</span> שליחה
         <span class="kbd">Ctrl+Shift+Space</span> דיבור
         <span class="kbd">Ctrl+Shift+V</span> שיחה חופשית
         <span class="kbd">Ctrl+Shift+J</span> נעיצה
         <span class="kbd">Ctrl+Shift+Esc</span> <b class="danger">KILL SWITCH</b>
+        <label id="mic-pick" title="מיקרופון קלט">🎚
+          <select id="mic-select"><option>ברירת מחדל</option></select>
+        </label>
       </div>
     </div>
   </section>

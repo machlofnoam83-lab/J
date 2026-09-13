@@ -1,4 +1,11 @@
 @echo off
+REM Windows consoles default to an OEM codepage (cp862/cp437, cp1255 on a Hebrew
+REM system). JARVIS prints Hebrew, and Python would encode it in that codepage
+REM while a parent process decoded UTF-8 - which aborted test runs with
+REM UnicodeDecodeError. Switch the console to UTF-8 and pin Python to match.
+chcp 65001 >nul
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8
 REM ═══════════════════════════════════════════════════════════════════
 REM  J.A.R.V.I.S. — one-time Windows setup
 REM  Installs the Python brain dependencies and the Electron shell.

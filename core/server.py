@@ -26,7 +26,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -44,8 +44,10 @@ AGENT = None            # built lazily in a worker thread (loading the core is h
 
 
 # ------------------------------------------------------------------ plumbing --
-def _json(data: Any) -> web.Response:
-    return web.json_response(data, dumps=lambda o: json.dumps(o, ensure_ascii=False, default=str))
+def _json(data: Any, status: int = 200) -> web.Response:
+    """JSON with Hebrew left readable (ensure_ascii=False) and a settable status."""
+    return web.json_response(data, status=status,
+                             dumps=lambda o: json.dumps(o, ensure_ascii=False, default=str))
 
 
 class Client:
@@ -484,6 +486,162 @@ def _dispatch_inner(agent, data: Dict[str, Any]) -> Dict[str, Any]:
     return {"type": "error", "message": f"unknown type {kind!r}"}
 
 
+# ══════════════════════════════ sight ══════════════════════════════
+# Who is in front of the machine decides what JARVIS may do to it. Detection,
+# recognition and the presence gate are all built in-house (vision/faces.py): no
+# OpenCV, no downloaded weights, no cloud. Frames arrive from the HUD as raw RGB
+# pixels read off a canvas, so there is no image codec in the path either.
+FACE_STATE: Dict[str, Any] = {"store": None, "gate": None}
+
+
+def get_faces() -> Tuple[Any, Any]:
+    """Lazily build the face store and its presence gate (heavy first call)."""
+    if FACE_STATE["store"] is None:
+        from security.permissions import FIREWALL
+        from vision.faces import FaceGate, FaceStore
+
+        cfg = getattr(CONFIG, "vision", None)
+        get = (lambda k, d: getattr(cfg, k, d)) if cfg is not None else (lambda k, d: d)
+        store = FaceStore()
+        gate = FaceGate(
+            store, firewall=FIREWALL,
+            default_level=str(get("default_level", FIREWALL.level)),
+            ceiling=str(get("ceiling", "CRITICAL")),
+            ttl=float(get("presence_ttl", 12.0)),
+            debounce=int(get("debounce", 2)),
+            unknown_level=str(get("unknown_level", "SAFE")),
+        )
+        gate.armed = bool(get("arm_firewall", True))
+        FACE_STATE["store"], FACE_STATE["gate"] = store, gate
+    return FACE_STATE["store"], FACE_STATE["gate"]
+
+
+def _face_frame(payload: Dict[str, Any]):
+    """Turn a HUD frame payload into an RGB array (raw pixels, or grey)."""
+    from vision.faces import frame_from_gray, frame_from_rgb
+    if payload.get("rgb") or payload.get("data"):
+        return frame_from_rgb(payload)
+    return frame_from_gray(payload)
+
+
+async def api_faces(request: web.Request) -> web.Response:
+    """GET /api/faces — the gallery, the gate and what it currently grants."""
+    from vision.faces import CONFIDENCE_THRESHOLD
+    store, gate = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_faces)
+    return _json({"ok": True, "people": store.list(), "gate": gate.state(),
+                  "threshold": CONFIDENCE_THRESHOLD,
+                  "calibrated": {"within": round(store._within, 3),
+                                 "between": round(store._between, 3)}})
+
+
+async def api_faces_recognize(request: web.Request) -> web.Response:
+    """POST /api/faces/recognize — who is this, and what may they do?"""
+    store, gate = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_faces)
+    try:
+        payload = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "body must be JSON"}, status=400)
+    loop = asyncio.get_event_loop()
+
+    def work() -> Dict[str, Any]:
+        from vision.faces import detect
+        try:
+            frame = _face_frame(payload)
+        except Exception as exc:
+            return {"ok": False, "error": f"bad frame: {exc}"}
+        found = detect(frame, max_faces=4)
+        match = store.recognize(frame)
+        state = gate.observe(match)
+        return {"ok": True, "match": match.to_dict(), "gate": state,
+                "boxes": [f.to_dict() for f in found],
+                "frame": {"w": int(frame.shape[1]), "h": int(frame.shape[0])}}
+
+    out = await loop.run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
+async def api_faces_enroll(request: web.Request) -> web.Response:
+    """POST /api/faces/enroll — teach JARVIS a face and what it is allowed to do."""
+    store, gate = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_faces)
+    try:
+        payload = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "body must be JSON"}, status=400)
+    name = str(payload.get("name") or "").strip()
+    level = str(payload.get("level") or "SAFE").upper()
+    if not name:
+        return _json({"ok": False, "error": "a name is required"}, status=400)
+    loop = asyncio.get_event_loop()
+
+    def work() -> Dict[str, Any]:
+        from vision.faces import LEVELS, encode_frame
+        if level not in LEVELS:
+            return {"ok": False, "error": f"level must be one of {list(LEVELS)}"}
+        try:
+            frame = _face_frame(payload)
+        except Exception as exc:
+            return {"ok": False, "error": f"bad frame: {exc}"}
+        face = encode_frame(frame)
+        if face is None:
+            return {"ok": False, "error": "לא נמצאו פנים בתמונה — התקרב למצלמה והאר אותה"}
+        person = store.enroll(name, face.vector, level=level,
+                              person_id=payload.get("id"), note=str(payload.get("note") or ""))
+        BUS.emit("vision.enroll", {"name": person.name, "level": person.level,
+                                   "samples": len(person.vectors), "eyes": bool(face.eyes)},
+                 source="faces")
+        return {"ok": True, "person": person.to_dict(), "gate": gate.state(),
+                "aligned_on_eyes": bool(face.eyes),
+                "warning": None if face.eyes else
+                "העיניים לא אותרו — היישור לפי תיבת הפנים בלבד, פחות מדויק"}
+
+    out = await loop.run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
+async def api_faces_admin(request: web.Request) -> web.Response:
+    """POST /api/faces/admin — remove, re-level, arm/disarm, poll the lease."""
+    store, gate = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_faces)
+    try:
+        payload = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "body must be JSON"}, status=400)
+    action = str(payload.get("action") or "").lower()
+    loop = asyncio.get_event_loop()
+
+    def work() -> Dict[str, Any]:
+        if action == "remove":
+            ok = store.remove(str(payload.get("id") or ""))
+            return {"ok": ok, "error": None if ok else "no such person", "gate": gate.poll()}
+        if action == "set_level":
+            ok = store.set_level(str(payload.get("id") or ""), str(payload.get("level") or ""))
+            if ok:
+                BUS.emit("vision.level.grant", {"id": payload.get("id"),
+                                                "level": str(payload.get("level")).upper()},
+                         source="faces")
+            return {"ok": ok, "error": None if ok else "no such person or bad level",
+                    "gate": gate.poll()}
+        if action == "arm":
+            gate.armed = True
+            return {"ok": True, "gate": gate.poll()}
+        if action == "disarm":
+            gate.disarm()
+            return {"ok": True, "gate": gate.state()}
+        if action == "poll":
+            return {"ok": True, "gate": gate.poll()}
+        if action == "configure":
+            if payload.get("ttl"):
+                gate.ttl = max(1.0, float(payload["ttl"]))
+            if payload.get("ceiling"):
+                gate.ceiling = str(payload["ceiling"]).upper()
+            if payload.get("default_level"):
+                gate.default_level = str(payload["default_level"]).upper()
+            return {"ok": True, "gate": gate.poll()}
+        return {"ok": False, "error": "action must be remove|set_level|arm|disarm|poll|configure"}
+
+    out = await loop.run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
 async def api_command(request: web.Request) -> web.Response:
     """REST twin of the WebSocket — used when a proxy will not upgrade sockets."""
     loop = asyncio.get_event_loop()
@@ -700,6 +858,10 @@ def build_app() -> web.Application:
     app.router.add_post("/api/audio", api_audio)
     app.router.add_get("/api/enroll", api_enroll)
     app.router.add_post("/api/enroll", api_enroll)
+    app.router.add_get("/api/faces", api_faces)
+    app.router.add_post("/api/faces/recognize", api_faces_recognize)
+    app.router.add_post("/api/faces/enroll", api_faces_enroll)
+    app.router.add_post("/api/faces/admin", api_faces_admin)
     app.router.add_post("/api/command", api_command)
     # Unknown /api/* must answer as JSON for every method. Registered before the
     # UI catch-all below (aiohttp resolves resources in registration order), so

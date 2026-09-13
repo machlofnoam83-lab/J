@@ -207,7 +207,28 @@ ipc('restart:brain', async () => {
 ipc('app:quit', () => quit());
 
 // ------------------------------------------------------------------ hotkey --
+// The HUD asks for the camera and the microphone; everything else is refused.
+// Without an explicit handler Electron's default is permissive, which is not a
+// posture JARVIS should ship with.
+function registerPermissions() {
+    try {
+        const { session } = require('electron');
+        session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+            const allowed = permission === 'media' || permission === 'audioCapture'
+                || permission === 'videoCapture';
+            if (!allowed) console.log(`[jarvis] denied permission request: ${permission}`);
+            callback(allowed);
+        });
+    } catch (e) { console.log('[jarvis] permission handler unavailable:', e.message); }
+}
+
 function registerHotkeys() {
+    // F5 brings the HUD forward and opens the conversation — the "talk to JARVIS
+    // without standing up" key. Registered system-wide, so it works even when
+    // another window has focus.
+    globalShortcut.register('F5', () => {
+        if (win) { win.show(); win.focus(); win.webContents.send('hotkey', { name: 'summon-chat' }); }
+    });
     globalShortcut.register('CommandOrControl+Shift+Space', () => {
         if (win) { win.show(); win.focus(); win.webContents.send('hotkey', { name: 'push-to-talk' }); }
     });
@@ -233,6 +254,7 @@ app.whenReady().then(async () => {
     if (process.platform === 'win32') app.setAppUserModelId('com.jarvis.hud');
     createWindow();
     createTray();
+    registerPermissions();
     registerHotkeys();
 
     brain = startBrain();

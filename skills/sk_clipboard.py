@@ -41,17 +41,17 @@ def _native_get() -> Optional[str]:
     try:
         if IS_WINDOWS:
             proc = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-Clipboard -Raw"],
-                                  capture_output=True, text=True, timeout=8)
+                                  capture_output=True, text=True, errors="replace", timeout=8)
             return proc.stdout if proc.returncode == 0 else None
         if shutil.which("xclip"):
             proc = subprocess.run(["xclip", "-selection", "clipboard", "-o"],
-                                  capture_output=True, text=True, timeout=8)
+                                  capture_output=True, text=True, errors="replace", timeout=8)
             return proc.stdout if proc.returncode == 0 else None
         if shutil.which("wl-paste"):
-            proc = subprocess.run(["wl-paste", "--no-newline"], capture_output=True, text=True, timeout=8)
+            proc = subprocess.run(["wl-paste", "--no-newline"], capture_output=True, text=True, errors="replace", timeout=8)
             return proc.stdout if proc.returncode == 0 else None
         if shutil.which("pbpaste"):
-            proc = subprocess.run(["pbpaste"], capture_output=True, text=True, timeout=8)
+            proc = subprocess.run(["pbpaste"], capture_output=True, text=True, errors="replace", timeout=8)
             return proc.stdout if proc.returncode == 0 else None
     except Exception:
         return None
@@ -69,16 +69,16 @@ def _native_set(text: str) -> bool:
         if IS_WINDOWS:
             escaped = text.replace("'", "''")
             proc = subprocess.run(["powershell", "-NoProfile", "-Command", f"Set-Clipboard -Value '{escaped}'"],
-                                  capture_output=True, text=True, timeout=8)
+                                  capture_output=True, text=True, errors="replace", timeout=8)
             return proc.returncode == 0
         if shutil.which("xclip"):
-            proc = subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, timeout=8)
+            proc = subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, errors="replace", timeout=8)
             return proc.returncode == 0
         if shutil.which("wl-copy"):
             proc = subprocess.run(["wl-copy", text], capture_output=True, timeout=8)
             return proc.returncode == 0
         if shutil.which("pbcopy"):
-            proc = subprocess.run(["pbcopy"], input=text, text=True, timeout=8)
+            proc = subprocess.run(["pbcopy"], input=text, text=True, errors="replace", timeout=8)
             return proc.returncode == 0
     except Exception:
         return False

@@ -134,7 +134,7 @@ def close_app(name: str = "", force: bool = False) -> SkillResult:
     else:
         cmd = ["pkill", "-9" if force else "-TERM", key]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=15)
     except FileNotFoundError:
         return SkillResult(ok=False, error=f"כלי הסגירה לא זמין במערכת הזו ({cmd[0]})")
     except Exception as exc:
@@ -201,7 +201,7 @@ def notify(message: str = "", title: str = "JARVIS") -> SkillResult:
                  f"$n=New-Object System.Windows.Forms.NotifyIcon; "
                  f"$n.Icon=[System.Drawing.SystemIcons]::Information; $n.Visible=$true; "
                  f"$n.ShowBalloonTip(4000,'{title}','{msg}',[System.Windows.Forms.ToolTipIcon]::Info)"],
-                capture_output=True, text=True, timeout=12)
+                capture_output=True, text=True, errors="replace", timeout=12)
             if fallback.returncode == 0:
                 return SkillResult(ok=True, value=f"שלחתי התראה: {msg}", data={"channel": "balloon"})
         except Exception:
@@ -233,7 +233,7 @@ def window_layout(mode: str = "grid") -> SkillResult:
         return SkillResult(ok=False, error=f"מצב לא מוכר: {mode} (אפשר grid/minimize/cascade/tile)")
     try:
         proc = subprocess.run(["powershell", "-NoProfile", "-Command", script],
-                              capture_output=True, text=True, timeout=20)
+                              capture_output=True, text=True, errors="replace", timeout=20)
     except Exception as exc:
         return SkillResult(ok=False, error=f"הפעלת PowerShell נכשלה: {exc}")
     if proc.returncode != 0:

@@ -48,7 +48,7 @@ def _send_media_key(key_name: str) -> SkillResult:
         )
         try:
             proc = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                                  capture_output=True, text=True, timeout=10)
+                                  capture_output=True, text=True, errors="replace", timeout=10)
             if proc.returncode == 0:
                 return SkillResult(ok=True, value=f"שלחתי את מקש המדיה {key_name}.",
                                    data={"key": key_name})
@@ -143,7 +143,7 @@ def screen_capture(path: str = "", monitor: int = 0) -> SkillResult:
             )
             try:
                 proc = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                                      capture_output=True, text=True, timeout=20)
+                                      capture_output=True, text=True, errors="replace", timeout=20)
                 if proc.returncode == 0 and out.exists():
                     return SkillResult(ok=True, value=f"צילמתי את המסך ושמרתי ל־{out.name}.",
                                        data={"path": str(out), "bytes": out.stat().st_size})
@@ -174,7 +174,7 @@ def screen_size() -> SkillResult:
                  "Add-Type -AssemblyName System.Windows.Forms; "
                  "[System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "
                  "\"$($_.Bounds.Width)x$($_.Bounds.Height) primary=$($_.Primary)\" }"],
-                capture_output=True, text=True, timeout=10)
+                capture_output=True, text=True, errors="replace", timeout=10)
             if proc.returncode == 0 and proc.stdout.strip():
                 return SkillResult(ok=True, value=proc.stdout.strip().replace("\n", "; "),
                                    data={"raw": proc.stdout.strip()})

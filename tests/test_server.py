@@ -98,7 +98,7 @@ def main() -> int:
 
     proc = subprocess.Popen(
         [sys.executable, "-m", "core.server", "--host", "127.0.0.1", "--port", str(port)],
-        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace",
         env={**__import__("os").environ, "PYTHONUNBUFFERED": "1"},
     )
 
