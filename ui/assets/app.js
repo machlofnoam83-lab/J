@@ -705,7 +705,7 @@
   const Vision = (() => {
     const GRAB_W = 320;        // what we ship; enough for a face, small to send
     const INTERVAL = 1200;     // ms between looks
-    let stream = null, timer = null, busy = false, on = false, last = null;
+    let stream = null, timer = null, poller = null, busy = false, on = false, last = null;
 
     const el = id => document.getElementById(id);
 
@@ -856,8 +856,13 @@
       Mic.refresh();                       // permission granted → real camera names
       await look(true);
       timer = setInterval(() => look(true), INTERVAL);
-      // the grant decays even between frames
-      setInterval(() => { if (on) admin('poll').then(r => { if (r && r.gate) badge((last || {}).match, r.gate); }); }, 4000);
+      // The grant decays even between frames. Kept in a variable and cleared on
+      // stop: an anonymous interval here survived every off/on cycle and piled up.
+      if (poller) clearInterval(poller);
+      poller = setInterval(() => {
+        if (!on) return;
+        admin('poll').then(r => { if (r && r.gate) badge((last || {}).match, r.gate); }).catch(() => {});
+      }, 4000);
       toast('המצלמה פתוחה — JARVIS מסתכל', 'ok');
       return true;
     }
@@ -865,6 +870,7 @@
     async function stop() {
       on = false;
       if (timer) { clearInterval(timer); timer = null; }
+      if (poller) { clearInterval(poller); poller = null; }
       try { stream && stream.getTracks().forEach(t => t.stop()); } catch (_) {}
       stream = null;
       const v = el('cam-view'); if (v) v.srcObject = null;
