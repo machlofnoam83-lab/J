@@ -51,6 +51,15 @@ HOP_MS = 20.0           # 20ms frames: half the DTW cost of 10ms, no loss for co
 MAX_FRAMES = 220
 BANK_DIR = ROOT / "voice" / "stt" / "bank"
 
+# Bump this whenever anything changes that would make an existing bank disagree
+# with the voice that has to match it — the DSP, the augmentation grid, or the
+# confidence ramp. The bank is gitignored and rebuilt on first use, but
+# `ensure_bank` only builds when one is *missing*, so a listener upgrading in
+# place would otherwise keep templates synthesised by the old voice and recognise
+# nothing: 2 fixed `time_stretch` and `pitch_shift`, which changed every waveform
+# the bank is made of, and moved the ramp from the facing tails to the means.
+BANK_FORMAT = 2
+
 # Used only when a bank carries no measurement of its own. Every bank built here
 # measures the gap between correct and incorrect recognitions and stores the
 # midpoint, so this constant is a floor for an uncalibrated bank, not a policy.
@@ -292,6 +301,15 @@ class SttEngine:
                 self._offs = z["offs"]
                 self._labels_arr = z["labels"]
             manifest = json.loads((self.bank_dir / "manifest.json").read_text(encoding="utf-8"))
+            if int(manifest.get("format", 0) or 0) != BANK_FORMAT:
+                # Built by a different voice. Report it as unavailable so
+                # `ensure_bank` rebuilds instead of recognising nothing.
+                BUS.emit(T.ERROR, {"where": "stt.load",
+                                   "error": f"bank format {manifest.get('format')} != {BANK_FORMAT}, rebuilding"},
+                         source="stt")
+                self._feat = None
+                self.labels = []
+                return False
             self.texts = {c["label"]: c["text"] for c in manifest.get("commands", [])}
             self.calib = manifest.get("calibration", {})
             self.enrolled = manifest.get("enrolled", [])
@@ -688,6 +706,7 @@ def build_bank(bank_dir: Optional[Path | str] = None,
     calib = calibrate(bank_dir)
 
     manifest = {
+        "format": BANK_FORMAT,
         "built_at": time.time(),
         "build_seconds": round(time.perf_counter() - t0, 2),
         "sample_rate": SR,

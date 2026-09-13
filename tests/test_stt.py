@@ -208,6 +208,34 @@ def main() -> int:
     check("the wake word is flagged",
           any(v["wake"] for v in eng.vocabulary()))
 
+    # ─────────────────── a bank built by an older voice is refused ───────────────────
+    # The bank is gitignored and `ensure_bank` only builds one when it is missing,
+    # so a listener upgrading in place keeps whatever templates they already had.
+    # If those were synthesised by the old DSP they no longer match the voice that
+    # now has to be recognised against them, and every command silently fails.
+    print("\n== bank format gate ==")
+    import shutil
+    import tempfile
+    from voice.stt import BANK_FORMAT
+    with tempfile.TemporaryDirectory() as td:
+        stale = Path(td) / "bank"
+        stale.mkdir()
+        shutil.copy(stt.BANK_DIR / "templates.npz", stale / "templates.npz")
+        old = json.loads((stt.BANK_DIR / "manifest.json").read_text(encoding="utf-8"))
+        old.pop("format", None)                       # exactly what an old build wrote
+        (stale / "manifest.json").write_text(json.dumps(old, ensure_ascii=False), encoding="utf-8")
+        check("a bank with no format stamp is refused, not trusted",
+              not SttEngine(bank_dir=stale).available)
+        old["format"] = BANK_FORMAT + 1               # and neither is one from the future
+        (stale / "manifest.json").write_text(json.dumps(old, ensure_ascii=False), encoding="utf-8")
+        check("a bank from a newer format is refused",
+              not SttEngine(bank_dir=stale).available)
+        old["format"] = BANK_FORMAT
+        (stale / "manifest.json").write_text(json.dumps(old, ensure_ascii=False), encoding="utf-8")
+        check("the current format loads", SttEngine(bank_dir=stale).available)
+    check("the shipped bank carries the current format stamp",
+          manifest.get("format") == BANK_FORMAT, f"(format {manifest.get('format')})")
+
     # ─────────────────────────── accuracy ───────────────────────────
     print("\n== recognition accuracy (synthesised speech, unseen rate) ==")
     hits = misses = 0
