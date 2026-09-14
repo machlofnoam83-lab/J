@@ -58,10 +58,19 @@ _REQUEST_FRAMES = (
     "please", "explain",
 )
 
-_STOPWORDS = frozenset("""
+# Raw list. Do NOT compare tokens against this directly: `content_tokens`
+# normalises and stems before testing membership, and normalisation rewrites the
+# Hebrew final forms (ך ם ן ץ ף -> כ מ נ צ פ). Fourteen entries here contain such
+# a letter, so `איך` normalises to `איכ` and never matched — "how" survived as a
+# topical word. That one defect let "איך מתקנים ברז דולף" match "איך מתקנים באג?"
+# at 0.736 and answer a plumbing question with debugging advice. `_STOPWORDS`
+# below is this list pushed through the same pipeline the tokens go through.
+_STOPWORDS_RAW = frozenset("""
     מה מי איך מתי למה כמה על של את זה זו הזו הזאת אני אתה את הם הן יש אין האם או גם כי אם
     לי לך אותי אצלי שם כאן כל מאוד קצת יותר הכי בין עם בלי לפני אחרי תודה בבקשה שלום
     הוא היא היה הייתה יהיה יכול יכולה צריך רוצה יודע
+    היום מחר אתמול עכשיו תמיד פעם שוב כבר משהו כלום אף אחד
+    today tomorrow yesterday now always again already something nothing
     the a an is are was were be been do does did you i we they he she it me my your our
     to of in on at for with about into from that this these those and or but not no
     can could should would will may might tell know get
@@ -91,6 +100,30 @@ def _stem(tok: str) -> str:
     return tok
 
 
+def _build_stopwords(raw: Iterable[str]) -> frozenset:
+    """Run the raw list through the same normalise+stem pipeline tokens use.
+
+    Comparing a normalised token against a raw stopword silently fails for every
+    entry containing a Hebrew final-form letter, because `normalize` rewrites
+    ך ם ן ץ ף to כ מ נ צ פ. Each raw entry is therefore stored in all three forms
+    it can legitimately appear as — raw, normalised, and stemmed — so membership
+    testing agrees with what `content_tokens` actually produces.
+    """
+    out = set()
+    for w in raw:
+        w = w.strip()
+        if not w:
+            continue
+        out.add(w)
+        n = normalize(w).lower()
+        out.add(n)
+        out.add(_stem(n))
+    return frozenset(out)
+
+
+_STOPWORDS = _build_stopwords(_STOPWORDS_RAW)
+
+
 def content_tokens(text: str) -> set:
     """Words that carry topic: request frames and function words removed."""
     t = f" {normalize(str(text)).lower()} "
@@ -102,7 +135,28 @@ def content_tokens(text: str) -> set:
 
 
 def shares_topic(a: str, b: str) -> bool:
-    """True when two strings have at least one substantive word in common."""
+    """True when two strings have at least one substantive word in common.
+
+    KNOWN LIMIT, measured rather than assumed. This gate is necessary but not
+    sufficient: it stops unrelated questions from matching on a polite shared
+    prefix, but it cannot stop two questions that share a *generic* word while
+    differing in subject. Measured on held-out probes:
+
+        "איך מתקנים ברז דולף"  -> "איך מתקנים באג?"        score 0.736
+        "מה השורשים של המשפחה" -> "מה השורש הריבועי של 144?" score 0.254
+
+    Neither a score threshold nor an overlap-fraction threshold separates these
+    from genuine paraphrases. The 0.736 leak scores *higher* than the best true
+    paraphrase (0.612), and the overlap-fraction distributions fully overlap
+    (true min 0.00, false max 0.50). Character n-grams plus token overlap simply
+    do not encode that "ברז" and "באג" are different subjects while "מתקנים" is
+    the same verb — that needs semantic vectors or part-of-speech-aware matching.
+
+    Fixing the stopword normalisation below (see `_build_stopwords`) cut false
+    answers on uncovered topics from 3/6 to 2/9. Going further by tuning on that
+    22-sample probe set would be overfitting to the probe, so the limit is
+    recorded here instead of hidden behind a threshold that looks principled.
+    """
     ta, tb = content_tokens(a), content_tokens(b)
     if not ta or not tb:
         return False

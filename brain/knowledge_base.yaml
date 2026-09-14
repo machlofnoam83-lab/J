@@ -253,3 +253,273 @@ entries:
       - ["מה מזג האוויר היום?", "אין לי גישה לאינטרנט, ולכן אין לי נתוני מזג אוויר חיים. אני יכול לקרוא את השעה, התאריך ואת מצב המחשב — ואלה מדויקים."]
       - ["מה יש בחדשות?", "אין לי חיבור לרשת, אז אין לי חדשות. מה שכן יש לי: הקבצים שלך, מצב המערכת, והזיכרון שלנו."]
       - ["תחפש באינטרנט", "לא מחובר לרשת — זו החלטה תכנונית, לא תקלה. כל החישוב מקומי. חפש בקבצים או במאגר הידע — את זה אני עושה מצוין."]
+
+  # ════════════════════════════════════════════════════════════ מחשב ─═══
+  - id: hw.cpu
+    topic: חומרה
+    he: "מעבד (CPU) הוא היחידה שמבצעת את ההוראות של התוכנות. הוא פועל במחזור של קריאת הוראה, פיענוח שלה, ביצוע וכתיבת תוצאה. המהירות נמדדת בגיגה־הרץ — מיליארדי מחזורים לשנייה — אבל מספר הליבות והמטמון משפיעים לא פחות, כי הוראה מהירה שלא מחכה לזיכרון שווה יותר מהוראה מהירה שכן."
+    en: "The CPU executes program instructions in a fetch-decode-execute-writeback cycle. Speed is measured in gigahertz, but core count and cache matter as much: a fast instruction that stalls on memory is slower in practice than one that does not."
+    tags: [cpu, מעבד, חומרה, גיגה הרץ, ליבות]
+    qa:
+      - ["מה זה CPU?", "המעבד — היחידה שמריצה את ההוראות של התוכנות. הוא קורא הוראה, מפענח, מבצע וכותב תוצאה, מיליארדי פעמים בשנייה."]
+      - ["מה זה מעבד?", "CPU: המוח החשבוני של המחשב. מבצע אריתמטיקה, לוגיקה והעברת נתונים לפי תוכנית. מספר הליבות קובע כמה משימות רצות באמת במקביל."]
+      - ["מה חשוב יותר — גיגה הרץ או ליבות?", "שניהם, ולרוב המטמון מכריע. מעבד מהיר שממתין לזיכרון מבזבז את המהירות שלו; מטמון גדול מקטין את ההמתנות האלה."]
+
+  - id: hw.ram
+    topic: חומרה
+    he: "זיכרון גישה אקראית (RAM) הוא הזיכרון הזמני שבו שוכנות תוכניות ונתונים בזמן ריצה. הוא מהיר מאוד ביחס לדיסק אבל נדיף — בלי חשמל התוכן נמחק. כשהזיכרון מתמלא, מערכת ההפעלה מזיזה נתונים לקובץ החלפה בדיסק, וזו הסיבה הנפוצה ביותר להאטה פתאומית."
+    en: "RAM is fast volatile working memory for running programs and data. When it fills, the OS pages data to disk, which is the most common cause of sudden slowdowns."
+    tags: [ram, זיכרון, חומרה, נדיף, החלפה]
+    qa:
+      - ["מה זה RAM?", "זיכרון עבודה זמני ומהיר לתוכניות שרצות עכשיו. הוא נדיף — בלי חשמל הכול נמחק, ולכן שומרים קבצים לדיסק."]
+      - ["מה ההבדל בין RAM לדיסק?", "RAM מהיר פי אלפים בערך אבל קטן ונדיף, ומשמש למה שרץ כרגע. הדיסק איטי יותר, גדול, ושומר הכול גם בלי חשמל."]
+      - ["למה המחשב מאט כשאין זיכרון?", "כי המערכת מתחילה להחליף נתונים בין הזיכרון לדיסק — קובץ החלפה. דיסק איטי בהרבה מ־RAM, וכל החלפה עוצרת את העבודה."]
+
+  - id: hw.ssd
+    topic: חומרה
+    he: "כונן SSD שומר נתונים בתאי זיכרון פלאש ואין בו חלקים נעים, בניגוד לדיסק קשיח מכני עם צלחת מסתובבת וראש קריאה. לכן הוא מהיר משמעותית, שקט ועמיד יותר לזעזועים. החולשה שלו היא שכל תא נשחק אחרי מספר כתיבות, ולכן הבקר מפזר כתיבות על פני התאים — תהליך שנקרא wear leveling."
+    en: "An SSD stores data in flash cells with no moving parts, unlike a mechanical drive with a spinning platter. Faster, silent, shock-resistant; its cells wear with writes, so the controller spreads them via wear leveling."
+    tags: [ssd, דיסק, אחסון, פלאש, חומרה]
+    qa:
+      - ["מה זה SSD?", "כונן אחסון מבוסס פלאש בלי חלקים נעים. מהיר, שקט ועמיד לזעזועים לעומת דיסק מכני, והתאים שלו נשחקים עם הכתיבה ולכן יש בקר שמפזר אותה."]
+      - ["מה עדיף — SSD או דיסק רגיל?", "SSD כמעט תמיד: מהירות ההפעלה והטעינה טובה ממנו בכמה סדרי גודל. דיסק מכני עדיין זול יותר לנפח ענק של גיבוי."]
+
+  - id: hw.cache
+    topic: חומרה
+    he: "זיכרון מטמון הוא עותק קטן ומהיר של נתונים שסביר שיידרשו שוב. המעבד מחזיק כמה רמות — L1 הקטן והמהיר ביותר, אחריו L2 ו־L3 — והעיקרון זהה בכל מערכת: לשמור קרוב את מה שחוזרים אליו. היחס בין פגיעות להחמצות קובע כמה מהר התוכנית באמת רצה."
+    en: "Cache is a small fast copy of data likely to be needed again. CPUs keep L1/L2/L3 levels; the same principle applies throughout computing — keep the frequently used close. The hit rate decides real speed."
+    tags: [מטמון, cache, חומרה, ביצועים]
+    qa:
+      - ["מה זה זיכרון מטמון?", "עותק קטן ומהיר של נתונים שסביר שיחזרו. שומרים בו כדי לא לגשת כל פעם לזיכרון האיטי — ובמעבד יש כמה רמות כאלה, L1 עד L3."]
+      - ["למה מטמון משפר ביצועים?", "כי גישה ל־L1 לוקחת כמה מחזורים בעוד גישה לזיכרון הראשי לוקחת מאות. ככל שיותר בקשות נענות מהמטמון, כך פחות המתנה."]
+
+  # ══════════════════════════════════════════════════════════ תכנות ─═══
+  - id: prog.variable
+    topic: תכנות
+    he: "משתנה הוא שם שמצביע על ערך השמור בזיכרון. השם מאפשר להתייחס לערך בלי לדעת איפה הוא יושב פיזית, ולהחליף את הערך בלי לשנות את הקוד שמשתמש בו. בשפות עם טיפוסים, למשתנה יש גם סוג — מספר, מחרוזת, בוליאני — שקובע אילו פעולות מותר לבצע עליו."
+    en: "A variable is a name bound to a value in memory. The name lets code refer to a value without knowing its address, and lets the value change without editing the code. Typed languages also attach a type that constrains operations."
+    tags: [משתנה, תכנות, טיפוס, זיכרון]
+    qa:
+      - ["מה זה משתנה בתכנות?", "שם שמצביע על ערך בזיכרון. במקום לכתוב את הערך בכל מקום, נותנים לו שם — ואפשר לשנות את הערך בלי לגעת בקוד."]
+      - ["למה צריך טיפוס למשתנה?", "כי הטיפוס קובע מה מותר לעשות עם הערך. אי אפשר לחבר מחרוזת למספר בלי החלטה מפורשת, והבדיקה הזאת תופסת שגיאות לפני הריצה."]
+
+  - id: prog.function
+    topic: תכנות
+    he: "פונקציה היא בלוק קוד עם שם, שמקבל קלט ומחזיר פלט. הערך שלה הוא הפרדה: קוראים לה בלי לדעת איך היא ממומשת, ואפשר לשנות את המימוש בלי לגעת בקוראים. פונקציה טובה עושה דבר אחד, ותלויה רק בקלט שקיבלה — כזאת נקראת טהורה, והיא הקלה ביותר לבדיקה."
+    en: "A function is a named block taking input and returning output. Its value is separation: callers need not know the implementation. A good function does one thing and depends only on its input — a pure function, the easiest kind to test."
+    tags: [פונקציה, תכנות, קלט, פלט, טהורה]
+    qa:
+      - ["מה זה פונקציה?", "בלוק קוד עם שם שמקבל קלט ומחזיר פלט. נותנים לו שם כדי לחזור עליו בלי לשכפל, ולהחליף מימוש בלי לשבור את הקוראים."]
+      - ["מה זו פונקציה טהורה?", "פונקציה שהפלט שלה תלוי רק בקלט, בלי לשנות שום דבר בחוץ. על אותם קלטים היא תמיד מחזירה אותו פלט, ולכן קל מאוד לבדוק אותה."]
+
+  - id: prog.bug
+    topic: תכנות
+    he: "באג הוא פער בין מה שהקוד עושה למה שהתכוונו שיעשה. רוב הבאגים הם הנחות שגויות — על קלט, על סדר פעולות, או על מצב שנשאר מהרצה קודמת. התיקון מתחיל בשחזור עקבי, כי באג שאי אפשר לשחזר אי אפשר לאמת שתיקנו אותו."
+    en: "A bug is the gap between what code does and what was intended. Most are wrong assumptions about input, ordering, or leftover state. Fixing starts with reliable reproduction: a bug you cannot reproduce, you cannot verify fixed."
+    tags: [באג, שגיאה, תכנות, איתור באגים, תיקון]
+    qa:
+      - ["מה זה באג?", "פער בין מה שהקוד באמת עושה למה שהתכוונו שיעשה. בדרך כלל זה נובע מהנחה שגויה על הקלט, על הסדר, או על מצב שנשאר מהרצה קודמת."]
+      - ["איך מתקנים באג?", "קודם משחזרים אותו בעקביות, אחר כך מצמצמים למקרה הקטן ביותר, ואז מתקנים ומוסיפים בדיקה שתיכשל אם הבאג יחזור. בלי בדיקה כזאת אותו באג נוטה לחזור."]
+
+  - id: prog.algorithm
+    topic: תכנות
+    he: "אלגוריתם הוא סדר פעולות מוגדר היטב שפותר בעיה. מודדים אותו בסיבוכיות — איך זמן הריצה או הזיכרון גדלים עם גודל הקלט. החלוקה החשובה ביותר היא בין ליניארי O(n), לוגריתמי O(log n) וריבועי O(n²): על קלט של מיליון פריטים, אלגוריתם ריבועי יבצע בערך פי מיליון יותר עבודה מליניארי."
+    en: "An algorithm is a well-defined procedure solving a problem, measured by how time or memory scale with input size. The key divide is O(n) vs O(log n) vs O(n²): on a million items, quadratic does roughly a million times the work of linear."
+    tags: [אלגוריתם, סיבוכיות, תכנות, ביצועים]
+    qa:
+      - ["מה זה אלגוריתם?", "סדר פעולות מוגדר שפותר בעיה. מודדים אותו לפי איך הזמן גדל עם הקלט — ליניארי, לוגריתמי או ריבועי — וזה מה שקובע אם יחזיק מעמד על נתונים גדולים."]
+      - ["מה זה O של n?", "סימון לסיבוכיות: כמה עבודה האלגוריתם עושה ביחס לגודל הקלט. O(n) גדל עם הקלט, O(n²) גדל עם הריבוע שלו, ו־O(log n) כמעט לא גדל בכלל."]
+
+  - id: prog.api
+    topic: תכנות
+    he: "ממשק תכנות יישומים (API) הוא החוזה שמגדיר איך מדברים עם רכיב — אילו פעולות קיימות, אילו פרמטרים הן מקבלות ומה הן מחזירות. הוא מסתיר את המימוש, ולכן אפשר לשנות את הפנים בלי לשבור את מי שמשתמש מבחוץ. אותו רעיון תקף לספרייה מקומית ולשירות רשת."
+    en: "An API is the contract defining how to talk to a component: which operations exist, their parameters and return values. It hides implementation so internals can change without breaking callers — true for a local library and a web service alike."
+    tags: [api, ממשק, תכנות, חוזה]
+    qa:
+      - ["מה זה API?", "ממשק שמגדיר איך מדברים עם רכיב — אילו פעולות יש, מה נותנים להן ומה מקבלים חזרה. הוא מסתיר את המימוש כדי שאפשר יהיה לשנות אותו בלי לשבור משתמשים."]
+      - ["למה API חשוב?", "כי הוא הופך רכיב מורכב למשהו שאפשר לסמוך עליו. כל עוד החוזה נשמר, הפנים יכול להשתנות לגמרי והקוד שמשתמש בו ימשיך לעבוד."]
+
+  - id: prog.git
+    topic: תכנות
+    he: "גיט הוא מערכת ניהול גרסאות: היא שומרת תמונות מצב של הקוד לאורך זמן ומאפשרת לחזור לכל נקודה, להשוות שינויים ולעבוד במקביל על ענפים נפרדים. כל שמירה נקראת קומיט ויש לה מזהה ייחודי. השינויים נשמרים מקומית, ולכן אפשר לעבוד בלי רשת ולדחוף אחר כך."
+    en: "Git is version control: it stores snapshots of code over time, allowing rollback, diffs and parallel branches. Each snapshot is a commit with a unique hash. Repositories are local, so work continues offline and pushes later."
+    tags: [git, גרסאות, קומיט, ענף, תכנות]
+    qa:
+      - ["מה זה git?", "מערכת ניהול גרסאות ששומרת תמונות מצב של הקוד. אפשר לחזור לכל נקודה, לראות מה השתנה, ולעבוד על ענפים במקביל בלי לדרוס אחד את השני."]
+      - ["מה זה קומיט?", "שמירה של מצב הקוד בנקודת זמן, עם מזהה ייחודי והודעה שמסבירה למה. רצף הקומיטים הוא ההיסטוריה של הפרויקט."]
+
+  - id: prog.python
+    topic: תכנות
+    he: "פייתון היא שפת תכנות בקריאה סטטית עם דגש על קריאות. הטיפוסים נבדקים בזמן ריצה, הזיכרון מנוהל אוטומטית, והתחביר מבוסס הזחה במקום סוגריים. היא נפוצה במדע נתונים, באוטומציה ובינה מלאכותית בזכות ספריות עשירות — המחיר הוא ביצועים איטיים יותר משפות מהודרות."
+    en: "Python is a dynamically typed language emphasising readability: runtime type checking, automatic memory management, indentation-based syntax. Dominant in data science, automation and AI thanks to its libraries; the cost is slower execution than compiled languages."
+    tags: [פייתון, python, שפת תכנות, אוטומציה]
+    qa:
+      - ["מה זה פייתון?", "שפת תכנות דינמית וקריאה, עם ניהול זיכרון אוטומטי ותחביר מבוסס הזחה. נפוצה מאוד באוטומציה, מדע נתונים ובינה מלאכותית."]
+      - ["למה פייתון איטית יחסית?", "כי היא מתפרשת בזמן ריצה ולא מהודרת מראש, וכל ערך נבדק ונארז. לכן חלקים כבדים נכתבים בספריות שממילא רצות בקוד מהודר."]
+
+  - id: prog.javascript
+    topic: תכנות
+    he: "ג'אווהסקריפט היא השפה שרצה בדפדפן, וכיום גם על שרתים דרך Node. היא מבוסעת אירועים ולולאת אירועים אחת, ולכן פעולות ארוכות נכתבות כאסינכרוניות במקום לחסום את התוכנית. זו הסיבה שהממשק נשאר מגיב גם בזמן שהרשת עובדת ברקע."
+    en: "JavaScript runs in the browser and on servers via Node. It is event-driven with a single event loop, so long operations are written asynchronously rather than blocking — which is why interfaces stay responsive while network work happens in the background."
+    tags: [ג'אווהסקריפט, javascript, דפדפן, אסינכרוני, node]
+    qa:
+      - ["מה זה ג'אווהסקריפט?", "השפה של הדפדפן, שרצה גם על שרתים דרך Node. היא מבוססת אירועים, ולכן פעולות ארוכות נכתבות כאסינכרוניות כדי לא לתקוע את הממשק."]
+      - ["מה זה אסינכרוני?", "להתחיל פעולה ארוכה ולחזור לתוצאה שלה אחר כך, בלי לעצור את שאר התוכנית. בג'אווהסקריפט זה הכרחי, כי יש לולאת אירועים אחת וחסימה שלה מקפיאה הכול."]
+
+  - id: prog.os
+    topic: תכנות
+    he: "מערכת הפעלה מנהלת חומרה ומחלקת משאבים בין תוכניות: זמן מעבד, זיכרון, גישה לקבצים ולהתקנים. ווינדוס נפוצה במחשבים אישיים ובארגונים, לינוקס שולטת בשרתים ובמערכות משובצות, ו־macOS מבוססת על יוניקס. ההבדל המעשי המשמעותי ביותר למתכנת הוא מודל ההרשאות ונתיבי הקבצים."
+    en: "An operating system manages hardware and allocates CPU time, memory, files and devices between programs. Windows dominates desktops, Linux servers and embedded systems, macOS is Unix-based. For developers the most practical differences are the permission model and file paths."
+    tags: [מערכת הפעלה, ווינדוס, לינוקס, חומרה]
+    qa:
+      - ["מה זה מערכת הפעלה?", "התוכנה שמנהלת את החומרה ומחלקת משאבים בין התוכניות — זמן מעבד, זיכרון, קבצים והתקנים. בלעדיה כל תוכנה הייתה צריכה לדבר עם החומרה בעצמה."]
+      - ["מה זה לינוקס?", "משפחת מערכות הפעלה בקוד פתוח ששולטת בשרתים, בתשתיות ובהתקנים משובצים. יש לה מודל הרשאות מבוסס משתמש וקבוצה, ונתיבי קבצים עם לוכסן רגיל."]
+      - ["מה זה ווינדוס?", "מערכת ההפעלה של מיקרוסופט, הנפוצה ביותר במחשבים אישיים. נתיבי הקבצים שלה משתמשים בלוכסן הפוך, ולקונסולה שלה יש קידוד עמודים שצריך לשים לב אליו בתוכנות עברית."]
+
+  # ══════════════════════════════════════════════════ בינה מלאכותית ─═══
+  - id: ai.overview
+    topic: בינה מלאכותית
+    he: "בינה מלאכותית היא תחום שבו מערכת מבצעת משימות שנחשבו עד היום לבעלות תבונה אנושית — זיהוי תמונה, הבנת שפה, קבלת החלטות. רוב ההתקדמות בעשור האחרון היא למידת מכונה: במקום לכתוב כללים, מראים למערכת דוגמאות והיא מוצאת את הדפוס בעצמה. ההבדל המעשי חשוב — מערכת מבוססת כללים נכשלת מחוץ לכללים, ומערכת שלומדת נכשלת מחוץ לנתונים שעליהם למדה."
+    en: "Artificial intelligence covers systems performing tasks once thought to need human intelligence. Most recent progress is machine learning: rather than writing rules, the system finds patterns in examples. The practical difference matters — rule systems fail outside their rules, learned systems fail outside their training data."
+    tags: [בינה מלאכותית, ai, למידת מכונה, דפוס]
+    qa:
+      - ["מה זה בינה מלאכותית?", "תחום שבו מערכת מבצעת משימות שנחשבו אנושיות — זיהוי תמונה, הבנת שפה, החלטות. רוב ההתקדמות היום מגיעה מלמידת מכונה, שמוצאת דפוסים בדוגמאות במקום לכתוב כללים ידנית."]
+      - ["מה ההבדל בין כללים ללמידה?", "מערכת כללים נכשלת בכל מקרה שלא נכתב במפורש. מערכת שלומדת מכלילה, אבל רק בתחום הנתונים שעליהם אומנה — מחוצה להם היא משוכנעת וטועה."]
+
+  - id: ai.ml
+    topic: בינה מלאכותית
+    he: "למידת מכונה היא התאמת פרמטרים כך שפונקציית שגיאה תקטן על נתונים. הלמידה המונחית לומדת מזוגות קלט־פלט מתויגים, הלא־מונחית מוצאת מבנה בלי תוויות, ולמידת חיזוק לומדת ממשוב על פעולות. הבעיה המרכזית היא התאמת יתר: מודל שזוכר את נתוני האימון נראה מצוין עליהם ונופל על נתונים חדשים."
+    en: "Machine learning fits parameters to minimise an error function on data: supervised from labelled pairs, unsupervised finding structure, reinforcement from feedback on actions. The central risk is overfitting — a model that memorises training data looks excellent there and fails on anything new."
+    tags: [למידת מכונה, ml, התאמת יתר, אימון, שגיאה]
+    qa:
+      - ["מה זה למידת מכונה?", "התאמת פרמטרים של מודל כך שהשגיאה על הנתונים תקטן. במקום לכתוב כללים, נותנים דוגמאות והמודל מוצא את הדפוס. הסוגים: מונחית, לא־מונחית וחיזוק."]
+      - ["מה זו התאמת יתר?", "כשהמודל משנן את נתוני האימון במקום ללמוד מהם. הסימן הוא פער גדול בין ביצועים על אימון לביצועים על נתונים חדשים — והוא נמדד מול קבוצת ביקורת נפרדת, אחרת אי אפשר לראות אותו."]
+      - ["איך יודעים שמודל באמת לומד?", "משאירים נתונים שהמודל לא ראה מעולם ומודדים עליהם. ציון על נתוני האימון בלבד לא אומר כלום — מודל יכול לשנן ולקבל ציון מושלם."]
+
+  - id: ai.nn
+    topic: בינה מלאכותית
+    he: "רשת עצבית היא שכבות של יחידות פשוטות שכל אחת מחשבת סכום משוקלל של הקלט שלה, מעבירה אותו דרך פונקציית הפעלה לא־ליניארית, ושולחת הלאה. האימון מתבצע על ידי מדידת השגיאה בפלט והפצתה אחורה כדי לעדכן את המשקולות — backpropagation. הלא־ליניאריות היא מה שמאפשר לרשת לייצג פונקציות מסובכות ולא רק צירופים ליניאריים."
+    en: "A neural network is layers of units each computing a weighted sum, passed through a non-linear activation. Training measures output error and propagates it backward to update weights. The non-linearity is what lets networks represent complex functions rather than only linear combinations."
+    tags: [רשת עצבית, שכבות, backpropagation, משקולות]
+    qa:
+      - ["מה זה רשת עצבית?", "שכבות של יחידות חישוב פשוטות: כל יחידה מסכמת קלט משוקלל, מעבירה דרך פונקציה לא־ליניארית ומעבירה הלאה. האימון מודד שגיאה ומפיץ אותה אחורה לעדכון המשקולות."]
+      - ["למה צריך פונקציית הפעלה לא ליניארית?", "בלי זה שכבות רבות קורסות לשקול של שכבה ליניארית אחת, והרשת לא יכולה לייצג יחסים מסובכים. הלא־ליניאריות היא מה שנותן עומק אמיתי."]
+
+  - id: ai.transformer
+    topic: בינה מלאכותית
+    he: "טרנספורמר הוא ארכיטקטורת רשת המבוססת על מנגנון קשב: כל מיקום בטקסט מחשב משקולות מול כל שאר המיקומים ולומד לאיזה הקשר רלוונטי להתייחס. בניגוד לרשתות חוזרות שעובדות מילה אחר מילה, הקשב מאפשר עיבוד מקבילי ולכידת תלויות למרחק. זו הארכיטקטורה שמתחת למודלי השפה הגדולים."
+    en: "A transformer relies on attention: each position computes weights against every other position and learns which context matters. Unlike recurrent networks that step word by word, attention allows parallel processing and long-range dependencies. It underlies modern large language models."
+    tags: [טרנספורמר, קשב, attention, מודל שפה]
+    qa:
+      - ["איך עובד טרנספורמר?", "עם מנגנון קשב: כל מילה מחשבת כמה להתייחס לכל מילה אחרת במשפט, ולומדת אילו הקשרים חשובים. זה מאפשר עיבוד מקבילי ותלויות למרחק, בניגוד לעיבוד מילה־אחר־מילה."]
+      - ["מה זה מנגנון קשב?", "חישוב שמקצה לכל מיקום משקל מול כל שאר המיקומים, כך שהמודל בוחר באיזה חלק מההקשר להתמקד. המשקולות נלמדות, לא נקבעות מראש."]
+
+  - id: ai.hallucination
+    topic: בינה מלאכותית
+    he: "הזיה היא פלט של מודל שפה שנשמע סביר אבל אינו נכון. הסיבה מבנית: מודל שפה מאומן לחזות את ההמשך הסביר ביותר, לא את האמת. לכן הוא מייצר תשובה בטוחה גם כשאין לו מקור. ההגנה המעשית היא עיגון — לחייב טענות מספריות ועובדתיות לעבור דרך מקור דטרמיניסטי, ולהגיד 'אני לא יודע' כשאין כזה."
+    en: "A hallucination is fluent but false output. The cause is structural: a language model is trained to predict the most plausible continuation, not the truth, so it produces confident answers with no source. The practical defence is grounding — routing numeric and factual claims through deterministic sources, and saying 'I do not know' when none exists."
+    tags: [הזיה, אמינות, עיגון, מודל שפה, קני מידה]
+    qa:
+      - ["מה זו הזיה של מודל?", "פלט שנשמע הגיוני אבל אינו נכון. מודל שפה מאומן לנבא את ההמשך הסביר, לא את האמת — ולכן הוא ממציא בביטחון כשאין לו מקור."]
+      - ["איך נלחמים בהזיות?", "עם עיגון: כל טענה מספרית או עובדתית עוברת דרך מקור דטרמיניסטי — מנוע חישוב, מאגר עובדות, או הרצת הקוד. אם אין מקור כזה, התשובה הנכונה היא 'אני לא יודע'."]
+
+  # ══════════════════════════════════════════════════════════ אבטחה ─═══
+  - id: sec.encryption
+    topic: אבטחה
+    he: "הצפנה הופכת מידע קריא ללא־קריא למי שאין לו את המפתח. בהצפנה סימטרית אותו מפתח מצפין ומפענח, והוא מהיר אך מחייב להעביר את המפתח בבטחה. בהצפנה אסימטרית יש זוג מפתחות — פומבי להצפנה ופרטי לפענוח — והיא פותרת את בעיית ההעברה אך איטית יותר. פרוטוקולים מודרניים משלבים: אסימטרי להחלפת מפתח, סימטרי לנתונים."
+    en: "Encryption turns readable data into unreadable data without the key. Symmetric uses one key for both directions — fast, but the key must be shared safely. Asymmetric uses a public/private pair, solving key distribution but slower. Modern protocols combine both: asymmetric to agree a key, symmetric for the data."
+    tags: [הצפנה, מפתח, אסימטרי, אבטחה, פרטיות]
+    qa:
+      - ["מה זה הצפנה?", "הפיכת מידע ללא־קריא בלי המפתח. סימטרית — מפתח אחד לשני הכיוונים, מהירה; אסימטרית — מפתח פומבי ופרטי, פותרת את העברת המפתח אבל איטית יותר."]
+      - ["מה ההבדל בין הצפנה סימטרית לאסימטרית?", "סימטרית משתמשת באותו מפתח להצפנה ולפענוח והיא מהירה, אבל צריך להעביר את המפתח בבטחה. אסימטרית משתמשת בזוג מפתחות ולכן אפשר לפרסם אחד מהם — ויחד משתילים בהן: אסימטרית לסיכום על מפתח, סימטרית לנתונים."]
+
+  - id: sec.password
+    topic: אבטחה
+    he: "סיסמה חזקה נמדדת באנטרופיה ולא במראה שלה. אורך מנצח סיבוכיות: משפט סיסמה של חמש מילים אקראיות עמיד בהרבה מסיסמה קצרה עם סמלים, והרבה יותר קל לזכור. כלל חשוב לא פחות — סיסמה ייחודית לכל שירות, כי דליפה של אתר אחד הופכת לשבירה של כולם. מנהל סיסמאות פותר את שני הצרכים יחד."
+    en: "Password strength is entropy, not appearance. Length beats complexity: a five-word random passphrase resists attack far better than a short symbol-laden one, and is easier to remember. Equally important — a unique password per service, so one breach cannot cascade. A password manager satisfies both."
+    tags: [סיסמה, אבטחה, אנטרופיה, אימות]
+    qa:
+      - ["מה זו סיסמה חזקה?", "כזאת עם הרבה אנטרופיה — כלומר קשה לניחוש. אורך מנצח סיבוכיות: משפט של חמש מילים אקראיות עדיף על סיסמה קצרה עם סמלים, וקל יותר לזכור."]
+      - ["למה אסור לחזור על סיסמאות?", "כי דליפה של שירות אחד הופכת למפתח לכל השאר. התוקפים מנסים אוטומטית את אותם צמדים בכל אתר, וסיסמה חוזרת היא הדלת היחידה שהם צריכים."]
+
+  - id: sec.phishing
+    topic: אבטחה
+    he: "פישינג הוא ניסיון לגרום לאדם למסור פרטי הזדהות על ידי התחזות לגורם אמין — דואל שנראה כמו הבנק, קישור לטופס כניסה מזויף, או הודעה דחופה שיוצרת לחץ. הסימן המהימן ביותר אינו התוכן אלא הכתובת: לבדוק את שם המתחם המלא לפני כל כניסה. דחיפות מלאכותית היא כמעט תמיד סימן אזהרה."
+    en: "Phishing tricks a person into surrendering credentials by impersonating a trusted party — bank-like email, fake login link, artificial urgency. The most reliable signal is not the content but the address: verify the full domain before entering credentials. Manufactured urgency is almost always a warning sign."
+    tags: [פישינג, הונאה, אבטחה, דואל, הנדסה חברתית]
+    qa:
+      - ["מה זה פישינג?", "התחזות לגורם אמין כדי לגרום לך למסור סיסמה או פרטי תשלום — מייל שנראה כמו הבנק, קישור מזויף, והודעה דחופה שיוצרת לחץ לפעול מיד."]
+      - ["איך מזהים פישינג?", "בודקים את הכתובת המלאה ולא את הטקסט המוצג, נזהרים מדחיפות מלאכותית, ולא נכנסים מקישור — מקלידים את הכתובת בעצמך. אם משהו דחוף באמת, אפשר לוודא בערוץ נפרד."]
+
+  - id: sec.backup
+    topic: אבטחה
+    he: "גיבוב הוא עותק של נתונים שנמצא במקום נפרד מהמקור. כלל 3-2-1: שלוש עותקים, על שני סוגי מדיה שונים, ואחד מהם מחוץ לאתר. גיבוב על דיסק חיצוני המחובר תמיד למחשב אינו גיבוב אמיתי — תוכנת כופר שמצפינה את המחשב מצפינה גם אותו."
+    en: "A backup is a copy stored separately from the original. The 3-2-1 rule: three copies, on two media types, one offsite. A backup on an always-attached external drive is not a real backup — ransomware that encrypts the machine encrypts it too."
+    tags: [גיבוב, 3-2-1, אבטחה, התאוששות]
+    qa:
+      - ["איך מגבים קבצים?", "לפי כלל 3-2-1: שלוש עותקים, שני סוגי מדיה, ואחד מחוץ לאתר. חשוב לנתק את אחד העותקים — גיבוב מחובר תמיד נפגע יחד עם המחשב."]
+      - ["למה דיסק חיצוני מחובר אינו גיבוב?", "כי כל מה שמגיע למחשב מגיע גם אליו: תוכנת כופר, מחיקה שגויה או תקלה חשמלית פוגעות בשניהם יחד. העותק השלישי חייב להיות מנותק או מרוחק."]
+
+  # ════════════════════════════════════════════════════════════ מדע ─═══
+  - id: sci.light
+    topic: מדע
+    he: "מהירות האור בריק היא 299,792,458 מטרים לשנייה, בקירוב 300,000 קילומטר לשנייה. הערך הזה אינו מדידה אלא הגדרה: מאז 1983 המטר מוגדר לפי המרחק שהאור עובר בחלק מסוים משנייה. שום גוף בעל מסה לא יכול להגיע למהירות הזאת, כי ככל שמתקרבים אליה נדרשת אנרגיה גדלה ללא גבול."
+    en: "The speed of light in vacuum is exactly 299,792,458 m/s, about 300,000 km/s. This is a definition rather than a measurement: since 1983 the metre is defined by how far light travels in a given fraction of a second. No massive object can reach it, since the energy required grows without bound."
+    tags: [אור, מהירות, פיזיקה, יחסות]
+    qa:
+      - ["מה מהירות האור?", "299,792,458 מטרים לשנייה בריק — בערך 300 אלף קילומטר לשנייה. זהו ערך מוגדר, ולא ממנו נגזר אורך המטר."]
+      - ["למה אי אפשר לעבור את מהירות האור?", "כי ככל שגוף עם מסה מתקרב אליה, נדרשת עוד ועוד אנרגיה כדי להאיץ אותו, והדרישה שואפת לאינסוף. לכן המהירות הזאת היא גבול ולא יעד."]
+
+  - id: sci.moon
+    topic: מדע
+    he: "מרחק הירח מכדור הארץ משתנה כי מסלולו אליפטי: בממוצע כ־384,400 קילומטר, בין כ־363,300 בנקודה הקרובה לכ־405,500 ברחוקה. הירח מתרחק מאיתנו בכ־3.8 סנטימטר בשנה כתוצאה מהעברת תנע זוויתי דרך הגאות, והוא מסובב טידאלית — ולכן פונה אלינו תמיד באותו צד."
+    en: "The Moon's distance varies because its orbit is elliptical: about 384,400 km on average, from roughly 363,300 km at perigee to 405,500 km at apogee. It recedes about 3.8 cm per year as tidal interaction transfers angular momentum, and it is tidally locked, so one face always points at Earth."
+    tags: [ירח, מרחק, מסלול, גאות, אסטרונומיה]
+    qa:
+      - ["כמה רחוק הירח?", "בממוצע כ־384,400 קילומטר. המסלול אליפטי, כך שהמרחק נע בין כ־363,300 ל־405,500 קילומטר."]
+      - ["למה רואים רק צד אחד של הירח?", "כי הוא מסובב טידאלית: זמן הסיבוב סביב עצמו זהה לזמן ההקפה סביב כדור הארץ. לכן אותה פניה פונה אלינו תמיד, והצד הרחוק נצפה לראשונה רק מגשושית."]
+
+  - id: sci.gravity
+    topic: מדע
+    he: "כוח משיכה הוא משיכה בין כל שני גופים בעלי מסה, ועוצמתה תלויה במכפלת המסות וביחס הפוך לריבוע המרחק ביניהן. על פני כדור הארץ התאוצה הנובעת ממנו היא כ־9.81 מטר לשנייה בריבוע. בתיאור של איינשטיין הכבידה אינה כוח אלא עקמומיות של המרחב־זמן שנוכחות מסה יוצרת, וגופים נעים לאורך העקמומיות הזאת."
+    en: "Gravity is attraction between any two masses, proportional to their product and inversely to the square of the distance. At Earth's surface it produces about 9.81 m/s² of acceleration. In Einstein's description gravity is not a force but curvature of spacetime caused by mass, and bodies follow that curvature."
+    tags: [כבידה, משיכה, פיזיקה, איינשטיין, מסה]
+    qa:
+      - ["מה זה כוח משיכה?", "משיכה בין כל שני גופים עם מסה. העוצמה תלויה במסות ויורדת עם ריבוע המרחק. על פני כדור הארץ היא נותנת תאוצה של כ־9.81 מטר לשנייה בריבוע."]
+      - ["למה דברים נופלים?", "כי כדור הארץ מעקם את המרחב־זמן סביבו לפי תורת היחסות, וגופים נעים לאורך העקמומיות הזאת. בפועל היומיומי זה נראה כמו כוח שמושך כלפי מטה."]
+
+  - id: sci.skies
+    topic: מדע
+    he: "השמיים כחולים ביום בגלל פיזור ריילי: מולקולות האוויר מפזרות אור באורכי גל קצרים הרבה יותר חזק מאשר ארוכים, והכחול מפוזר לכל עבר ולכן מגיע לעין מכל כיוון בשמיים. בשקיעה האור עובר דרך שכבת אוויר עבה יותר, הכחול כבר פוזר החוצה, ומה שנשאר הוא האדום והכתום."
+    en: "Daytime skies are blue because of Rayleigh scattering: air molecules scatter short wavelengths far more strongly than long ones, so blue light is redirected from every direction into the eye. At sunset light crosses more atmosphere, the blue has already scattered away, and reds and oranges remain."
+    tags: [שמיים, כחול, פיזור, אופטיקה, שקיעה]
+    qa:
+      - ["למה השמיים כחולים?", "בגלל פיזור ריילי — מולקולות האוויר מפזרות אורכי גל קצרים כמו כחול הרבה יותר חזק מאורכים ארוכים. הכחול מגיע לעין מכל כיוון, ולכן כל השמיים נראים כחולים."]
+      - ["למה השקיעה אדומה?", "כי בשקיעה האור עובר דרך שכבת אוויר עבה בהרבה. הכחול כבר פוזר בדרך, ומה שמגיע לעין הם אורכי הגל הארוכים — אדום וכתום."]
+
+  - id: sci.dna
+    topic: מדע
+    he: "דנ״א הוא מולקולת הסליל הכפול שנושאת את ההוראות לבניית תא ולתפעולו. המידע מקודד ברצף של ארבע בסיסים — אדנין, תימין, ציטוזין וגואנין — והם מזווגים תמיד א' עם ת' ו־צ' עם ג'. הסליל הכפול משוכפל על ידי הפרדה של שני הגדילים ובנייה של גדיל משלים לכל אחד, וזו הסיבה שהמידע עובר במדויק מדור לדור."
+    en: "DNA is the double helix carrying a cell's instructions. Information is encoded in a sequence of four bases — adenine, thymine, cytosine, guanine — always pairing A with T and C with G. Replication separates the strands and builds a complement for each, which is why information passes on accurately."
+    tags: [dna, דנא, גנטיקה, סליל כפול, תא]
+    qa:
+      - ["מה זה DNA?", "מולקולת הסליל הכפול שנושאת את ההוראות הגנטיות. המידע מקודד ברצף של ארבעה בסיסים — A, T, C, G — שמזווגים תמיד א' עם ת' ו־צ' עם ג'."]
+      - ["איך דנ״א משוכפל?", "הסליל נפתח לשני גדילים, וכל אחד משמש תבנית לבניית גדיל משלים. בגלל כללי הזיווג הקבועים התוצאה היא שני עותקים זהים למקור."]
+
+  - id: sci.vaccine
+    topic: מדע
+    he: "חיסון מציג למערכת החיסון זיהוי של פולש — אנטיגן, נגיף מוחלש או הוראה לייצור חלבון — בלי לגרום למחלה. מערכת החיסון מגיבה בייצור נוגדנים ובתאי זיכרון, וכשנגיף אמיתי מופיע התגובה מהירה וחזקה בהרבה. זו הסיבה שחיסון מגן גם אחרי שנים, וזו גם הסיבה לחלק מהתופעות הקצרות שאחריו — הן עדות לאימון, לא למחלה."
+    en: "A vaccine presents the immune system with a marker of an invader — an antigen, weakened virus, or instructions to make a protein — without causing disease. The immune system responds with antibodies and memory cells, so a real infection meets a far faster and stronger response. This explains both long-lasting protection and the brief after-effects, which reflect training rather than illness."
+    tags: [חיסון, מערכת חיסון, נוגדנים, רפואה]
+    qa:
+      - ["איך עובד החיסון?", "הוא מציג למערכת החיסון זיהוי של הפולש בלי לגרום למחלה. המערכת מייצרת נוגדנים ותאי זיכרון, וכשהנגיף האמיתי מגיע התגובה כבר מוכנה ומהירה."]
+      - ["למה יש תופעות לוואי אחרי חיסון?", "כי זו תגובת אימון פעילה של מערכת החיסון, לא המחלה עצמה. הסימנים הקצרים מעידים שהגוף בנה זיכרון חיסוני."]
+
+  - id: sci.bp
+    topic: מדע
+    he: "לחץ דם נמדד בשני מספרים: סיסטולי — הלחץ בזמן שהלב מתכווץ ודוחף דם, ודיאסטולי — הלחץ בין פעימות כשהלב נח. נהוג לכתוב זאת כ־120/80 מילימטר כספית. המספר הראשון גבוה מהשני תמיד, ולכן יחס הפוך ביניהם מצביע על טעות מדידה ולא על מצב רפואי."
+    en: "Blood pressure is recorded as two numbers: systolic, the pressure while the heart contracts, and diastolic, the pressure between beats while it rests — conventionally written as 120/80 mmHg. Systolic is always the higher number, so a reversed ratio indicates a measurement error rather than a medical condition."
+    tags: [לחץ דם, סיסטולי, דיאסטולי, רפואה, לב]
+    qa:
+      - ["מה זה לחץ דם?", "הלחץ שהדם מפעיל על דפנות כלי הדם, ונמדד בשני מספרים: סיסטולי בזמן כיווץ הלב, ודיאסטולי בין הפעימות. נהוג לכתוב 120/80 מילימטר כספית."]
+      - ["מה ההבדל בין סיסטולי לדיאסטולי?", "סיסטולי הוא הלחץ כשהלב מתכווץ ודוחף דם, דיאסטולי כשהלב נח בין פעימות. הראשון תמיד גבוה יותר — אם קיבלת יחס הפוך, כנראה הייתה טעות במדידה."]
