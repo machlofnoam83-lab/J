@@ -30,8 +30,44 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from brain.knowledge import HashedNgramVectorizer  # noqa: E402
+from brain.knowledge import HashedNgramVectorizer, _stem, content_tokens  # noqa: E402
+from brain.tokenizer import normalize  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
+
+
+def strip_recall_frame(text: str) -> str:
+    """Drop interrogative and recall frame words, keeping survivors verbatim.
+
+    `recall` used to vectorise the raw query, and the vectoriser is character
+    n-gram based, so the frame carried as much weight as the content. Every
+    "מה אמרתי על X" therefore looked like every other one: measured across 15
+    probes, genuine content matches scored 0.46-0.71 while frame-only matches
+    against an unrelated memory clustered at 0.05-0.28, and one query —
+    "סיפרתי לך על רקס" — matched a memory about a *project* at 0.227. The frame
+    words, not the topic, were doing the matching.
+
+    Only frame words are removed and the rest is left exactly as written, because
+    stored memories were vectorised raw; stemming the query would break character
+    n-gram agreement with them. `content_tokens` decides what is content, so this
+    reuses the KB's stopword list and normalisation rather than growing a second
+    one that can drift out of sync — the same divergence that caused 14 stopwords
+    to silently stop matching.
+
+    Falls back to the original text when nothing survives, so a query made
+    entirely of frame words still produces a vector instead of an empty one.
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    content = content_tokens(raw)
+    if not content:
+        return raw
+    kept = []
+    for w in raw.split():
+        n = normalize(w).lower()
+        if n in content or _stem(n) in content:
+            kept.append(w)
+    return " ".join(kept) or raw
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS episodes (
@@ -253,7 +289,7 @@ class MemoryPalace:
             self._rebuild_cache()
         if self._cache_vecs is None or not len(self._cache_texts):
             return []
-        qv = self.vectorizer.transform_one(query)
+        qv = self.vectorizer.transform_one(strip_recall_frame(query))
         sims = self._cache_vecs @ qv
         weights = np.array([m["weight"] for m in self._cache_meta], dtype=np.float32)
         scored = sims * (0.35 + 0.65 * weights)

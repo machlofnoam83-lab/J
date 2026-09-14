@@ -115,3 +115,62 @@ def shell_history(limit: int = 15) -> SkillResult:
         return SkillResult(ok=True, value="עדיין לא הורצו פקודות דרכי.", data={"count": 0})
     return SkillResult(ok=True, value="\n".join(f"$ {r.get('command', '')}" for r in rows),
                        data={"count": len(rows), "commands": rows})
+
+
+@REGISTRY.register(
+    "coder.run", risk="WRITE", agent="hephaestus",
+    description_he="מריץ קוד פייתון בארגז חול מבודד עם פסק זמן — לא נוגע במערכת ישירות",
+    required=("code",), triggers_he=("הרץ קוד", "run code", "run python"),
+)
+def coder_run(code: str = "", tests: str = "", timeout: float = 20.0) -> SkillResult:
+    """Execute Python in HEPHAESTUS's restricted sandbox.
+
+    This skill existed in the training corpus long before it existed here:
+    forge_corpus.py emitted {"tool": "coder.run", ...} for every coding sample,
+    but no such skill was registered, so the corpus taught a tool call that could
+    only ever resolve to "unknown skill 'coder.run'". Registering it makes that
+    data truthful and gives sandboxed execution a first-class, permission-gated
+    entry point.
+
+    Risk is WRITE, matching the gate on the CODE intent path. Not CRITICAL: that
+    level demands HUD confirmation for every coding request, which headless denies
+    outright — measured, it broke the coding agent entirely rather than protecting
+    it. Sandboxed execution under an isolated interpreter with a mandatory timeout
+    is the same trust class as fs.write, whereas shell.exec runs arbitrary commands
+    against the real system and stays CRITICAL.
+
+    The import is lazy because agents.hephaestus and the skill registry load each
+    other during startup.
+    """
+    src = str(code or "").strip()
+    if not src:
+        return SkillResult(ok=False, error="לא קיבלתי קוד להרצה.")
+
+    timeout = max(1.0, min(float(timeout), 120.0))
+    try:
+        from agents.hephaestus import run_python
+    except Exception as exc:                                  # pragma: no cover
+        return SkillResult(ok=False, error=f"ארגז החול לא זמין: {exc}")
+
+    extra = {"test_generated.py": tests} if str(tests or "").strip() else None
+    BUS.emit("coder.start", {"chars": len(src), "timeout": timeout}, source="coder.run")
+    res = run_python(src, timeout=timeout, extra_files=extra)
+
+    out = (getattr(res, "stdout", "") or "")[:MAX_OUTPUT]
+    err = (getattr(res, "stderr", "") or "")[:MAX_OUTPUT]
+    ok = bool(getattr(res, "ok", False))
+    BUS.emit("coder.done", {"ok": ok, "ms": round(getattr(res, "ms", 0.0), 1),
+                            "error_kind": getattr(res, "error_kind", "")}, source="coder.run")
+
+    if ok:
+        return SkillResult(ok=True, value=out or "(הקוד רץ בלי פלט)",
+                           data={"stdout": out, "ms": getattr(res, "ms", 0.0),
+                                 "sandboxed": True,
+                                 "summary_he": "הקוד הורץ בארגז חול מבודד והסתיים בהצלחה."})
+    kind = getattr(res, "error_kind", "") or "Error"
+    line = getattr(res, "error_line", None)
+    where = f" בשורה {line}" if line else ""
+    return SkillResult(ok=False,
+                       error=f"ההרצה נכשלה ({kind}){where}: {err[-600:] or 'אין פלט שגיאה'}",
+                       data={"stdout": out, "stderr": err, "error_kind": kind,
+                             "error_line": line, "sandboxed": True})

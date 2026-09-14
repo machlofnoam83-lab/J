@@ -184,6 +184,23 @@ def template_leak(answer: str, question: str) -> str:
     return ""
 
 
+# Floor for presenting a memory hit as an answer, as opposed to merely using it
+# as loose context. `recall` defaults to min_score 0.05, which is right for
+# context and wrong for a claim: at that floor every "מה אמרתי על X" returned
+# something, so JARVIS answered questions about dogs, spaceships and politics
+# with a stored sentence about coffee, prefaced by "כן, אדוני. מהזיכרון שלי".
+#
+# 0.15 is deliberately conservative and is NOT fitted to a decision boundary.
+# After `strip_recall_frame` removed the interrogative frame from the query, the
+# measured probe scored genuine content matches 0.252-0.707 and irrelevant ones
+# 0.056-0.229. Those ranges do now separate, but by only 0.023 across 15 samples,
+# so a threshold placed inside that gap would be overfitting the probe — the same
+# mistake as tuning against the knowledge base's 22-sample set. 0.15 sits well
+# below the observed relevant minimum, blocks the noise cluster outright, and
+# leaves room for the boundary to move on real data.
+MEMORY_ANSWER_FLOOR = 0.15
+
+
 def _num_key(value: Any) -> str:
     try:
         if isinstance(value, str):
@@ -415,12 +432,16 @@ class ReasoningEngine:
                              recalled: Sequence[Dict[str, Any]]) -> Answer:
         route = Route("MEMORY_QUERY", 0.8, "recall request")
         t = time.perf_counter()
-        if not recalled:
-            trace.add("recall", "no memory hits", {}, t)
+        # Filter to hits strong enough to assert, not merely to use as context.
+        strong = [h for h in (recalled or []) if float(h.get("score", 0.0)) >= MEMORY_ANSWER_FLOOR]
+        if not strong:
+            trace.add("recall", f"no memory hits above {MEMORY_ANSWER_FLOOR} "
+                                f"({len(recalled or [])} weak)",
+                      {"top": [h.get("score") for h in (recalled or [])[:3]]}, t)
             reply = "לא מצאתי משהו רלוונטי בזיכרון לשאלה הזו. אם תזכיר לי את ההקשר, אשמור אותו עכשיו."
         else:
-            trace.add("recall", f"{len(recalled)} hits", {"top": recalled[:3]}, t)
-            lines = " ".join(f"[{h['score']:.2f}] {h['text'][:120]}" for h in recalled[:3])
+            trace.add("recall", f"{len(strong)} hits above floor", {"top": strong[:3]}, t)
+            lines = " ".join(f"[{h['score']:.2f}] {h['text'][:120]}" for h in strong[:3])
             reply = f"כן, אדוני. מהזיכרון שלי: {lines}"
         return self._verify_and_pack(reply, route, trace, t0)
 
@@ -432,6 +453,42 @@ class ReasoningEngine:
             return self._neural_answer(text, trace, t0, route=route,
                                        system_note="המשתמש ביקש קוד. ספק קוד פייתון תקין עם הסבר קצר בעברית.")
         trace.add("plan", "dispatch to HEPHAESTUS (coder agent)", {"task": text[:120]}, t)
+
+        # HEPHAESTUS writes Python and then *runs it* in a subprocess sandbox. That
+        # is arbitrary code execution, and it used to happen with no firewall check
+        # at all: `_handle_code` dispatched straight to `agent.handle(text)`, while
+        # every skill-based action went through `firewall.check` in `_run_tool`.
+        # Measured, the gap was total — identical code ran at level WRITE, at level
+        # SAFE, and with the emergency kill switch engaged. A kill switch that stops
+        # fs.write but not code execution is not a kill switch, and SAFE as a "hard
+        # ceiling" meant nothing on this path.
+        #
+        # Gated at WRITE, not CRITICAL, and the distinction was measured rather than
+        # assumed. CRITICAL is correct for shell.exec, which runs arbitrary commands
+        # against the real system; at CRITICAL this path requires human confirmation
+        # for *every* coding request, which headless denies outright and which cost
+        # a 180s confirm_timeout per call — that broke the coding agent completely
+        # instead of protecting it. Sandboxed execution under an isolated
+        # interpreter with a timeout is the same trust class as fs.write, so WRITE
+        # is the honest level. It still closes the actual hole: SAFE blocks it as a
+        # hard ceiling and the kill switch stops it.
+        if self.firewall is not None:
+            t = time.perf_counter()
+            decision = self.firewall.check("coder.run", "WRITE",
+                                           {"task": text[:200]}, agent="hephaestus")
+            trace.add("tool",
+                      f"firewall: {'allow' if decision.allowed else 'block'} — {decision.reason}",
+                      decision.to_dict(), t)
+            if not decision.allowed:
+                BUS.emit(T.AGENT_RESULT, {"agent": "hephaestus", "ok": False,
+                                          "blocked": decision.reason}, source="reasoning")
+                reply = self._phrase_block(route, decision.reason, "WRITE")
+                return self._verify_and_pack(reply, route, trace, t0)
+            if self.firewall.dry_run:
+                reply = ("מצב הדמיה פעיל, אדוני. הייתי כותב ומריץ קוד עבור הבקשה הזו "
+                         "בארגז החול, אבל לא הרצתי דבר.")
+                return self._verify_and_pack(reply, route, trace, t0)
+
         BUS.emit(T.AGENT_DISPATCH, {"agent": "hephaestus", "task": text[:200]}, source="reasoning")
         try:
             out = agent.handle(text)

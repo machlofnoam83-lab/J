@@ -55,7 +55,8 @@ class Route:
 
 
 # ------------------------------------------------------------------ patterns --
-_TIME_Q = re.compile(r"(מה (ה)?שעה|שעה עכשיו|what time|השעה כרגע|מה התאריך|איזה יום|what date|today's date)", re.I)
+_TIME_Q = re.compile(r"(מה (ה)?שעה|שעה עכשיו|what time|השעה כרגע|מה התאריך|איזה תאריך|"
+                     r"התאריך (היום|של היום)|איזה יום|מה היום|what date|today's date)", re.I)
 _HELP_Q = re.compile(r"(מה אתה (יודע|מסוגל|עושה|טוב)|מה (ה)?תפקיד(ך| שלך)|למה אתה מסוגל"
                      r"|עזרה|help|מה אפשר|היכולות שלך|הכישורים שלך"
                      r"|what can you do|what do you do|your (abilities|skills))", re.I)
@@ -74,17 +75,66 @@ _CODE = re.compile(
     r"write (me )?(a )?(function|script|class|code|program)|explain (this|the) code|"
     r"תסביר את הקוד|להריץ קוד|הרץ קוד)", re.I)
 _MEM_WRITE = re.compile(r"(תזכור|תזכרי|זכור|remember that|אל תשכח|שים לב ש|העדפה שלי|קרא לי)", re.I)
-_MEM_QUERY = re.compile(r"(מה (אמרתי|סיפרתי|ביקשתי)|זוכר (מה|את)|recall|מה דיברנו|לפני (שעה|יום|שבוע))", re.I)
+_MEM_QUERY = re.compile(r"(מה (אמרתי|סיפרתי|ביקשתי)|זוכר (מה|את)|recall|מה דיברנו|לפני (שעה|יום|שבוע)|"
+                        r"מה (הסיסמה|השם|העיר|הכתובת|הפרויקט|ההעדפה|ההעדפות) (שלי|של המשתמש)|"
+                        r"איפה אני גר|היכן אני גר|מה שם (הכלב|החתול|הבן|הבת|הילד) שלי|"
+                        r"מה אני (אוהב|מעדיף|לומד|עובד)|על איזה פרויקט אני עובד|"
+                        r"what (did i say|is my (name|password))|where do i live)", re.I)
+
+# Subset of `_MEM_QUERY` that is unambiguously a recall request — it names the act
+# of having said something, not a topic. Checked ahead of the system intents
+# because those match bare keywords at priority 4, and memory only ran at 6, so
+# "מה אמרתי על מוזיקה" was claimed by `_MEDIA` and answered by skipping a track.
+# Same shape as the CPU/telemetry hijack: a keyword route stealing a question it
+# cannot answer. Only the explicit forms are promoted; the possessive ones
+# ("הסיסמה שלי") stay at priority 6, because "הקובץ שלי" must still reach FILES.
+_MEM_EXPLICIT = re.compile(
+    r"(מה (אמרתי|סיפרתי|ביקשתי|שאלתי)|זוכר (מה|את)|מה דיברנו|recall|"
+    r"what did i (say|ask|tell)|do you remember)", re.I)
 _SYS_Q = re.compile(r"(מצב (ה)?מחשב|טלמטריה|cpu|ram|זיכרון פנוי|מעבד|דיסק|סוללה|temperature|"
                     r"system status|מה קורה עם המחשב|תהליכים|processes)", re.I)
+
+# A question about what a component *is* must not be answered with what that
+# component is *currently doing*. `_SYS_Q` matches the bare nouns cpu/ram/דיסק/
+# מעבד, so "מה זה CPU" used to route to sys.telemetry at 0.93 and reply "מעבד
+# 2.0 אחוז, זיכרון 17.5 אחוז" — technically a true statement about the machine
+# and a complete non-answer to the question, while KNOWLEDGE sat at priority 9
+# holding the definition. Definitional phrasing therefore vetoes the telemetry
+# route and lets the question fall through to the knowledge base.
+_DEFINITION = re.compile(
+    r"(מה זה|מה (הוא|היא) |מה זה אומר|מה הכוונה|הסבר|תסביר|הגדר|תגדיר|"
+    r"מה ההבדל|מה היתרון|למה משמש|בשביל מה|what (is|are) |define |explain )",
+    re.I,
+)
+
+# Narrower sibling of `_DEFINITION`, and the distinction is deliberate.
+#
+# `_DEFINITION` only ever *vetoes* the telemetry route, so a false positive is
+# harmless — the question simply falls through to whatever matches next. It can
+# therefore afford to include bare "הסבר/תסביר/explain".
+#
+# `_WHAT_IS` instead *claims* a route for the knowledge base, ahead of CODE and
+# SYSTEM. A false positive there steals the question from a specialist that could
+# actually handle it: "תסביר את הקוד" must reach HEPHAESTUS, not the KB. So this
+# pattern is restricted to explicit definition requests, and even a match only
+# wins when the knowledge base actually holds an answer — otherwise routing
+# continues unchanged.
+_WHAT_IS = re.compile(
+    r"(מה זה|מה זה אומר|מה הכוונה (ב|של)|הגדר (לי )?|תגדיר|"
+    r"מה ההבדל בין|מה היתרון (של|של)|למה משמש|בשביל מה (משמש|טוב)|"
+    r"what (is|are) |what does .* mean|define )",
+    re.I,
+)
 _FILES = re.compile(r"(קובץ|קבצים|קבצי(?=[\s־\-.,!?]|$)|תיקי(?:יה|ית|ות|ה|ת)|תת־תיקייה"
                      r"|file|folder|directory|json|txt|csv|"
                      r"לקרוא את|לכתוב את|לשמור את|למחוק את|לחפש|חפש)", re.I)
 _APPS = re.compile(r"(פתח את|סגור את|הפעל את|open |close |launch |start |kill |הרג את|מחשבון|דפדפן)", re.I)
 _FILE_VERB = re.compile(r"(קרא|הצג|שמור|כתוב|מחק|ערוך|read|show|save|write|delete|edit|list)", re.I)
-_SCREEN = re.compile(r"(צילום מסך|צלם את המסך|screenshot|capture the screen)", re.I)
+_SCREEN = re.compile(r"(צילום מסך|צלם (את )?(ה)?מסך|תצלם (את )?(ה)?מסך|המסך לצלם|"
+                     r"screenshot|capture the screen|screen shot)", re.I)
 _CLIP = re.compile(r"(לוח|clipboard|העתק|הדבק|copy|paste)", re.I)
-_MEDIA = re.compile(r"(מוזיקה|ווליום|עוצמת קול|נגן|השהה|volume|music|pause|play|next)", re.I)
+_MEDIA = re.compile(r"(מוזיקה|שיר|רצועה|ווליום|עוצמת קול|נגן|השהה|"
+                    r"volume|music|pause|play|next|previous|track|song)", re.I)
 _REMIND = re.compile(r"(תזכיר לי|remind me|בעוד \d+ דקות|in \d+ minutes|שעון עצר|timer)", re.I)
 _SAFETY = re.compile(r"(מסוכן|סיכון|אבטחה|הרשאות|dangerous|permission|security|kill switch)", re.I)
 _MATH_HINT = re.compile(
@@ -117,6 +167,50 @@ def _num(x: Any) -> str:
             return str(int(x))
         return f"{round(x, 6):g}"
     return str(x)
+
+
+_UNIT_RE = None
+
+
+def _unit_pattern():
+    """One alternation over every known unit name, longest first.
+
+    Longest-first matters: "מטר" is a substring of "קילומטר", so scanning
+    left-to-right with short names first would match the tail of the longer unit
+    and report two units where the user named one.
+    """
+    global _UNIT_RE
+    if _UNIT_RE is None:
+        from brain.math_engine import UNIT_ALIASES
+        names = sorted(UNIT_ALIASES.keys(), key=len, reverse=True)
+        _UNIT_RE = re.compile("|".join(re.escape(n) for n in names), re.I)
+    return _UNIT_RE
+
+
+def _match_conversion(text: str) -> Optional[Tuple[float, str, str]]:
+    """Pull (value, source_unit, target_unit) out of a conversion request.
+
+    Requires two *distinct* units and a number. Demanding two units is what keeps
+    this from swallowing ordinary quantity questions — "מה זה 5 קילו" names one
+    unit and falls through untouched, while "המר 100 צלזיוס לפרנהייט" and
+    "5 קילומטר במיילים" both name a source and a target. Source is the unit that
+    appears first in the sentence, which is how both Hebrew and English phrase it.
+    """
+    units = [(m.start(), m.group(0)) for m in _unit_pattern().finditer(text)]
+    if len(units) < 2:
+        return None
+    src = units[0][1]
+    dst = next((u for _, u in units[1:] if u.lower() != src.lower()), None)
+    if not dst:
+        return None
+    nums = re.findall(r"\d+(?:\.\d+)?", text)
+    if not nums:
+        return None
+    try:
+        value = float(nums[0])
+    except ValueError:
+        return None
+    return value, src, dst
 
 
 def _search_extension(text: str) -> str:
@@ -209,6 +303,34 @@ class IntentRouter:
         if _SAFETY.search(t):
             return Route("SAFETY", 0.8, "security or permission question")
 
+        # 3b. an explicit definition request consults the knowledge base BEFORE
+        # the specialist intents below. Those match on bare nouns — _SYS_Q on
+        # cpu/ram/דיסק/מעבד, _CODE on באג/תוכנה/אלגוריתם — so without this a
+        # question about what something *is* gets answered with what it is
+        # currently *doing*: "מה זה CPU" returned telemetry, "מה זה באג" was
+        # handed to HEPHAESTUS as a programming request. Both were confident and
+        # both were non-answers.
+        #
+        # This only claims the route when the KB genuinely holds an answer. A
+        # definitional question the KB cannot answer falls through untouched, so
+        # "מה זה דיסק" with no disk entry still reaches whatever specialist
+        # matches, exactly as before.
+        if self.knowledge is not None and _WHAT_IS.search(t):
+            qa = self.knowledge.search_qa(t, k=1, min_score=0.55)
+            if qa:
+                hit = qa[0]
+                return Route("KNOWLEDGE", min(0.99, hit["score"]),
+                             f"definition request, known QA pair ({hit['fact_id']})",
+                             reply_he=hit["answer"], grounded=True, value=hit)
+
+        # 3c. an explicit recall request outranks the keyword-based system intents
+        # below. "מה אמרתי על מוזיקה" contains "מוזיקה", and `_MEDIA` runs at
+        # priority 4 while memory ran at 6, so the question was answered by trying
+        # to skip a track. Promoting only the unambiguous forms keeps "הקובץ שלי"
+        # on the FILES path and "נגן מוזיקה" on the media path.
+        if _MEM_EXPLICIT.search(t):
+            return Route("MEMORY_QUERY", 0.9, "explicit recall request")
+
         # 4. explicit system intents
         if _SCREEN.search(t):
             return Route("SYSTEM", 0.95, "screenshot request", skill="screen.capture", risk="WRITE")
@@ -217,7 +339,7 @@ class IntentRouter:
             return Route("SYSTEM", 0.9, "clipboard request", skill=skill, risk="WRITE")
         if _MEDIA.search(t):
             return Route("SYSTEM", 0.85, "media control request", skill=self._media_skill(t), risk="SAFE")
-        if _SYS_Q.search(t):
+        if _SYS_Q.search(t) and not _DEFINITION.search(t):
             return Route("SYSTEM", 0.93, "telemetry/process question", skill="sys.telemetry")
 
         # 5. apps and files (WRITE / CRITICAL)
@@ -292,6 +414,28 @@ class IntentRouter:
 
     def _route_math(self, text: str) -> Optional[Route]:
         low = text.lower()
+
+        # a0) unit conversion. math.convert was registered and described in
+        # Hebrew, but nothing ever routed to it — the keyword table below covers
+        # sqrt/prime/fib/base/factorial/stats/gcd and has no conversion entry.
+        # The only caller that supplied a source unit was forge_corpus.py, so the
+        # training corpus taught a tool call the deterministic router could not
+        # emit and the neural core does not reliably emit either. The tool was
+        # dead on arrival, and worse, it failed with a message that looked like an
+        # unsupported conversion rather than a missing argument.
+        conv = _match_conversion(text)
+        if conv is not None:
+            value, src, dst = conv
+            from brain.math_engine import canonical_unit, convert as _convert_units
+            out = _convert_units(value, src, dst)
+            if out is not None:
+                cs, cd = canonical_unit(src), canonical_unit(dst)
+                return Route("MATH", 0.97, f"unit conversion {src}->{dst}",
+                             skill="math.convert",
+                             args={"v": value, "from": src, "to": dst},
+                             value=out,
+                             reply_he=f"{_num(value)} {cs} הם {_num(out)} {cd}.",
+                             grounded=True)
 
         # a) explicit function-call syntax, e.g. gcd(48, 18) / sqrt(144)
         m = re.search(r"\b(sqrt|abs|log|log2|log10|ln|exp|sin|cos|tan|gcd|lcm|hypot|"
@@ -413,6 +557,12 @@ class IntentRouter:
             return "media.volume_down"
         if re.search(r"(השהה|pause|עצור)", text, re.I):
             return "media.pause"
+        # previous-track had no branch at all, so "השיר הקודם" fell through to the
+        # `return` below and skipped *forward* — the opposite of what was asked,
+        # while media.prev sat registered and unreachable. Checked before play
+        # because "נגן את השיר הקודם" contains both verbs.
+        if re.search(r"(הקודם|הקודמת|previous|prev\b|back)", text, re.I):
+            return "media.prev"
         if re.search(r"(נגן|play|המשך)", text, re.I):
             return "media.play"
         return "media.next"

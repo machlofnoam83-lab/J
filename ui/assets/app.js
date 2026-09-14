@@ -370,6 +370,96 @@
   }
 
   // ───────────────────────── memory feed ─────────────────────────
+  // ══════════════════════ firewall audit + skill catalogue ══════════════════
+  // /api/audit, /api/skills and /api/stt were all implemented server-side and
+  // none of them were ever called from the HUD — the permission firewall kept an
+  // immutable log of every blocked action and the UI showed none of it. Surfacing
+  // them here rather than adding new backend surface.
+  const RISK_ORDER = { CRITICAL: 0, WRITE: 1, SAFE: 2 };
+  let skillsFilter = null;
+  let skillsCache = [];
+
+  function renderAudit(a) {
+    if (!a) return;
+    const s = a.stats || {}, tail = a.tail || [];
+    const el = $('#fw-stats'); if (!el) return;
+    el.innerHTML = kv([
+      ['רמת הרשאות', s.level || '—', true],
+      ['מצב הדמיה', s.dry_run ? 'פעיל' : 'כבוי'],
+      ['מתג חירום', s.killed ? 'מופעל' : 'תקין', !!s.killed],
+      ['סה״כ החלטות', s.total || 0],
+      ['אושרו', s.allowed || 0],
+      ['נחסמו', s.blocked || 0, (s.blocked || 0) > 0]
+    ]);
+    const total = Math.max(1, (s.allowed || 0) + (s.blocked || 0));
+    const bar = $('#bar-fw');
+    if (bar) bar.style.width = Math.round(100 * (s.blocked || 0) / total) + '%';
+    const ul = $('#audit-stream');
+    if (ul) {
+      ul.innerHTML = tail.length ? tail.slice(0, 18).map(r => {
+        const t = new Date((r.ts || 0) * 1000).toTimeString().slice(0, 8);
+        const mark = r.allowed ? '✓' : '✕';
+        return `<li class="${r.allowed ? '' : 'denied'}">`
+             + `<span class="t-ts">${esc(t)}</span>`
+             + `<b>${esc(mark)}</b> ${esc(r.action || '?')} `
+             + `<span class="lvl-${esc(String(r.level || '').toLowerCase())}">${esc(r.level || '')}</span>`
+             + `<div class="a-reason">${esc(r.reason || '')}</div></li>`;
+      }).join('') : '<li>אין עדיין רישומים ביומן.</li>';
+    }
+  }
+
+  async function refreshAudit() {
+    try { renderAudit(await api('/api/audit?n=40')); }
+    catch (_) { const el = $('#fw-stats'); if (el) el.innerHTML = kv([['מצב', 'לא זמין']]); }
+  }
+
+  function renderSkills(r) {
+    if (!r) return;
+    skillsCache = r.skills || [];
+    const el = $('#skills-stats'); if (!el) return;
+    const by = { SAFE: 0, WRITE: 0, CRITICAL: 0 };
+    skillsCache.forEach(s => { by[s.risk] = (by[s.risk] || 0) + 1; });
+    el.innerHTML = kv([
+      ['סה״כ כלים', r.count || skillsCache.length, true],
+      ['SAFE', by.SAFE || 0],
+      ['WRITE', by.WRITE || 0],
+      ['CRITICAL', by.CRITICAL || 0, (by.CRITICAL || 0) > 0]
+    ]);
+    const ul = $('#skills-list'); if (!ul) return;
+    const rows = skillsCache
+      .filter(s => !skillsFilter || s.risk === skillsFilter)
+      .slice()
+      .sort((a, b) => (RISK_ORDER[a.risk] ?? 9) - (RISK_ORDER[b.risk] ?? 9)
+                   || String(a.name).localeCompare(String(b.name)));
+    ul.innerHTML = rows.length ? rows.map(s =>
+        `<li data-risk="${esc(s.risk)}" title="${esc(s.description || '')}">`
+      + `<span class="t-ts">${esc(s.agent || '')}</span>`
+      + `<b>${esc(s.name)}</b> <span class="lvl-${esc(String(s.risk || '').toLowerCase())}">${esc(s.risk)}</span>`
+      + `<div class="a-reason">${esc(s.description || '')}</div></li>`).join('')
+      : '<li>אין כלים ברמה הזו.</li>';
+  }
+
+  async function refreshSkills() {
+    try { renderSkills(await api('/api/skills')); }
+    catch (_) { const el = $('#skills-stats'); if (el) el.innerHTML = kv([['מצב', 'לא זמין']]); }
+  }
+
+  function wireSecurityPanels() {
+    const ba = $('#btn-refresh-audit'); if (ba) ba.addEventListener('click', refreshAudit);
+    const bs = $('#btn-refresh-skills'); if (bs) bs.addEventListener('click', refreshSkills);
+    // clicking the stats row cycles the risk filter on the catalogue
+    const ss = $('#skills-stats');
+    if (ss) ss.addEventListener('click', () => {
+      skillsFilter = skillsFilter === null ? 'CRITICAL'
+                   : skillsFilter === 'CRITICAL' ? 'WRITE'
+                   : skillsFilter === 'WRITE' ? 'SAFE' : null;
+      renderSkills({ count: skillsCache.length, skills: skillsCache });
+      toast(skillsFilter ? `מסנן: ${skillsFilter}` : 'המסנן הוסר', 'good', 1800);
+    });
+    refreshAudit(); refreshSkills();
+    setInterval(refreshAudit, 9000);
+  }
+
   async function syncMemory() {
     try {
       const r = await api('/api/memory');
@@ -1552,7 +1642,7 @@
     // hotkeys from Electron main
     if (win && win.onHotkey) win.onHotkey(h => {
       if (h.name === 'push-to-talk') { Rec.recording ? Rec.stop() : Rec.start(); }
-      if (h.name === 'summon-chat') summonSpeech();
+      if (h.name === 'summon-speech') summonSpeech();
       if (h.name === 'kill-switch') doKill('KILL SWITCH — מקש קיצור');
     });
     if (win && win.onBrainState) win.onBrainState(s => {
@@ -1766,6 +1856,7 @@
     }
 
     startClocks();
+    wireSecurityPanels();
     recomputeState();
     connect();
 

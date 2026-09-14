@@ -108,11 +108,30 @@ def _factorial(n: int = 0, **kw: Any) -> SkillResult:
                    description_he="המרת יחידות (אורך, משקל, זמן, נפח מידע, טמפרטורה)",
                    required=("v", "to"))
 def _convert(v: float = 0, to: str = "", **kw: Any) -> SkillResult:
-    src = str(kw.get("from", kw.get("src", "")))
+    # `from` is a Python keyword, so it can only ever arrive through **kw — and a
+    # caller that spells it `source`, `src`, `unit` or `from_unit` is not wrong,
+    # just different. Previously only "from"/"src" were read; anything else left
+    # the source empty, the conversion returned None, and the error printed an
+    # empty slot: "אין לי המרה מ־ ל־c". That message described a missing argument
+    # as though it were an unsupported one, which sends a user down the wrong path.
+    src = ""
+    for key in ("from", "src", "source", "from_unit", "unit", "in"):
+        if kw.get(key):
+            src = str(kw[key])
+            break
+    if not src:
+        return SkillResult(ok=False,
+                           error="חסרה יחידת המקור. צריך לומר למשל 'המר 100 צלזיוס לפרנהייט' "
+                                 "— כלומר ערך, יחידת מקור ויחידת יעד.")
     out = ME.convert(v, src, to)
     if out is None:
-        return SkillResult(ok=False, error=f"אין לי המרה מ־{src} ל־{to}")
-    return SkillResult(ok=True, value=out, data={"summary_he": f"{v} {src} הם {out} {to}."})
+        return SkillResult(ok=False,
+                           error=f"אין לי המרה מ־{src} ל־{to}. אני ממיר אורך, משקל, זמן, "
+                                 f"נפח מידע וטמפרטורה.")
+    cs, cd = ME.canonical_unit(src), ME.canonical_unit(to)
+    return SkillResult(ok=True, value=out,
+                       data={"summary_he": f"{v} {cs} הם {out} {cd}.",
+                             "from": cs, "to": cd})
 
 
 @REGISTRY.register("math.stats", risk="SAFE", agent="jarvis",
@@ -120,7 +139,7 @@ def _convert(v: float = 0, to: str = "", **kw: Any) -> SkillResult:
                    required=("values",))
 def _stats(values: Any = (), op: str = "mean", **kw: Any) -> SkillResult:
     try:
-        v = ME.stats([float(x) for x in values], str(op))
+        v = ME.stats(ME.coerce_values(values), str(op))
     except ME.MathError as exc:
         return SkillResult(ok=False, error=str(exc))
     names = {"mean": "הממוצע", "median": "החציון", "sum": "הסכום",

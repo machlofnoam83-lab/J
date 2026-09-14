@@ -409,6 +409,45 @@ def to_base(n: int, base: int) -> str:
     return ("-" if neg else "") + "".join(reversed(out))
 
 
+# Hebrew and long-form names folded onto the canonical keys `convert` uses.
+# Without this a Hebrew question could never convert anything except temperature,
+# which had its own hard-coded aliases — the length/mass/time/data groups only
+# accepted "km"/"lb"/"mb", so "כמה זה 5 קילומטר במיילים" had no path through.
+UNIT_ALIASES: Dict[str, str] = {
+    "מילימטר": "mm", "מ״מ": "mm", "סנטימטר": "cm", "ס״מ": "cm", "סנטים": "cm",
+    "מטר": "m", "מטרים": "m", "קילומטר": "km", "ק״מ": "km", "קילומטרים": "km",
+    "אינץ׳": "in", "אינצ׳ים": "in", "רגל": "ft", "רגליים": "ft", "מייל": "mi", "מיילים": "mi",
+    "מיליגרם": "mg", "גרם": "g", "גרמים": "g", "קילוגרם": "kg", "ק״ג": "kg", "קילו": "kg",
+    "טון": "t", "ליטרה": "lb", "אונקיה": "oz",
+    "מילישנייה": "ms", "שנייה": "s", "שניות": "s", "דקה": "min", "דקות": "min",
+    "שעה": "h", "שעות": "h", "יום": "d", "ימים": "d", "שבוע": "w", "שבועות": "w",
+    "ביט": "b", "בית": "b", "קילובייט": "kb", "מגהביט": "mb", "ג׳יגהביט": "gb",
+    "טרהביט": "tb", "צלזיוס": "c", "פרנהייט": "f", "קלווין": "k",
+    "celsius": "c", "fahrenheit": "f", "kelvin": "k",
+    "kilometer": "km", "kilometre": "km", "meter": "m", "metre": "m",
+    "centimeter": "cm", "centimetre": "cm", "millimeter": "mm", "inch": "in",
+    "inches": "in", "foot": "ft", "feet": "ft", "mile": "mi", "miles": "mi",
+    "gram": "g", "grams": "g", "kilogram": "kg", "kilograms": "kg", "kilo": "kg",
+    "pound": "lb", "pounds": "lb", "ounce": "oz", "ounces": "oz", "ton": "t",
+    "second": "s", "seconds": "s", "minute": "min", "minutes": "min",
+    "hour": "h", "hours": "h", "day": "d", "days": "d", "week": "w", "weeks": "w",
+    "byte": "b", "bytes": "b",
+}
+
+
+def canonical_unit(u: str) -> str:
+    """Fold a unit name to the canonical key `convert` understands."""
+    s = (u or "").strip().lower().rstrip(".")
+    if not s:
+        return ""
+    if s in UNIT_ALIASES:
+        return UNIT_ALIASES[s]
+    # strip a trailing plural 's' for English long forms not listed above
+    if s.endswith("s") and s[:-1] in UNIT_ALIASES:
+        return UNIT_ALIASES[s[:-1]]
+    return s
+
+
 def convert(value: Number, src: str, dst: str) -> Optional[Number]:
     """Unit conversion for the units JARVIS talks about most."""
     table: Dict[str, Dict[str, float]] = {
@@ -419,15 +458,26 @@ def convert(value: Number, src: str, dst: str) -> Optional[Number]:
         "data": {"b": 1.0, "kb": 1e3, "mb": 1e6, "gb": 1e9, "tb": 1e12,
                  "kib": 1024.0, "mib": 1024.0**2, "gib": 1024.0**3},
     }
-    s, d = src.lower().strip(), dst.lower().strip()
-    if s in ("c", "צלזיוס", "celsius") and d in ("f", "פרנהייט", "fahrenheit"):
+    s, d = canonical_unit(src), canonical_unit(dst)
+    if not s or not d:
+        return None
+    # Temperature is affine, not a scale factor, so it cannot live in the table.
+    # `canonical_unit` has already folded צלזיוס/celsius/C onto "c" etc., so these
+    # compare canonical keys only — the raw aliases used to be repeated inline
+    # here and nowhere else, which is why Hebrew worked for temperature and for
+    # no other quantity.
+    if s == "c" and d == "f":
         return round(float(value) * 9 / 5 + 32, 6)
-    if s in ("f", "פרנהייט", "fahrenheit") and d in ("c", "צלזיוס", "celsius"):
+    if s == "f" and d == "c":
         return round((float(value) - 32) * 5 / 9, 6)
-    if s in ("c", "צלזיוס", "celsius") and d in ("k", "קלווין", "kelvin"):
+    if s == "c" and d == "k":
         return round(float(value) + 273.15, 6)
-    if s in ("k", "קלווין", "kelvin") and d in ("c", "צלזיוס", "celsius"):
+    if s == "k" and d == "c":
         return round(float(value) - 273.15, 6)
+    if s == "f" and d == "k":
+        return round((float(value) - 32) * 5 / 9 + 273.15, 6)
+    if s == "k" and d == "f":
+        return round((float(value) - 273.15) * 9 / 5 + 32, 6)
     for group in table.values():
         if s in group and d in group:
             return round(float(value) * group[s] / group[d], 9)
@@ -479,6 +529,44 @@ def _first(kw: Dict[str, Any], *names: str) -> Any:
     raise MathError(f"missing argument, expected one of {names}")
 
 
+def coerce_values(values: Any) -> List[float]:
+    """Normalise whatever a caller passed as a number list into List[float].
+
+    `stats` used to do `[float(x) for x in values]`, which is correct for a list
+    and silently catastrophic for a string: iterating "1,2,3,4,5" yields the
+    characters '1', ',', '2' ... and `float(',')` raises ValueError. The skill
+    wrapper caught only MathError, so the exception escaped as an unhandled crash
+    instead of a clean refusal — reachable in practice, since "ממוצע" routes
+    straight to math.stats and a user saying "הממוצע של 1,2,3,4,5" supplies a
+    string. The dispatcher had the same bug one layer down via `list(...)`.
+
+    Accepts a list/tuple, a single number, or a string separated by commas,
+    semicolons, whitespace or Hebrew/Arabic comma. Raises MathError, never
+    ValueError, so every caller's existing handler keeps working.
+    """
+    if values is None:
+        raise MathError("no values given")
+    if isinstance(values, str):
+        parts = [p for p in re.split(r"[,\u060c;؛\s]+", values.strip()) if p]
+    elif isinstance(values, (int, float)) and not isinstance(values, bool):
+        parts = [values]
+    else:
+        parts = list(values)
+    out: List[float] = []
+    for p in parts:
+        if isinstance(p, str):
+            p = p.strip().replace("\u066c", "").replace(",", "")
+            if not p:
+                continue
+        try:
+            out.append(float(p))
+        except (TypeError, ValueError):
+            raise MathError(f"not a number: {p!r}")
+    if not out:
+        raise MathError("no values given")
+    return out
+
+
 MATH_OPS: Dict[str, Callable[..., Any]] = {
     "eval": lambda **kw: evaluate(str(_first(kw, "expr", "expression", "text", "n"))),
     "sqrt": lambda **kw: evaluate(f"sqrt({_first(kw, 'x', 'n', 'value')})"),
@@ -492,7 +580,7 @@ MATH_OPS: Dict[str, Callable[..., Any]] = {
     "convert": lambda **kw: convert(_first(kw, "v", "value", "amount"),
                                     str(kw.get("from", kw.get("src", ""))),
                                     str(kw.get("to", kw.get("dst", "")))),
-    "stats": lambda **kw: stats(list(_first(kw, "values", "nums", "xs")), str(kw.get("op", "mean"))),
+    "stats": lambda **kw: stats(coerce_values(_first(kw, "values", "nums", "xs")), str(kw.get("op", "mean"))),
     "factorial": lambda **kw: evaluate(f"factorial({_first(kw, 'n', 'x', 'value')})"),
 }
 

@@ -233,6 +233,23 @@
       <canvas id="spark-ram" class="spark"></canvas>
     </section>
 
+    <section class="panel" id="panel-security">
+      <header><h2>חומת הרשאות · יומן ביקורת</h2><span class="panel-tag">FIREWALL</span>
+        <button class="mini" id="btn-refresh-audit">רענן</button></header>
+      <div id="fw-stats" class="kv"></div>
+      <div class="bar-wrap"><div class="bar" id="bar-fw"></div></div>
+      <ul id="audit-stream" class="ticker"></ul>
+      <p class="hint">כל פעולה לא־בטוחה נכתבת ליומן ביקורת בלתי נמחק. חסימות מוצגות באדום.</p>
+    </section>
+
+    <section class="panel" id="panel-skills">
+      <header><h2>ארגז כלים</h2><span class="panel-tag">SKILLS</span>
+        <button class="mini" id="btn-refresh-skills">רענן</button></header>
+      <div id="skills-stats" class="kv"></div>
+      <ul id="skills-list" class="ticker"></ul>
+      <p class="hint">הקטלוג המלא שנחשף לליבה כחוזה כלים. לחיצה מסננת לפי רמת סיכון.</p>
+    </section>
+
     <section class="panel grow" id="panel-events">
       <header><h2>זרם אירועים</h2><span class="panel-tag">BUS</span>
         <button class="mini" id="btn-clear-events">נקה</button></header>

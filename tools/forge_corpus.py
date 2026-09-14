@@ -148,8 +148,12 @@ def math_source(rng: random.Random, n: int) -> Iterator[str]:
                        tool_result=json.dumps({"ok": True, "value": r}, ensure_ascii=False))
         elif kind == "pow2":
             e = rng.randint(1, 20)
+            # math.pow does not exist and never did — the registry has no such
+            # skill, so this sample taught a tool call that could only resolve to
+            # "unknown skill 'math.pow'". Exponentiation goes through math.eval,
+            # which handles ** natively (verified: 2**10 -> 1024).
             yield chat(f"כמה זה 2 בחזקת {e}?", f"2 בחזקת {e} שווה {2 ** e}.",
-                       tool=json.dumps({"tool": "math.pow", "args": {"a": 2, "b": e}}, ensure_ascii=False),
+                       tool=json.dumps({"tool": "math.eval", "args": {"expr": f"2**{e}"}}, ensure_ascii=False),
                        tool_result=json.dumps({"ok": True, "value": 2 ** e}, ensure_ascii=False))
         elif kind == "prime":
             x = rng.randint(2, 400)
@@ -508,7 +512,8 @@ def reasoning_source(rng: random.Random, n: int) -> Iterator[str]:
         ("ארגן לי את תיקיית ההורדות",
          "1. לסרוק את התיקייה ולסווג קבצים לפי סיומת 2. ליצור תת־תיקיות 3. להעביר קבצים "
          "4. לוודא שלא נמחק דבר 5. להציג דוח סיכום",
-         "fs.scan", "קיבלתי. סרקתי, סיווגתי והעברתי. שום קובץ לא נמחק — רק הועבר. מצורף דוח עם מספר הקבצים בכל קטגוריה."),
+         # fs.scan does not exist; the registry's directory-walk tool is fs.tree.
+         "fs.tree", "קיבלתי. סרקתי, סיווגתי והעברתי. שום קובץ לא נמחק — רק הועבר. מצורף דוח עם מספר הקבצים בכל קטגוריה."),
         ("בדוק למה המחשב איטי",
          "1. לאסוף טלמטריה 2. לדרג תהליכים לפי CPU וזיכרון 3. לבדוק דיסק ורשת 4. להציע פעולה 5. לבקש אישור לפני סגירה",
          "sys.telemetry",
@@ -635,20 +640,59 @@ def build_corpus(size: str, seed: int, kb_path: Path) -> Tuple[List[str], List[s
         ("sentence", lambda: sentence_source(rng, 3000 * budget), 1),
     ]
 
-    samples: List[str] = []
+    # Collect per source, keeping the weight each source deserves.
+    per_source: List[Tuple[str, List[str], int]] = []
     counts: Dict[str, int] = {}
     for name, fn, weight in sources:
         items = list(fn())
         counts[name] = len(items)
-        samples.extend(items * weight)
+        per_source.append((name, items, weight))
 
-    rng.shuffle(samples)
-    cut = max(1, int(len(samples) * 0.95))
-    train, dev = samples[:cut], samples[cut:]
+    # ── two defects fixed here, both of which made the published dev ppl
+    # meaningless rather than merely optimistic.
+    #
+    # 1. Replication was applied before the split (`samples.extend(items * w)`),
+    #    so identical strings landed on both sides. Measured on a medium corpus:
+    #    103,732 rows held only 22,469 unique texts (78.3% duplicates, one text
+    #    repeated 1,514 times) and 89.9% of dev rows also appeared in train.
+    #    The model was scored on strings it had memorised, which is why ppl came
+    #    out at 1.204 with train_loss 0.175 — that pair is the signature of
+    #    memorisation, and the dev number was confirming it, not catching it.
+    #
+    # 2. Deduplication therefore has to happen *before* the split, on the text
+    #    itself, so a given string can only ever belong to one side.
+    #
+    # Weighting is still applied — it is a legitimate way to emphasise
+    # conversational samples over templated tool transcripts — but only to the
+    # training side, after the held-out side has been carved off. Replicating a
+    # string adds no information; it only inflates the gradient on that exact
+    # string, which is precisely what teaches recitation instead of language.
+    unique: Dict[str, None] = {}
+    owner: Dict[str, int] = {}          # text -> source index (first wins)
+    for si, (name, items, weight) in enumerate(per_source):
+        for t in items:
+            if t not in unique:
+                unique[t] = None
+                owner[t] = si
+
+    texts = list(unique)
+    rng.shuffle(texts)
+    cut = max(1, int(len(texts) * 0.95))
+    dev_texts, train_texts = texts[cut:], texts[:cut]
+
+    train: List[str] = []
+    for t in train_texts:
+        train.extend([t] * per_source[owner[t]][2])
+    rng.shuffle(train)
+    dev = list(dev_texts)                # dev is never replicated
 
     print("[forge] sample counts per source:")
     for k, v in counts.items():
         print(f"        {k:10s} {v:7d}")
+    dup = len(train) - len(train_texts)
+    print(f"[forge] unique texts: {len(texts)}  (train {len(train_texts)} / dev {len(dev)})")
+    print(f"[forge] train rows after weighting: {len(train)} "
+          f"(+{dup} weighted repeats, dev untouched)")
     print(f"[forge] total (with weights): train={len(train)} dev={len(dev)}")
     return train, dev
 

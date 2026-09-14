@@ -215,6 +215,33 @@ body { display: flex; flex-direction: column; }
 .ticker li .t-ts { font-family: var(--font-mono); font-size: 9px; color: var(--cyan-dim); margin-inline-end: 6px; }
 @keyframes slide-in { from { opacity: 0; transform: translateX(-12px) } }
 
+/* firewall audit + skill catalogue.
+   The `lvl-*` colours already existed but were scoped to #who-badge, so the
+   risk badges in these panels needed their own rules — reusing the same palette
+   keeps a CRITICAL action reading identically whether it is a person's clearance
+   or a blocked tool call. */
+#audit-stream li b, #skills-list li b { font-family: var(--font-mono); color: var(--text); }
+#audit-stream li.denied {
+  border-inline-start-color: rgba(255,110,110,.75);
+  background: rgba(46,14,16,.42);
+}
+#audit-stream li.denied b { color: #ff9d9d; }
+.ticker li .a-reason {
+  display: block; font-size: 10px; color: var(--text-dim); opacity: .78;
+  margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ticker li span[class^="lvl-"], .ticker li span[class*=" lvl-"] {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .04em;
+  padding: 0 4px; border-radius: 2px; margin-inline-start: 4px;
+}
+.ticker li .lvl-safe     { color: var(--green); background: rgba(70,220,150,.10); }
+.ticker li .lvl-write    { color: #ffd9a0;     background: rgba(255,196,92,.12); }
+.ticker li .lvl-critical { color: #ffb3b3;     background: rgba(255,110,110,.14); }
+#skills-list { max-height: 190px; }
+#skills-list li { cursor: default; }
+#skills-stats { cursor: pointer; }
+#bar-fw { background: linear-gradient(90deg, rgba(255,110,110,.55), rgba(255,150,90,.85)); }
+
 /* ─────────────────────────── stage ─────────────────────────── */
 #stage { display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; }
 

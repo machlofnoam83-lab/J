@@ -188,7 +188,20 @@ ipc('win:maximize', () => {
     return win.isMaximized();
 });
 ipc('win:close', () => win && win.hide());
-ipc('win:alwaysOnTop', (_, on) => { if (win) win.setAlwaysOnTop(!!on); return win ? win.isAlwaysOnTop() : false; });
+// Was `(_, on) => ...`, written as though `ipcMain.handle` passed the event
+// through. The `ipc` helper above strips it — `handler(...args)` — so `_`
+// received the caller's value and `on` was always undefined. The HUD's pin button
+// calls toggleAlwaysOnTop() with no argument at all, so `!!undefined` meant
+// setAlwaysOnTop(false) every time: the pin could only ever turn always-on-top
+// off, and the button then coloured itself from that always-false return, so it
+// never lit up. Fixed as a genuine toggle, with an explicit value still honoured
+// for callers that pass one.
+ipc('win:alwaysOnTop', (on) => {
+    if (!win) return false;
+    const next = (on === undefined || on === null) ? !win.isAlwaysOnTop() : !!on;
+    win.setAlwaysOnTop(next);
+    return win.isAlwaysOnTop();
+});
 ipc('win:fullscreen', () => {
     if (!win) return false;
     win.setFullScreen(!win.isFullScreen());
@@ -223,11 +236,14 @@ function registerPermissions() {
 }
 
 function registerHotkeys() {
-    // F5 brings the HUD forward and opens the conversation — the "talk to JARVIS
-    // without standing up" key. Registered system-wide, so it works even when
-    // another window has focus.
+    // F5 brings the HUD forward and opens VOICE mode — continuous dictation, with
+    // a push-to-talk fallback if the microphone is refused. Not the text chat
+    // panel; that distinction was an explicit correction, and the event used to be
+    // named 'summon-chat' while calling summonSpeech(), which invited exactly the
+    // wrong assumption. Registered system-wide, so it works even when another
+    // window has focus.
     globalShortcut.register('F5', () => {
-        if (win) { win.show(); win.focus(); win.webContents.send('hotkey', { name: 'summon-chat' }); }
+        if (win) { win.show(); win.focus(); win.webContents.send('hotkey', { name: 'summon-speech' }); }
     });
     globalShortcut.register('CommandOrControl+Shift+Space', () => {
         if (win) { win.show(); win.focus(); win.webContents.send('hotkey', { name: 'push-to-talk' }); }
