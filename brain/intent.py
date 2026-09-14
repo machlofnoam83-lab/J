@@ -91,6 +91,47 @@ _MEM_QUERY = re.compile(r"(מה (אמרתי|סיפרתי|ביקשתי)|זוכר 
 _MEM_EXPLICIT = re.compile(
     r"(מה (אמרתי|סיפרתי|ביקשתי|שאלתי)|זוכר (מה|את)|מה דיברנו|recall|"
     r"what did i (say|ask|tell)|do you remember)", re.I)
+
+# Shell execution. `shell.exec` was registered as CRITICAL and described in its own
+# module as "the most dangerous skill JARVIS has, so it is the most heavily guarded
+# one" — but no route ever emitted it, so the blocklist, the executable allowlist,
+# the confirmation prompt and the audit trail were exercised only by tests. Asked to
+# run "rm -rf /", JARVIS answered UNKNOWN: the guard never even saw the command.
+# `shell.preview` existing as a SAFE sibling was the tell — the intended flow was
+# preview -> confirm -> execute, and it was unreachable.
+#
+# Deliberately requires an explicit command marker ("פקודה"/"command"/"terminal").
+# Matching a bare run-verb would let ordinary phrasing fall into arbitrary command
+# execution, and the cost of a false negative here is only that JARVIS asks you to
+# say "פקודה". "הרץ קוד" still belongs to CODE, which is checked separately.
+_SHELL = re.compile(
+    r"(הרץ את הפקודה|הרץ פקודה|הפעל את הפקודה|הפעל פקודה|בצע את הפקודה|בצע פקודה|"
+    r"תריץ את הפקודה|תריץ פקודה|פקודת (של|shell)|בשורת הפקודה|"
+    r"run (the |this )?command|execute (the |this )?command|run shell|"
+    r"run (it )?in (the )?terminal|shell command)", re.I)
+
+# Stripped from the utterance to leave the command itself. Ordered longest-first so
+# "הרץ את הפקודה" is removed whole rather than leaving a stray "את" glued to the
+# front of the command, which would make the allowlist check the wrong executable.
+_SHELL_LEAD = re.compile(
+    r"^\s*(בבקשה\s+)?(נא\s+)?("
+    r"הרץ את הפקודה|הרץ פקודה|הפעל את הפקודה|הפעל פקודה|בצע את הפקודה|בצע פקודה|"
+    r"תריץ את הפקודה|תריץ פקודה|הרץ את|הרץ|הפעל|בצע|תריץ|"
+    r"run (the |this )?command|execute (the |this )?command|run shell|"
+    r"run (it )?in (the )?terminal|shell command|run|execute"
+    r")\s*[:\-]?\s*", re.I)
+
+# Same alternation without the `^` anchor, for the case where the marker appears
+# mid-utterance ("תוכל להרץ את הפקודה git status"). Kept as a separate compiled
+# pattern rather than made optional inside _SHELL_LEAD, because the anchored form
+# is what makes the common leading case unambiguous.
+_SHELL_LEAD_UNANCHORED = re.compile(
+    r"(בבקשה\s+)?(נא\s+)?("
+    r"הרץ את הפקודה|הרץ פקודה|הפעל את הפקודה|הפעל פקודה|בצע את הפקודה|בצע פקודה|"
+    r"תריץ את הפקודה|תריץ פקודה|הרץ את|הרץ|הפעל|בצע|תריץ|"
+    r"run (the |this )?command|execute (the |this )?command|run shell|"
+    r"run (it )?in (the )?terminal|shell command|run|execute"
+    r")\s*[:\-]?\s*", re.I)
 _SYS_Q = re.compile(r"(מצב (ה)?מחשב|טלמטריה|cpu|ram|זיכרון פנוי|מעבד|דיסק|סוללה|temperature|"
                     r"system status|מה קורה עם המחשב|תהליכים|processes)", re.I)
 
@@ -185,6 +226,44 @@ def _unit_pattern():
         names = sorted(UNIT_ALIASES.keys(), key=len, reverse=True)
         _UNIT_RE = re.compile("|".join(re.escape(n) for n in names), re.I)
     return _UNIT_RE
+
+
+def _extract_shell_command(text: str) -> str:
+    """Pull the command out of a shell request, or return '' if there isn't one.
+
+    `_SHELL` is unanchored but the lead-stripper is anchored with `^`, and using
+    the two together let "מה זה run command" through: the marker matched mid-string,
+    nothing was stripped, and the whole Hebrew question became the command. The
+    firewall's allowlist would have blocked it — "מה" is not an executable — but it
+    would have blocked it *after* raising a CRITICAL confirmation prompt asking the
+    user to approve running "מה זה run command", which is a worse failure than not
+    routing at all.
+
+    So the marker is removed wherever it occurs, and what remains has to start with
+    something an executable could plausibly look like: an ASCII letter or digit, a
+    path separator, or a dot. Hebrew-only residue is rejected here rather than
+    being handed to the firewall.
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    cmd = _SHELL_LEAD_UNANCHORED.sub(" ", raw, count=1)
+    cmd = re.sub(r"^\s*(בבקשה|נא|please|kindly)\s*[:\-]?\s*", "", cmd, flags=re.I)
+    cmd = cmd.strip().strip(".!?;،،").strip()
+    if not cmd:
+        return ""
+    # Take from the first character an executable could start with, rather than
+    # rejecting on a Hebrew first character. Polite wrappers survive marker
+    # stripping — "תוכל להרץ את הפקודה git status" leaves "תוכל ל git status" —
+    # and rejecting that would drop a perfectly clear request. Commands are ASCII
+    # in practice, so cutting to the first ASCII token keeps the command and drops
+    # the wrapper. Pure-Hebrew residue such as "מה זה" has no ASCII at all and is
+    # rejected here, before it can raise a CRITICAL confirmation prompt.
+    m = re.search(r"[A-Za-z0-9_./\\~-]", cmd)
+    if not m:
+        return ""
+    cmd = cmd[m.start():].strip().strip(".!?;").strip()
+    return cmd
 
 
 def _match_conversion(text: str) -> Optional[Tuple[float, str, str]]:
@@ -332,6 +411,17 @@ class IntentRouter:
             return Route("MEMORY_QUERY", 0.9, "explicit recall request")
 
         # 4. explicit system intents
+        # 4a. shell command. Routed at CRITICAL so the firewall runs check_shell
+        # (destructive-pattern blocklist, then executable allowlist) and then
+        # demands explicit human confirmation in the HUD before anything runs.
+        # Falls through when stripping the marker leaves nothing, so "מה זה
+        # run command" cannot become an execution request.
+        if _SHELL.search(t):
+            cmd = _extract_shell_command(t)
+            if cmd:
+                return Route("SYSTEM", 0.95, "shell command request",
+                             skill="shell.exec", args={"command": cmd}, risk="CRITICAL")
+
         if _SCREEN.search(t):
             return Route("SYSTEM", 0.95, "screenshot request", skill="screen.capture", risk="WRITE")
         if _CLIP.search(t):
