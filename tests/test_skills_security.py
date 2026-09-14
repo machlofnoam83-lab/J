@@ -129,6 +129,59 @@ def main() -> int:
     d = fw.check("time.now", "SAFE", {})
     check("revive restores operation", d.allowed)
 
+    print("\n== powershell argument injection ==")
+    # screen.capture and sys.notify used to build their PowerShell script with an
+    # f-string, splicing a caller-supplied path/title/message into a quoted
+    # literal. A single apostrophe closed the literal and the remainder parsed as
+    # code. Both skills ran without a confirmation prompt — notify is graded SAFE,
+    # which never prompts at all — so the firewall's verdicts below show it was
+    # waved through rather than caught. Values now travel as environment
+    # variables and the script text is constant, so there is no literal to close.
+    from skills._ps import run_ps, ps_env_path, reject_control_chars, PsError
+
+    hostile_path = "x.png'); Remove-Item -Recurse -Force C:\\Users; ('"
+    check("firewall does not catch a quote-spliced path (the reason escaping mattered)",
+          fw.check("screen.capture", "WRITE", {"path": hostile_path}, "argus").allowed,
+          "policy satisfied — this was the exposed surface")
+
+    # No PowerShell in this sandbox, so the invariant is checked on the strings
+    # the child would receive: the payload must never appear in script text.
+    import skills.sk_apps as _apps
+    import skills.sk_media_input as _media
+    import inspect as _inspect
+
+    _src_notify = _inspect.getsource(_apps.notify)
+    _src_capture = _inspect.getsource(_media.screen_capture)
+    check("notify no longer interpolates title into the script",
+          "'{title}'" not in _src_notify and "CreateTextNode($env:JARVIS_TITLE)" in _src_notify)
+    check("notify no longer interpolates message into the script",
+          "'{msg}'" not in _src_notify and "ShowBalloonTip(4000,$env:JARVIS_TITLE,$env:JARVIS_MSG" in _src_notify)
+    check("screen.capture no longer interpolates the output path",
+          "Save('{out}')" not in _src_capture and "Save($env:JARVIS_SHOT)" in _src_capture)
+    check("notify actually runs the toast script it builds",
+          "run_ps(toast" in _src_notify,
+          "it used to assemble the toast script and fall through without calling it")
+
+    for bad, label in [("\x00", "NUL"), ("\n", "newline"), ("\r", "carriage return")]:
+        try:
+            reject_control_chars(f"a{bad}b", "path")
+            check(f"rejects a {label} in data bound for the child process", False)
+        except PsError:
+            check(f"rejects a {label} in data bound for the child process", True)
+
+    # An apostrophe is legitimate in a filename (O'Brien's notes.png) and must
+    # survive untouched — refusing it would break honest paths to fix a hole that
+    # the environment-variable design already closes.
+    tricky = "O'Brien's \"shot\" $(calc) '; Remove-Item C:\\ ;'.png"
+    check("an apostrophe-laden path is accepted, not escaped into nonsense",
+          reject_control_chars(tricky, "path") == tricky)
+
+    try:
+        run_ps("Write-Output $env:X", {"X": "a\nRemove-Item C:\\"})
+        check("run_ps refuses a newline before spawning anything", False)
+    except PsError as exc:
+        check("run_ps refuses a newline before spawning anything", True, str(exc)[:52])
+
     print("\n== audit log ==")
     check("audit recorded decisions", len(fw.history) > 10, f"({len(fw.history)} entries)")
     check("audit file written", Path(fw.audit_path).exists() and Path(fw.audit_path).stat().st_size > 100)

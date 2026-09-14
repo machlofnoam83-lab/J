@@ -135,21 +135,26 @@ def screen_capture(path: str = "", monitor: int = 0) -> SkillResult:
         import mss.tools  # type: ignore
     except Exception:
         if IS_WINDOWS:
+            # The path arrives as $env:JARVIS_SHOT, never spliced into the script
+            # text. `path` is caller-supplied, so interpolating it meant a quote
+            # in the filename closed the literal and the remainder parsed as
+            # PowerShell — a WRITE-risk skill, waved through by the firewall with
+            # no confirmation. skills/_ps.py keeps the script constant.
             ps = (
                 "Add-Type -AssemblyName System.Windows.Forms,System.Drawing; "
                 "$b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds; "
                 "$bmp=New-Object System.Drawing.Bitmap $b.Width,$b.Height; "
                 "$g=[System.Drawing.Graphics]::FromImage($bmp); "
                 "$g.CopyFromScreen($b.Location,[System.Drawing.Point]::Empty,$b.Size); "
-                f"$bmp.Save('{out}'); $g.Dispose(); $bmp.Dispose()"
+                "$bmp.Save($env:JARVIS_SHOT); $g.Dispose(); $bmp.Dispose()"
             )
             try:
-                proc = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                                      capture_output=True, text=True, errors="replace", timeout=20)
-                if proc.returncode == 0 and out.exists():
+                from skills._ps import ps_env_path
+                rc, _stdout, stderr = ps_env_path(ps, "JARVIS_SHOT", out, timeout=20)
+                if rc == 0 and out.exists():
                     return SkillResult(ok=True, value=f"צילמתי את המסך ושמרתי ל־{out.name}.",
                                        data={"path": str(out), "bytes": out.stat().st_size})
-                return SkillResult(ok=False, error=(proc.stderr or "capture failed")[:300])
+                return SkillResult(ok=False, error=(stderr or "capture failed")[:300])
             except Exception as exc:
                 return SkillResult(ok=False, error=f"צילום מסך נכשל: {exc}")
         return _missing("mss", "pip install mss")

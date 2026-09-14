@@ -185,26 +185,47 @@ def apps_installed(limit: int = 80) -> SkillResult:
 )
 def notify(message: str = "", title: str = "JARVIS") -> SkillResult:
     msg = str(message)
+    ttl = str(title)
     if IS_WINDOWS:
-        ps = (
-            "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, "
-            "ContentType = WindowsRuntime] | Out-Null; "
-            f"$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(0); "
-            f"$n = $t.SelectSingleNode('//text'); $n.AppendChild($t.CreateTextNode('{title}')); "
-            f"$b = $t.CreateTextNode('{msg}'); "
-            "Write-Host 'notified'"
-        )
+        # Both strings come from the caller — `message` is a required argument,
+        # so anyone who can talk to JARVIS controls it. They used to be
+        # interpolated into single-quoted PowerShell literals, which meant a
+        # message containing an apostrophe closed the literal and the remainder
+        # parsed as code. This skill is graded SAFE, so the firewall would not
+        # even ask before running it. They now travel as environment variables
+        # and the script text stays constant (skills/_ps.py).
+        from skills._ps import run_ps, PsError
         try:
-            fallback = subprocess.run(
-                ["powershell", "-NoProfile", "-Command",
-                 f"Add-Type -AssemblyName System.Windows.Forms; "
-                 f"$n=New-Object System.Windows.Forms.NotifyIcon; "
-                 f"$n.Icon=[System.Drawing.SystemIcons]::Information; $n.Visible=$true; "
-                 f"$n.ShowBalloonTip(4000,'{title}','{msg}',[System.Windows.Forms.ToolTipIcon]::Info)"],
-                capture_output=True, text=True, errors="replace", timeout=12)
-            if fallback.returncode == 0:
+            # The toast script used to be assembled here and then never run — the
+            # code fell straight through to the balloon fallback, so the modern
+            # notification path was dead while looking implemented.
+            toast = (
+                "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, "
+                "ContentType = WindowsRuntime] | Out-Null; "
+                "$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(0); "
+                "$n = $t.SelectSingleNode('//text'); "
+                "$n.AppendChild($t.CreateTextNode($env:JARVIS_TITLE)); "
+                "$null = $t.CreateTextNode($env:JARVIS_MSG); "
+                "Write-Host 'notified'"
+            )
+            rc, out, _err = run_ps(toast, {"JARVIS_TITLE": ttl, "JARVIS_MSG": msg}, timeout=12)
+            if rc == 0 and "notified" in out:
+                return SkillResult(ok=True, value=f"שלחתי התראה: {msg}", data={"channel": "toast"})
+        except (PsError, subprocess.SubprocessError, OSError):
+            pass
+
+        try:
+            balloon = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "$n=New-Object System.Windows.Forms.NotifyIcon; "
+                "$n.Icon=[System.Drawing.SystemIcons]::Information; $n.Visible=$true; "
+                "$n.ShowBalloonTip(4000,$env:JARVIS_TITLE,$env:JARVIS_MSG,"
+                "[System.Windows.Forms.ToolTipIcon]::Info)"
+            )
+            rc, _out, _err = run_ps(balloon, {"JARVIS_TITLE": ttl, "JARVIS_MSG": msg}, timeout=12)
+            if rc == 0:
                 return SkillResult(ok=True, value=f"שלחתי התראה: {msg}", data={"channel": "balloon"})
-        except Exception:
+        except (PsError, subprocess.SubprocessError, OSError):
             pass
     elif shutil.which("notify-send"):
         try:
