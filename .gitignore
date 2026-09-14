@@ -49,3 +49,6 @@ Thumbs.db
 # download bundle built on demand for the sandbox preview — never committed
 ui/*.zip
 samples/
+
+# ASR acoustic models are trained from local speech — personal data, never committed
+models/asr/

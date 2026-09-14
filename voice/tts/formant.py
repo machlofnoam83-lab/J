@@ -251,8 +251,21 @@ def _formant_targets(units: Sequence[Unit]) -> List[Tuple[float, float, float, f
 
 # ---------------------------------------------------------------- synthesis --
 def synthesize_units(units: Sequence[Unit], sr: int = SR_DEFAULT, f0: float = BASE_F0,
-                     rate: float = 1.0, seed: int = 7) -> np.ndarray:
-    """Render a phoneme sequence into a float waveform in [-1, 1]."""
+                     rate: float = 1.0, seed: int = 7,
+                     collect: Optional[List[Tuple[str, int, int]]] = None) -> np.ndarray:
+    """Render a phoneme sequence into a float waveform in [-1, 1].
+
+    If ``collect`` is given it is filled with ``(sym, start_sample, end_sample)``
+    for every unit placed, including ``("#", ...)`` entries for the pauses between
+    them. This is how the ASR gets training labels: the renderer already knows
+    exactly where each phone lands, so the alignment is exact and free rather
+    than estimated.
+
+    Deliberately a hook on *this* function instead of a second copy of the
+    timing loop elsewhere. Two implementations of the same timeline drift apart,
+    and a recogniser trained against a timeline the synthesiser no longer uses
+    fails silently — it keeps recognising audio nobody produces.
+    """
     units = [u for u in units if u.sym and u.sym != "_"]
     if not units:
         return np.zeros(int(sr * 0.05))
@@ -276,11 +289,15 @@ def synthesize_units(units: Sequence[Unit], sr: int = SR_DEFAULT, f0: float = BA
                 amp[p0:p1] = 0.0
                 voiced[p0:p1] = 0.0
                 f0_traj[p0:p1] = 0.0
+                if collect is not None:
+                    collect.append(("_sil_", p0, p1))
             pos += u.pause_before
         start = int(pos * sr)
         end = int(min(n_total, (pos + dur / rate) * sr))
         if end <= start:
             end = min(n_total, start + 1)
+        if collect is not None:
+            collect.append((u.sym, start, end))
         seg = slice(start, end)
         L = max(1, end - start)
 
