@@ -14,6 +14,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
@@ -188,6 +190,87 @@ def screen_size() -> SkillResult:
                                data={"width": mon["width"], "height": mon["height"]})
     except Exception:
         return _missing("mss", "pip install mss")
+
+
+@REGISTRY.register(
+    "screen.read", risk="SAFE", agent="argus",
+    description_he="קורא צילום מסך שנשמר כ־PNG ומדווח מה יש בו",
+    triggers_he=("קרא את צילום המסך", "מה יש על המסך", "read screenshot"),
+)
+def screen_read(path: str = "") -> SkillResult:
+    """Decode a saved screenshot and describe it.
+
+    `screen.capture` has always written a PNG, and until now nothing in JARVIS
+    could open one: Pillow and OpenCV are both absent and neither may be assumed
+    offline. So the assistant could photograph the screen and never look at the
+    photograph — the file landed on disk and the loop stopped there.
+
+    Decoding goes through `vision.png`, a codec written against the format spec
+    using only stdlib `zlib`/`binascii` and numpy. This reports what can be
+    derived from pixels alone and says nothing about text content: reading
+    characters off a screen needs a recogniser with training data, and there is
+    none available offline — the same data starvation that closed the
+    open-vocabulary ASR attempt. Claiming otherwise here would be the kind of
+    confident non-answer the knowledge base audits were about.
+
+    With no `path`, reads the most recent screenshot under data/.
+    """
+    target = Path(path).expanduser() if path else None
+    if target is None:
+        shots = sorted((ROOT / "data").glob("screenshot_*.png")) if (ROOT / "data").exists() else []
+        if not shots:
+            return SkillResult(ok=False,
+                               error="אין צילום מסך שמור. אפשר לבקש 'צלם את המסך' קודם, "
+                                     "או לתת נתיב לקובץ PNG.")
+        target = shots[-1]
+    if not target.exists():
+        return SkillResult(ok=False, error=f"הקובץ לא נמצא: {target}")
+    from vision import png as _png
+    if not _png.is_png(target):
+        # Checked by content, not by extension: a screenshot renamed on disk is
+        # still readable, and a .png that is not one should say so plainly.
+        kind = target.suffix.lower() if target.suffix else "ללא סיומת"
+        return SkillResult(ok=False,
+                           error=f"הקובץ {target.name} אינו PNG תקין (סיומת: {kind}).")
+
+    try:
+        im = _png.decode_file(target)
+    except _png.PngError as exc:
+        return SkillResult(ok=False, error=f"הקובץ אינו PNG תקין: {exc}")
+    except OSError as exc:
+        return SkillResult(ok=False, error=f"לא הצלחתי לקרוא את הקובץ: {exc}")
+
+    gray = im.gray()
+    mean = float(gray.mean())
+    # a screen is mostly background, so the dominant tone is more informative than
+    # the mean alone; quartiles say whether it is a dark UI or a bright document
+    q1, q2, q3 = (float(np.percentile(gray, p)) for p in (25, 50, 75))
+    bright_share = float((gray > 0.66).mean())
+    dark_share = float((gray < 0.33).mean())
+    edge = float(np.abs(np.diff(gray, axis=1)).mean())
+
+    # adjective agrees with תמונה (feminine); כהה is gender-invariant
+    kind = ("בהירה" if mean > 0.6 else "כהה" if mean < 0.35 else "בינונית")
+    detail = ("עמוס פרטים" if edge > 0.06 else "מעט פרטים" if edge < 0.015 else "פירוט בינוני")
+    summary = (f"{target.name}: {im.width}x{im.height} פיקסלים, {im.color_name}, "
+               f"תמונה {kind} (ממוצע אור {mean:.2f}), {detail}. "
+               f"שיעור האזורים הבהירים {bright_share:.0%}, כהים {dark_share:.0%}.")
+
+    return SkillResult(ok=True, value=summary, data={
+        "path": str(target), "bytes": target.stat().st_size,
+        "width": im.width, "height": im.height,
+        "color_type": im.color_type, "color_name": im.color_name,
+        "bit_depth": im.bit_depth, "channels": im.channels,
+        "interlaced": im.interlaced,
+        "brightness_mean": round(mean, 4),
+        "brightness_quartiles": [round(q1, 4), round(q2, 4), round(q3, 4)],
+        "bright_share": round(bright_share, 4),
+        "dark_share": round(dark_share, 4),
+        "edge_energy": round(edge, 5),
+        "summary_he": summary,
+        "text_extracted": False,
+        "note": "pixel statistics only — offline OCR is not available",
+    })
 
 
 # ------------------------------------------------------------------ input --
