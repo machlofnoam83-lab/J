@@ -135,6 +135,35 @@ COMMANDS: Dict[str, Dict[str, Any]] = {
     "volume_down": {"text": "הנמך עוצמה", "say": ["הנמך עוצמה", "תנמיך"]},
     "yes":         {"text": "כן", "say": ["כן", "כן בבקשה"]},
     "no":          {"text": "לא", "say": ["לא", "לא תודה"]},
+
+    # ── Capabilities the brain already routes but the voice layer could not
+    # hear. Every entry below maps to an intent pattern that already exists and
+    # is already tested in brain/intent.py — _CLIP, _REMIND, _MATH_HINT,
+    # _IDENTITY, _MEM_WRITE, _MEM_QUERY, _APPS, _SYS_Q, _MEDIA, _CODE. Nothing
+    # here needs new dispatch logic: voice_session passes the recognised *text*
+    # to the intent router, so widening the ear is enough.
+    #
+    # Phrases are chosen to be acoustically distinct from each other and from the
+    # original 25, because every new template is also a new chance for a
+    # false match. The calibration run measures whether separation survived; if
+    # false_max rises toward the threshold, the offending phrase comes back out.
+    "date":            {"text": "מה התאריך היום", "say": ["מה התאריך היום", "איזה יום היום"]},
+    "identity":        {"text": "מי אתה", "say": ["מי אתה", "מה השם שלך"]},
+    "remember":        {"text": "תזכור את זה", "say": ["תזכור את זה", "זכור את ההעדפה שלי"]},
+    "recall":          {"text": "מה אמרתי קודם", "say": ["מה אמרתי קודם", "מה דיברנו לפני"]},
+    "calculate":       {"text": "חשב לי את זה", "say": ["חשב לי את זה", "כמה זה יוצא"]},
+    "copy_clip":       {"text": "העתק ללוח", "say": ["העתק ללוח", "תעתיק את זה"]},
+    "paste_clip":      {"text": "הדבק מהלוח", "say": ["הדבק מהלוח", "תדביק את הטקסט"]},
+    "timer":           {"text": "תזכיר לי בעוד חמש דקות",
+                        "say": ["תזכיר לי בעוד חמש דקות", "הפעל שעון עצר"]},
+    "open_calc":       {"text": "פתח את המחשבון", "say": ["פתח את המחשבון", "הפעל מחשבון"]},
+    "close_window":    {"text": "סגור את החלון", "say": ["סגור את החלון", "תסגור את התוכנה"]},
+    "processes":       {"text": "הצג תהליכים", "say": ["הצג תהליכים", "מה רץ על המחשב"]},
+    "battery":         {"text": "מה מצב הסוללה", "say": ["מה מצב הסוללה", "כמה סוללה נשארה"]},
+    "next_track":      {"text": "השיר הבא", "say": ["השיר הבא", "העבר לשיר הבא"]},
+    "prev_track":      {"text": "השיר הקודם", "say": ["השיר הקודם", "חזור לשיר הקודם"]},
+    "run_code":        {"text": "הרץ את הקוד", "say": ["הרץ את הקוד", "תריץ את הסקריפט"]},
+    "fix_bug":         {"text": "תקן את הבאג", "say": ["תקן את הבאג", "מצא את השגיאה בקוד"]},
 }
 
 
