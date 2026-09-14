@@ -444,6 +444,92 @@
     catch (_) { const el = $('#skills-stats'); if (el) el.innerHTML = kv([['מצב', 'לא זמין']]); }
   }
 
+  // ── screen analysis ─────────────────────────────────────────────────────
+  // Drives /api/screen/read, which decodes a screenshot with vision.png.
+  // `capture` asks the backend to photograph the screen first; that step is
+  // WRITE-risk and still passes through the firewall, so it can come back
+  // blocked or waiting on a confirmation — both are shown, not swallowed.
+  function pct(x) { return (Math.round((Number(x) || 0) * 100)) + '%'; }
+
+  function renderScreenRead(r) {
+    const sum = $('#sr-summary'); if (!sum) return;
+    sum.classList.remove('err');
+    const stats = $('#sr-stats'), note = $('#sr-note');
+
+    if (!r || !r.ok) {
+      const msg = (r && (r.error || r.value)) || 'לא הצלחתי לקרוא את צילום המסך.';
+      sum.textContent = msg;
+      sum.classList.add('err');
+      if (stats) stats.innerHTML = kv([['שלב שנכשל', (r && r.stage) || '—']]);
+      if (note) note.textContent = 'קריאת המסך נכשלה — שום ניתוח לא בוצע.';
+      ['#bar-bright', '#bar-dark', '#bar-edge'].forEach(id => {
+        const b = $(id); if (b) b.style.width = '0%';
+      });
+      ['#val-bright', '#val-dark', '#val-edge'].forEach(id => {
+        const v = $(id); if (v) v.textContent = '—';
+      });
+      return;
+    }
+
+    const d = r.data || {};
+    sum.textContent = d.summary_he || r.value || '—';
+    if (stats) stats.innerHTML = kv([
+      ['קובץ', d.path ? String(d.path).split(/[\\/]/).pop() : '—', true],
+      ['מימדים', `${d.width ?? '?'}×${d.height ?? '?'}`],
+      ['סוג צבע', d.color_name || '—'],
+      ['עומק סיביות', d.bit_depth ? `${d.bit_depth}-bit` : '—'],
+      ['שזור', d.interlaced ? 'כן (Adam7)' : 'לא'],
+      ['גודל', d.bytes ? `${(d.bytes / 1024).toFixed(1)} KB` : '—'],
+      ['אור ממוצע', d.brightness_mean != null ? Number(d.brightness_mean).toFixed(2) : '—']
+    ]);
+
+    const bright = Number(d.bright_share) || 0, dark = Number(d.dark_share) || 0;
+    // edge energy is unbounded in principle; 0.12 reads as a busy document, so
+    // scaling against that keeps the bar meaningful instead of pinned at 100%.
+    const edge = Math.min(1, (Number(d.edge_energy) || 0) / 0.12);
+    const setBar = (barId, valId, frac, label) => {
+      const b = $(barId); if (b) b.style.width = Math.round(frac * 100) + '%';
+      const v = $(valId); if (v) v.textContent = label;
+    };
+    setBar('#bar-bright', '#val-bright', bright, pct(bright));
+    setBar('#bar-dark', '#val-dark', dark, pct(dark));
+    setBar('#bar-edge', '#val-edge', edge, Number(d.edge_energy || 0).toFixed(3));
+
+    // Always say what this is not. The panel reports pixel statistics; it does
+    // not read text, and leaving that unstated would imply a capability the
+    // offline build does not have.
+    if (note) note.textContent = d.text_extracted === false
+      ? 'סטטיסטיקת פיקסלים בלבד — אין OCR במצב מקומי, ולכן לא מוצע טקסט מהמסך. '
+        + 'פענוח ה־PNG נעשה בקודק שנכתב כאן (zlib + numpy), בלי Pillow ובלי OpenCV.'
+      : '';
+  }
+
+  async function runScreenRead(capture) {
+    const btnR = $('#btn-screen-read'), btnC = $('#btn-screen-capture');
+    const btn = capture ? btnC : btnR;
+    const sum = $('#sr-summary');
+    [btnR, btnC].forEach(b => { if (b) b.disabled = true; });
+    if (sum) { sum.classList.remove('err'); sum.textContent = capture ? 'מצלם וקורא…' : 'קורא…'; }
+    try {
+      renderScreenRead(await api(capture ? '/api/screen/read?capture=1' : '/api/screen/read'));
+    } catch (e) {
+      renderScreenRead({ ok: false, stage: capture ? 'capture' : 'read',
+                         error: 'השרת לא זמין לקריאת המסך: ' + e.message });
+    } finally {
+      [btnR, btnC].forEach(b => { if (b) b.disabled = false; });
+    }
+  }
+
+  function wireScreenRead() {
+    const br = $('#btn-screen-read'); if (br) br.addEventListener('click', () => runScreenRead(false));
+    const bc = $('#btn-screen-capture'); if (bc) bc.addEventListener('click', () => runScreenRead(true));
+    const note = $('#sr-note');
+    // State the limitation up front, before anyone presses a button and wonders
+    // why there is no text in the result.
+    if (note) note.textContent = 'לוחץ "קרא אחרון" מנתח את הצילום השמור האחרון; '
+      + '"צלם ונתח" מצלם עכשיו דרך חומת האש ואז מנתח.';
+  }
+
   function wireSecurityPanels() {
     const ba = $('#btn-refresh-audit'); if (ba) ba.addEventListener('click', refreshAudit);
     const bs = $('#btn-refresh-skills'); if (bs) bs.addEventListener('click', refreshSkills);
@@ -1857,6 +1943,7 @@
 
     startClocks();
     wireSecurityPanels();
+    wireScreenRead();
     recomputeState();
     connect();
 

@@ -206,6 +206,70 @@ async def api_audit(request: web.Request) -> web.Response:
     return _json({"stats": agent.firewall.stats(), "tail": agent.firewall.tail(int(request.query.get("n", 40)))})
 
 
+async def api_screen_read(request: web.Request) -> web.Response:
+    """Describe a screenshot, decoding it with the in-house PNG codec.
+
+    Two modes, because they have different risk profiles and the UI offers both:
+
+      ?path=<file>   read that file (SAFE — reading something already on disk)
+      ?capture=1     take a fresh screenshot, then read it (WRITE — the capture
+                     step drives the OS, so it goes through the firewall like
+                     any other screen.capture call)
+
+    With neither, the most recent saved screenshot is read.
+
+    This is the visible end of the capture→understand loop that `vision.png`
+    exists to close. The response always carries `text_extracted: false`: pixel
+    statistics are derivable offline, reading characters is not, and the panel
+    would rather show an honest gap than imply it understood the screen.
+    """
+    from skills.registry import REGISTRY
+    import skills as skills_pkg
+    skills_pkg.load_all()
+
+    agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
+    path = request.query.get("path", "").strip()
+    capture = request.query.get("capture", "").strip().lower() in ("1", "true", "yes")
+
+    def _work() -> Dict[str, Any]:
+        shot_path = path
+        if capture:
+            # Same sequence the WS `invoke` path uses: ask the firewall with the
+            # agent's real level, and only then run it. Hardcoding
+            # permission_granted=False here made the button permanently dead —
+            # it could never succeed at any level. Going through check() keeps
+            # the kill switch, the SAFE ceiling, dry-run and the CRITICAL
+            # confirmation hook all in force, and the reason comes back to the
+            # panel verbatim so a denial explains itself.
+            skill = REGISTRY.get("screen.capture")
+            if skill is None:
+                return {"ok": False, "stage": "capture",
+                        "error": "screen.capture is not registered"}
+            decision = agent.firewall.check("screen.capture", skill.risk, {}, "hud")
+            if not decision.allowed:
+                return {"ok": False, "stage": "capture", "error": decision.reason,
+                        "risk": skill.risk, **decision.to_dict()}
+            cap = REGISTRY.invoke("screen.capture", {}, permission_granted=True)
+            if not cap.ok:
+                return {"ok": False, "stage": "capture",
+                        "error": cap.error or "the capture did not succeed",
+                        "value": cap.value or ""}
+            shot_path = str((cap.data or {}).get("path") or "")
+            if not shot_path:
+                return {"ok": False, "stage": "capture",
+                        "error": "the capture reported success but returned no path"}
+        res = REGISTRY.invoke("screen.read", {"path": shot_path} if shot_path else {},
+                              permission_granted=True)
+        out: Dict[str, Any] = {"ok": bool(res.ok), "stage": "read", "value": res.value or ""}
+        if res.ok:
+            out["data"] = res.data
+        else:
+            out["error"] = res.error
+        return out
+
+    return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, _work))
+
+
 async def api_permissions(request: web.Request) -> web.Response:
     agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
     return _json({"pending": agent.pending_permissions(), "stats": agent.firewall.stats(),
@@ -859,6 +923,7 @@ def build_app() -> web.Application:
     app.router.add_get("/api/events", api_events)
     app.router.add_get("/api/skills", api_skills)
     app.router.add_get("/api/audit", api_audit)
+    app.router.add_get("/api/screen/read", api_screen_read)
     app.router.add_get("/api/memory", api_memory)
     app.router.add_get("/api/history", api_history)
     app.router.add_get("/api/permissions", api_permissions)

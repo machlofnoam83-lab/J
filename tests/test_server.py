@@ -156,6 +156,58 @@ def main() -> int:
         st, _, d = get_json(f"{base}/api/audit")
         check("/api/audit responds", st == 200 and "stats" in d and "tail" in d,
               f"level={d['stats'].get('level')} entries={d['stats'].get('total')}")
+
+        # ── /api/screen/read: the HTTP face of the in-house PNG codec ──────
+        # A real PNG written by our own encoder, read back through the route.
+        import numpy as _np
+        from vision import png as _png
+        _shot = _np.full((60, 90, 3), 240, dtype=_np.uint8)
+        for _y in range(12, 50, 8):
+            _shot[_y:_y + 3, 14:76] = (30, 30, 30)
+        _p = ROOT / "data" / "screenshot_server_test.png"
+        _p.parent.mkdir(parents=True, exist_ok=True)
+        _png.write_file(_p, _shot)
+        try:
+            st, _, d = get_json(f"{base}/api/screen/read?path={_p}")
+            check("/api/screen/read decodes a real PNG", st == 200 and d.get("ok") is True,
+                  str(d.get("value") or d.get("error"))[:70])
+            _dd = d.get("data") or {}
+            check("...and reports the decoded dimensions, not the filename",
+                  _dd.get("width") == 90 and _dd.get("height") == 60,
+                  f"{_dd.get('width')}x{_dd.get('height')}")
+            check("...and states plainly that no text was extracted",
+                  _dd.get("text_extracted") is False and "OCR" in str(_dd.get("note", "")),
+                  str(_dd.get("note"))[:56])
+            check("...and measures the bright screen as bright",
+                  (_dd.get("brightness_mean") or 0) > 0.5, str(_dd.get("brightness_mean")))
+
+            st, _, d = get_json(f"{base}/api/screen/read?path={ROOT / 'requirements.txt'}")
+            check("/api/screen/read refuses a non-image cleanly",
+                  st == 200 and d.get("ok") is False and "PNG" in str(d.get("error", "")),
+                  str(d.get("error"))[:60])
+
+            st, _, d = get_json(f"{base}/api/screen/read?path={ROOT / 'data' / 'absent.png'}")
+            check("/api/screen/read reports a missing file cleanly",
+                  st == 200 and d.get("ok") is False and bool(d.get("error")),
+                  str(d.get("error"))[:60])
+
+            # Capture goes through the firewall with the agent's real level, so
+            # it either gets denied by policy or fails because a headless sandbox
+            # has no display to photograph. Either is acceptable; what matters is
+            # that it comes back as a reported result with a reason attached,
+            # never a 500 or a stack trace.
+            st, _, d = get_json(f"{base}/api/screen/read?capture=1")
+            _clean = (st == 200 and isinstance(d, dict) and "ok" in d
+                      and d.get("stage") == "capture"
+                      and (d.get("ok") is True or bool(d.get("error"))))
+            check("/api/screen/read?capture=1 is clean when headless", _clean,
+                  f"HTTP {st} ok={d.get('ok')} stage={d.get('stage')} "
+                  f"risk={d.get('risk')} {str(d.get('error') or d.get('value'))[:40]}")
+            check("...and a denial carries the firewall's own reason",
+                  d.get("ok") is True or "reason" in d or "error" in d,
+                  str(d.get("reason") or d.get("error"))[:56])
+        finally:
+            _p.unlink(missing_ok=True)
         st, _, d = get_json(f"{base}/api/permissions")
         check("/api/permissions responds", st == 200 and isinstance(d.get("pending"), list),
               f"timeout={d.get('timeout')}")

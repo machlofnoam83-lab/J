@@ -122,6 +122,26 @@
         <label>דגימות <span id="enroll-count">0</span></label>
       </div>
       <ul id="face-list" class="ticker"></ul>
+
+      <div id="screen-read">
+        <div class="sr-head">
+          <span class="sr-title">ניתוח צילום מסך</span>
+          <span class="sr-tag">PNG</span>
+        </div>
+        <div class="row">
+          <button id="btn-screen-read" title="קרא את צילום המסך השמור האחרון">🖼️ קרא אחרון</button>
+          <button id="btn-screen-capture" title="צלם עכשיו ואז קרא — דרך חומת האש">📸 צלם ונתח</button>
+        </div>
+        <div id="sr-summary" class="sr-summary">—</div>
+        <div id="sr-stats" class="kv"></div>
+        <div id="sr-bars">
+          <div class="sr-bar-row"><span>בהיר</span><div class="bar-wrap"><div class="bar" id="bar-bright"></div></div><b id="val-bright">—</b></div>
+          <div class="sr-bar-row"><span>כהה</span><div class="bar-wrap"><div class="bar" id="bar-dark"></div></div><b id="val-dark">—</b></div>
+          <div class="sr-bar-row"><span>פירוט</span><div class="bar-wrap"><div class="bar" id="bar-edge"></div></div><b id="val-edge">—</b></div>
+        </div>
+        <p class="sr-note" id="sr-note"></p>
+      </div>
+
       <p class="hint">הזיהוי מקומי לגמרי: עור ב־YCbCr, יישור לפי העיניים ו־eigenfaces — בלי OpenCV ובלי ענן.
         ההרשאה ניתנת רק כל עוד הפנים מול המצלמה: מי שיוצא מהחדר מאבד אותה.</p>
     </section>
