@@ -233,12 +233,12 @@ class ConcatEngine:
                     stats.from_phone_ctx += 1
                     used += 1
             if chunk is None:
-                for alt in self.by_sym.get(ph.sym, []):
+                alt = self._nearest_tag(ph.sym, left, right)
+                if alt is not None:
                     chunk = self._unit(self.phones[alt]["file"])
                     if chunk is not None and len(chunk) > 8:
                         stats.from_phone_any += 1
                         used += 1
-                        break
             if chunk is None:
                 chunk = formant.synthesize_units(units_from_g2p([ph], rate=rate), sr=self.sr)
                 stats.from_formant += 1
@@ -249,8 +249,14 @@ class ConcatEngine:
             # inside fluent speech. Left alone they stack up: 148 phones rendered
             # as 18.0 s of sound (122 ms each) where natural speech needs ~65 ms.
             # Compress with pitch preserved, and let a stressed phone run longer.
-            chunk = self._cap_duration(chunk, max_s=0.24 if ph.stressed else 0.17,
-                                       rate=rate)
+            # Vowels carry the syllable and survive compression badly; consonants
+            # are short by nature. One cap for both was clipping vowels down to
+            # 170 ms, which is a consonant's budget.
+            if ph.sym in self._VOWELS:
+                cap = 0.30 if ph.stressed else 0.22
+            else:
+                cap = 0.22 if ph.stressed else 0.15
+            chunk = self._cap_duration(chunk, max_s=cap, rate=rate)
             # G2P pauses were measured at 2.05 s across a 16-word sentence — an
             # average of 89 ms between words, where fluent speech uses 30-50 ms.
             # Halve them and keep a real break only where the text has one.
@@ -259,6 +265,52 @@ class ConcatEngine:
                 out = self._join(out, silence(min(pad, 0.32), self.sr))
             out = self._join(out, chunk)
         return out, stats
+
+    #: which symbols behave as vowels — a vowel spliced from a consonantal
+    #: frame is what makes a sentence sound like a foreign language
+    _VOWELS = frozenset("aeiouAEIOU@")
+
+    def _nearest_tag(self, sym: str, left: str, right: str) -> Optional[str]:
+        """Pick the recorded unit whose context is closest to the one needed.
+
+        With 386 context tags for 26 symbols most requests miss their exact
+        frame, and the old fallback took whichever tag came first — so a phone
+        recorded before a plosive got spliced into a vowel run. Measured on real
+        answers that was 30-70% of all phones, and mismatched co-articulation is
+        exactly what reads as gibberish: every syllable is a real Hebrew sound in
+        a frame it was never spoken in.
+
+        Scoring prefers, in order: same right neighbour (the transition the ear
+        hears into the next phone), same left neighbour, and — for vowels — a tag
+        recorded between vowels, since a vowel carries the syllable and degrades
+        worst when its frame is consonantal.
+        """
+        cands = self.by_sym.get(sym) or []
+        if not cands:
+            return None
+        if len(cands) == 1:
+            return cands[0]
+        want_vowel_frame = sym in self._VOWELS
+        best, best_score = None, -1.0
+        for tag in cands:
+            parts = tag.split("_")
+            if len(parts) != 3:
+                continue
+            t_sym, t_left, t_right = parts
+            score = 0.0
+            if t_right == right:
+                score += 2.0
+            elif (t_right in self._VOWELS) == (right in self._VOWELS):
+                score += 0.7
+            if t_left == left:
+                score += 1.5
+            elif (t_left in self._VOWELS) == (left in self._VOWELS):
+                score += 0.5
+            if want_vowel_frame and t_left in self._VOWELS and t_right in self._VOWELS:
+                score += 0.8
+            if score > best_score:
+                best, best_score = tag, score
+        return best or cands[0]
 
     # ------------------------------------------------------------- prosody --
     def _cap_duration(self, chunk: np.ndarray, max_s: float = 0.8,
@@ -288,8 +340,11 @@ class ConcatEngine:
             return b
         if not b.size:
             return a
-        n = int(self.sr * 0.008)
-        return crossfade(a, b, n)
+        # 8 ms is shorter than one pitch period at 120 Hz, so the join was a
+        # click rather than a transition; a run of them sounds like static under
+        # the words. 16 ms overlaps without blurring the phone boundary.
+        n = int(self.sr * 0.016)
+        return crossfade(a, b, min(n, len(a), len(b)))
 
     @staticmethod
     def _pause_for(tail: str) -> float:
