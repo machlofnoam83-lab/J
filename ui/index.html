@@ -275,7 +275,19 @@
       <div id="fw-stats" class="kv"></div>
       <div class="bar-wrap"><div class="bar" id="bar-fw"></div></div>
       <ul id="audit-stream" class="ticker"></ul>
-      <p class="hint">כל פעולה לא־בטוחה נכתבת ליומן ביקורת בלתי נמחק. חסימות מוצגות באדום.</p>
+
+      <div id="sentinel-box">
+        <div class="sr-head">
+          <span class="sr-title">הזקיף · צורות חריגות</span>
+          <span class="sr-tag" id="sentinel-state">צופה</span>
+        </div>
+        <div id="sentinel-stats" class="kv"></div>
+        <ul id="sentinel-stream" class="ticker"></ul>
+      </div>
+
+      <p class="hint">כל פעולה לא־בטוחה נכתבת ליומן ביקורת בלתי נמחק. חסימות מוצגות באדום.
+        הזקיף לא שופט פעולה בודדת אלא את צורת הרצף: פרץ פעולות, חזרה על אותה פעולה
+        קריטית, או רצף סירובים — ומתריע.</p>
     </section>
 
     <section class="panel" id="panel-skills">

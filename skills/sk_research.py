@@ -251,6 +251,35 @@ def research_query(topic: str = "", limit: int = 4) -> SkillResult:
         "groups": found, "note": "offline: no web sources are consulted"})
 
 
+@REGISTRY.register(
+    "memory.consolidate", risk="SAFE", agent="mnemosyne",
+    description_he="מרכז זיכרון: מעלה נושאים שחוזרים על עצמם לעובדות קבועות ומנקה דעיכה",
+    triggers_he=("רכז זיכרון", "גיבוש זיכרון", "consolidate"),
+)
+def memory_consolidate(min_support: int = 3, prune: bool = False) -> SkillResult:
+    """Promote recurring conversational themes into durable semantic facts."""
+    from brain.memory import MemoryPalace
+    from core.config import CONFIG
+    mp = MemoryPalace(CONFIG.memory.db_path,
+                      decay_half_life_days=CONFIG.memory.decay_half_life_days)
+    rep = mp.consolidate(min_support=int(min_support or 3), prune=bool(prune))
+    n_promoted = len(rep["promoted"])
+    n_refreshed = len(rep["refreshed"])
+    if not n_promoted and not n_refreshed:
+        return SkillResult(ok=True,
+                           value=(f"סרקתי {rep['episodes_scanned']} שיחות ולא מצאתי נושא "
+                                  f"שחוזר לפחות {rep['min_support']} פעמים — אין מה לרכז. "
+                                  f"הזיכרון האפיזודי נשאר כשהוא."),
+                           data=rep)
+    names = ", ".join(k.split(".", 1)[1] for k in rep["promoted"][:6])
+    return SkillResult(ok=True,
+                       value=(f"ריכזתי: {n_promoted} נושאים חדשים הפכו לעובדות "
+                              f"({names}) ו־{n_refreshed} קיימים רועננו, מתוך "
+                              f"{rep['episodes_scanned']} שיחות. ניקוי דעיכה: "
+                              f"{rep['pruned']['deleted'] if not rep['pruned']['dry_run'] else 0} נמחקו."),
+                       data=rep)
+
+
 # ------------------------------------------------------------------- modes --
 @REGISTRY.register(
     "mode.set", risk="SAFE", agent="argus",

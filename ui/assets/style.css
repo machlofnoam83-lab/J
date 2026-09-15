@@ -252,6 +252,16 @@ body { display: flex; flex-direction: column; }
 .mode-chips .chip.on::before { content: "● "; font-size: 8px; }
 #research-out { white-space: pre-wrap; max-height: 140px; overflow-y: auto; }
 
+/* ── the sentinel: sequence-shape watchdog in the firewall panel ──────────── */
+#sentinel-box {
+  margin-top: 9px; padding: 8px 9px 9px;
+  border: 1px solid var(--edge); border-inline-start: 2px solid var(--cyan-dim);
+  background: rgba(255,255,255,.015);
+  display: flex; flex-direction: column; gap: 6px;
+}
+#sentinel-stream { max-height: 92px; overflow-y: auto; }
+#sentinel-stream li b { color: var(--cyan); font-family: var(--font-mono); font-size: 10px; }
+
 /* agents */
 #agent-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 #agent-list li {

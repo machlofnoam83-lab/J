@@ -243,6 +243,15 @@ async def api_audit(request: web.Request) -> web.Response:
     return _json({"stats": agent.firewall.stats(), "tail": agent.firewall.tail(int(request.query.get("n", 40)))})
 
 
+async def api_sentinel(request: web.Request) -> web.Response:
+    """The anomaly watchdog: burst/repeat/denial shapes across the session."""
+    agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
+    s = getattr(agent, "sentinel", None)
+    if s is None:
+        return _json({"stats": {}, "tail": []})
+    return _json({"stats": s.stats(), "tail": s.tail(int(request.query.get("n", 20)))})
+
+
 async def api_screen_read(request: web.Request) -> web.Response:
     """Describe a screenshot, decoding it with the in-house PNG codec.
 
@@ -963,6 +972,7 @@ def build_app() -> web.Application:
     app.router.add_get("/api/events", api_events)
     app.router.add_get("/api/skills", api_skills)
     app.router.add_get("/api/audit", api_audit)
+    app.router.add_get("/api/sentinel", api_sentinel)
     app.router.add_get("/api/screen/read", api_screen_read)
     app.router.add_get("/api/memory", api_memory)
     app.router.add_get("/api/history", api_history)

@@ -371,7 +371,8 @@ class ReasoningEngine:
                          f"אבל לא נגעתי במערכת.")
                 return self._verify_and_pack(reply, route, trace, t0)
 
-        BUS.emit(T.BRAIN_TOOL_CALL, {"skill": route.skill, "args": route.args}, source="reasoning")
+        BUS.emit(T.BRAIN_TOOL_CALL, {"skill": route.skill, "args": route.args,
+                                 "risk": skill.risk}, source="reasoning")
         t = time.perf_counter()
         result = self.skills.invoke(route.skill, route.args, permission_granted=True)
         BUS.emit(T.BRAIN_TOOL_RESULT, result.to_dict(), source="reasoning")

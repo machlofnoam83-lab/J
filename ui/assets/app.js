@@ -413,6 +413,39 @@
     catch (_) { const el = $('#fw-stats'); if (el) el.innerHTML = kv([['מצב', 'לא זמין']]); }
   }
 
+  // ── the sentinel: sequence shapes the per-call firewall cannot see ────────
+  function renderSentinel(s) {
+    if (!s) return;
+    const st = s.stats || {}, tail = s.tail || [];
+    const tag = $('#sentinel-state');
+    if (tag) {
+      const cooling = !!st.cooldown_active;
+      tag.textContent = cooling ? 'מגיב' : (st.acting ? 'חמוש' : 'צופה');
+      tag.style.color = cooling ? 'var(--red)' : (st.alerts ? 'var(--cyan)' : '');
+    }
+    const el = $('#sentinel-stats');
+    if (el) el.innerHTML = kv([
+      ['התראות', st.alerts || 0, (st.alerts || 0) > 0],
+      ['פעולות לא־בטוחות בדקה', st.recent_non_safe || 0, (st.recent_non_safe || 0) >= 4],
+      ['סירובים ב־2 דק׳', st.recent_denials || 0, (st.recent_denials || 0) >= 3],
+      ['הגינה אוטומטית', st.acting ? 'חמושה' : 'כבויה', !!st.acting],
+      ['הרשאות בהקפאה', coolingTag(st), coolingTag(st) !== 'לא']
+    ]);
+    const ul = $('#sentinel-stream');
+    if (ul) ul.innerHTML = tail.length
+      ? tail.slice().reverse().map(a =>
+          `<li><span class="t-ts">${a.ts ? hhmmss(a.ts) : '•'}</span>`
+          + `<b>${esc(a.kind)}</b> ${esc(JSON.stringify(a.detail || {}).slice(1, 90))}`
+          + (a.acted ? ` <span class="lvl-critical">הגיב</span>` : '') + `</li>`).join('')
+      : '<li>הרצף תקין — אין צורות חריגות.</li>';
+  }
+  function coolingTag(st) { return st && st.cooldown_active ? 'כן' : 'לא'; }
+
+  async function refreshSentinel() {
+    try { renderSentinel(await api('/api/sentinel?n=12')); }
+    catch (_) { const el = $('#sentinel-stats'); if (el) el.innerHTML = kv([['מצב', 'לא זמין']]); }
+  }
+
   function renderSkills(r) {
     if (!r) return;
     skillsCache = r.skills || [];
@@ -608,8 +641,9 @@
       renderSkills({ count: skillsCache.length, skills: skillsCache });
       toast(skillsFilter ? `מסנן: ${skillsFilter}` : 'המסנן הוסר', 'good', 1800);
     });
-    refreshAudit(); refreshSkills();
+    refreshAudit(); refreshSkills(); refreshSentinel();
     setInterval(refreshAudit, 9000);
+    setInterval(refreshSentinel, 6000);
   }
 
   async function syncMemory() {

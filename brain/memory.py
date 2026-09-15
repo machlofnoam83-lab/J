@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sqlite3
 import sys
 import threading
@@ -33,6 +34,54 @@ sys.path.insert(0, str(ROOT))
 from brain.knowledge import HashedNgramVectorizer, _stem, content_tokens  # noqa: E402
 from brain.tokenizer import normalize  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
+
+# Words that appear in nearly every exchange and would therefore "consolidate"
+# out of pure address rather than topic: the assistant's form of address, its own
+# name, pleasantry. Promoting "אדוני" to a fact about the user's world would be
+# the consolidation equivalent of a transcript counting "the" as a theme.
+_CONSOL_STOP = {"אדוני", "jarvis", "jrovis", "גרוויס", "שלום", "בבקשה", "תודה",
+                "אני", "אתה", "את", "של", "על", "מה", "יש", "היה", "זה", "כן",
+                "לא", "גם", "רק", "עכשיו", "המערכת", "מערכת", "המשתמש",
+                # conversational verbs and possessives recur because people talk,
+                # not because a topic exists; measured, they were the top
+                # "themes" of the first cut
+                "דיברנו", "דיבר", "דיברת", "אמר", "אמרתי", "אמרנו", "אמרת",
+                "סיפר", "סיפרתי", "שאל", "שאלתי", "ביקש", "ביקשתי", "עשה",
+                "עשיתי", "רוצה", "יכול", "צריך", "שלי", "שלך", "שלנו", "איך",
+                "היה", "היתה", "יהיה", "נמצא", "קרה", "קורה",
+                # normalized spellings: the tokenizer maps final ך/ם/ן to כ/מ/נ,
+                # so a stop entry written in print form would never match
+                "איכ", "כיכ", "שליכ"}
+
+# Glued prefixes that are safe to peel: the definite article, "and", "in", "to",
+# "like", "that". Deliberately NOT "מ", because mem opens as many roots as it
+# closes as a preposition, and peeling it turns "מוזיקה" into noise.
+_CONSOL_PREFIXES = ("ו", "ה", "ב", "ל", "כ", "ש")
+
+
+def _consolidation_tokens(text: str) -> Dict[str, str]:
+    """normalized word -> itself, for theme mining.
+
+    Grouping peels only unambiguous glued prefixes so "המוזיקה" and "מוזיקה"
+    count as one theme, and drops anything shorter than four characters or on
+    the stop list. The first cut grouped by crude stem and promoted fragments
+    like "איכ" and "דיברנו" to facts; peeling less and stopping more is what
+    keeps a promoted fact reading like a topic.
+    """
+    t = f" {normalize(str(text)).lower()} "
+    out: Dict[str, str] = {}
+    for w in re.findall(r"[A-Za-z\u0590-\u05FF][A-Za-z\u0590-\u05FF'\-]{2,}", t):
+        if w in _CONSOL_STOP:
+            continue
+        key = w
+        for _ in range(2):
+            if len(key) >= 4 and key[0] in _CONSOL_PREFIXES:
+                key = key[1:]
+            else:
+                break
+        if len(key) >= 4 and key not in _CONSOL_STOP:
+            out.setdefault(key, w)
+    return out
 
 
 def strip_recall_frame(text: str) -> str:
@@ -308,6 +357,55 @@ class MemoryPalace:
         return hits
 
     # ------------------------------------------------------------ maintenance --
+    # --------------------------------------------------------- consolidation --
+    def consolidate(self, min_support: int = 3, scan: int = 200,
+                    prune: bool = False) -> Dict[str, Any]:
+        """Mine recurring themes out of recent episodes into semantic facts.
+
+        Episodes are episodic memory: what happened, in order, decaying. A theme
+        that keeps coming back across separate conversations is no longer an
+        event — it is something true about the user's world, and keeping it only
+        as N fading episodes means the N+1'th mention starts from zero. So themes
+        appearing in at least `min_support` recent episodes are promoted (or
+        refreshed, if already promoted) into a semantic fact whose confidence
+        grows with the support, sourced as "consolidation" so its origin stays
+        visible.
+
+        This is the offline analogue of sleep consolidation: nothing new enters
+        the system, recurring structure is merely moved to where retrieval is
+        cheap. Nothing is deleted here unless `prune` is set, and even then only
+        through forget()'s decay threshold.
+        """
+        eps = self.recent_episodes(n=int(scan))
+        counts: Dict[str, int] = {}
+        word: Dict[str, str] = {}
+        snippet: Dict[str, str] = {}
+        for ep in eps:
+            body = str(ep.get("content", ""))
+            for stem, raw in _consolidation_tokens(body).items():
+                counts[stem] = counts.get(stem, 0) + 1
+                word.setdefault(stem, raw)
+                snippet.setdefault(stem, body[:140])
+
+        existing = {f.get("key") for f in self.all_facts()}
+        promoted: List[str] = []
+        refreshed: List[str] = []
+        for stem, c in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
+            if c < int(min_support):
+                continue
+            key = f"consolidated.{stem}"
+            value = (f"הנושא '{word.get(stem, stem)}' עלה ב־{c} מתוך {len(eps)} "
+                     f"השיחות שנבדקו לאחרונה. דוגמה: {snippet.get(stem, '')}")
+            confidence = min(0.95, 0.45 + 0.12 * c)
+            self.remember_fact(key, value, confidence=confidence, source="consolidation")
+            (refreshed if key in existing else promoted).append(key)
+
+        pruned = self.forget(dry_run=not prune)
+        return {"episodes_scanned": len(eps), "themes_seen": len(counts),
+                "min_support": int(min_support),
+                "promoted": promoted, "refreshed": refreshed,
+                "pruned": pruned}
+
     def forget(self, dry_run: bool = True, threshold: float = 0.02) -> Dict[str, Any]:
         """Prune memories whose decayed strength fell below the threshold."""
         now = time.time()

@@ -92,6 +92,13 @@ class JarvisAgent:
 
         skills_pkg.load_all()
         self.firewall: PermissionFirewall = FIREWALL
+        # The sentinel watches the shapes the per-call firewall cannot see:
+        # bursts, repeats and denial streaks across the session. Detection is
+        # always on; actuation stays opt-in.
+        from security.sentinel import SENTINEL
+        self.sentinel = SENTINEL
+        SENTINEL.firewall = self.firewall
+        SENTINEL.attach(BUS)
         self.voice: VoiceEngine = get_voice(audio_sink=audio_sink) if audio_sink else get_voice()
         if audio_sink is not None:
             self.voice.audio_sink = audio_sink
