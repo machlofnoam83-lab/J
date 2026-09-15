@@ -1410,15 +1410,47 @@
       const b = el('who-badge'), nm = el('who-name'), lv = el('who-level'), bar = el('bar-who');
       if (!b) return;
       const known = match && match.known;
+      const owner = !!(match && match.is_owner);
       b.className = 'who ' + (known ? 'known lvl-' + (match.level || 'SAFE').toLowerCase()
+                                    + (owner ? ' is-owner' : '')
                                     : (match && match.faces ? 'stranger' : 'empty'));
-      nm.textContent = known ? match.name : (match && match.faces ? 'לא מזוהה' : 'אין איש מול המצלמה');
+      nm.textContent = known
+        ? (owner ? '★ ' + match.name : match.name)
+        : (match && match.faces ? 'לא מזוהה' : 'אין איש מול המצלמה');
       lv.textContent = (gate && gate.level) || (match && match.level) || 'SAFE';
       const conf = (match && match.confidence) || 0;
       if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, conf)) * 100) + '%';
       b.title = known
-        ? `זוהה בוודאות ${(conf * 100).toFixed(0)}% · הרשאה ${match.level}`
+        ? (owner
+            ? `${match.name} — היוצר. הרשאות מלאות (CRITICAL). רק הוא יכול להגיע לרמה הזו.`
+            : `זוהה בוודאות ${(conf * 100).toFixed(0)}% · הרשאה ${match.level}`)
         : `ביטחון ${(conf * 100).toFixed(0)}% — מתחת לסף, ולכן SAFE`;
+    }
+
+    // What the camera is actually looking at — not just whose face it is. The
+    // summary is written server-side in Hebrew so the HUD never has to guess at
+    // the thresholds, and the warnings are the actionable part: "it's too dark"
+    // is something the user can fix, "confidence 61%" is not.
+    function scene(sc, gate) {
+      const sum = el('scene-summary'), warn = el('scene-warns');
+      if (sum) sum.textContent = (sc && sc.summary_he) || '—';
+      if (warn) {
+        const w = (sc && sc.warnings) || [];
+        const withheld = gate && gate.withheld === 'liveness';
+        const all = withheld ? ['הפריים נראה כמו מסך או תמונה — ההרשאה הושהתה'].concat(w) : w;
+        warn.innerHTML = all.map(x => `<span class="scene-warn">${x}</span>`).join('');
+        warn.className = 'scene-warns' + (all.length ? ' active' : '');
+      }
+      const q = el('bar-quality'), qv = el('val-quality');
+      if (q && sc) q.style.width = Math.round((sc.quality || 0) * 100) + '%';
+      if (qv && sc) qv.textContent = Math.round((sc.quality || 0) * 100) + '%';
+      const lb = el('bar-light'), lv2 = el('val-light');
+      const L = sc && sc.lighting;
+      if (lb && L) lb.style.width = Math.round(Math.max(0, Math.min(1, L.mean / 255)) * 100) + '%';
+      if (lv2 && L) {
+        const names = { good: 'טובה', dim: 'חלשה', dark: 'חשוך', blown: 'שרוף', flat: 'שטוחה' };
+        lv2.textContent = names[L.verdict] || L.verdict;
+      }
     }
 
     function drawBoxes(res) {
@@ -1469,6 +1501,7 @@
         if (!res.ok) { if (!silent) toast(res.error || 'הזיהוי נכשל', 'err'); return; }
         last = res;
         badge(res.match, res.gate);
+        scene(res.scene, res.gate);
         drawBoxes(res);
         stat([['זוהו', `${res.match.faces} פנים`, res.match.faces > 0],
               ['ביטחון', `${Math.round((res.match.confidence || 0) * 100)}%`, res.match.known],
@@ -1500,16 +1533,19 @@
         const list = el('face-list');
         if (list) {
           list.innerHTML = (res.people || []).map(p =>
-            `<li><span class="fname">${p.name}</span>` +
-            `<select class="flevel" data-id="${p.id}">` +
+            `<li${p.role === 'owner' ? ' class="owner"' : ''}>` +
+            `<span class="fname">${p.role === 'owner' ? '★ ' : ''}${p.name}</span>` +
+            `<select class="flevel" data-id="${p.id}"${p.role === 'owner' ? ' title="הבעלים — ההרשאה מוגנת"' : ''}>` +
             ['SAFE', 'WRITE', 'CRITICAL'].map(l =>
               `<option value="${l}"${l === p.level ? ' selected' : ''}>${l}</option>`).join('') +
             `</select><span class="fsamp">${p.samples} דגימות</span>` +
             `<button class="fdel" data-id="${p.id}" title="מחק">✕</button></li>`).join('')
-            || '<li class="dim">אף אחד לא רשום — JARVIS לא יכיר איש</li>';
+            || '<li class="dim">אף אחד לא רשום — ההרשמה הראשונה תהפוך לבעלים עם הרשאות מלאות</li>';
           list.querySelectorAll('.flevel').forEach(sel => sel.onchange = async () => {
             const r = await admin('set_level', { id: sel.dataset.id, level: sel.value });
-            toast(r.ok ? `ההרשאה עודכנה ל־${sel.value}` : (r.error || 'נכשל'), r.ok ? 'ok' : 'err');
+            toast(r.ok ? `ההרשאה עודכנה ל־${sel.value}`
+                       : (r.error || 'ההרשאה לא שונתה — הרשאת הבעלים מוגנת'),
+                  r.ok ? 'ok' : 'err');
             refresh();
           });
           list.querySelectorAll('.fdel').forEach(b => b.onclick = async () => {

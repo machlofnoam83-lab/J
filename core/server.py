@@ -866,14 +866,28 @@ async def api_faces_recognize(request: web.Request) -> web.Response:
 
     def work() -> Dict[str, Any]:
         from vision.faces import detect
+        from vision.scene import describe
         try:
             frame = _face_frame(payload)
         except Exception as exc:
             return {"ok": False, "error": f"bad frame: {exc}"}
         found = detect(frame, max_faces=4)
         match = store.recognize(frame)
+        # Scene understanding is measured on every frame, not only when a face is
+        # enrolled — "it's too dark to tell you who you are" is an answer, and a
+        # more useful one than silence.
+        scene = describe(frame, identity=match)
         state = gate.observe(match)
+        # Liveness can only ever subtract. A frame that looks like a display never
+        # unlocks anything, whatever the eigenface distance said.
+        if scene.liveness is not None and scene.liveness.verdict == "suspect":
+            state = dict(state)
+            state["withheld"] = "liveness"
+            state["withheld_reason"] = scene.summary_he
+            if state.get("level") not in ("SAFE",):
+                state["level"] = "SAFE"
         return {"ok": True, "match": match.to_dict(), "gate": state,
+                "scene": scene.to_dict(),
                 "boxes": [f.to_dict() for f in found],
                 "frame": {"w": int(frame.shape[1]), "h": int(frame.shape[0])}}
 
@@ -934,12 +948,32 @@ async def api_faces_admin(request: web.Request) -> web.Response:
             ok = store.remove(str(payload.get("id") or ""))
             return {"ok": ok, "error": None if ok else "no such person", "gate": gate.poll()}
         if action == "set_level":
-            ok = store.set_level(str(payload.get("id") or ""), str(payload.get("level") or ""))
+            pid = str(payload.get("id") or "")
+            lvl = str(payload.get("level") or "").upper()
+            person = store.get(pid)
+            if person is None:
+                return {"ok": False, "error": "no such person", "gate": gate.poll()}
+            ok = store.set_level(pid, lvl)
             if ok:
-                BUS.emit("vision.level.grant", {"id": payload.get("id"),
-                                                "level": str(payload.get("level")).upper()},
-                         source="faces")
-            return {"ok": ok, "error": None if ok else "no such person or bad level",
+                BUS.emit("vision.level.grant", {"id": pid, "level": lvl}, source="faces")
+                return {"ok": True, "error": None, "gate": gate.poll()}
+            # Say which of the two it was. "no such person or bad level" on a
+            # protected owner sends the user hunting for a typo that is not there.
+            from vision.faces import LEVELS, OWNER_LEVEL
+            if lvl not in LEVELS:
+                err = f"level must be one of {list(LEVELS)}"
+            elif person.is_owner:
+                err = (f"{person.name} הוא הבעלים — הרשאת הבעלים ({OWNER_LEVEL}) מוגנת. "
+                       "העבר בעלות קודם אם זה באמת מה שרצית.")
+            else:
+                err = "not changed"
+            return {"ok": False, "error": err, "gate": gate.poll()}
+        if action == "set_owner":
+            ok = store.set_owner(str(payload.get("id") or ""))
+            if ok:
+                o = store.owner()
+                BUS.emit("vision.owner", {"id": o.id, "name": o.name}, source="faces")
+            return {"ok": ok, "error": None if ok else "no such person",
                     "gate": gate.poll()}
         if action == "arm":
             gate.armed = True
