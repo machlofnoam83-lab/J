@@ -138,6 +138,34 @@ class ServerConfig:
 
 
 @dataclass
+class RagConfig:
+    """Retrieval over the user's own local files (offline, no embeddings API).
+
+    ``roots`` is empty by default on purpose: JARVIS must never start crawling
+    the disk uninvited. The user points it at folders explicitly, from the HUD or
+    with ``tools/build_rag_index.py --root``.
+    """
+
+    enabled: bool = True
+    db_path: str = str(DATA / "rag_index.sqlite3")
+    roots: tuple = ()                     # absolute paths; empty = nothing indexed
+    include: tuple = ()                   # glob allowlist (empty = every text file)
+    exclude: tuple = ("*.min.js", "*.map", "*.lock", "package-lock.json",
+                      "yarn.lock", "*.svg", "*.ipynb")
+    max_file_bytes: int = 4 * 1024 * 1024
+    max_files: int = 20_000
+    chunk_target: int = 900
+    chunk_max: int = 1600
+    chunk_overlap: int = 160
+    top_k: int = 8
+    rerank_candidates: int = 120
+    ngram_dim: int = 4096
+    min_hit_score: float = 0.22
+    allow_self_feedback: bool = False     # index JARVIS's own data/ and logs/?
+    auto_index_on_boot: bool = False      # never crawl without being asked
+
+
+@dataclass
 class AgentConfig:
     orchestrator: str = "jarvis"
     agents: tuple = ("jarvis", "hephaestus", "mnemosyne", "argus", "hermes")
@@ -153,6 +181,7 @@ class Config:
     reasoning: ReasonConfig = field(default_factory=ReasoningConfig)
     voice: VoiceConfig = field(default_factory=VoiceConfig)
     memory: MemoryConfig = field(default_factory=MemoryConfig)
+    rag: RagConfig = field(default_factory=RagConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
     ui: UIConfig = field(default_factory=UIConfig)
     server: ServerConfig = field(default_factory=ServerConfig)

@@ -338,14 +338,17 @@ class ReasoningEngine:
                 BUS.emit(T.ERROR, {"where": "memory", "error": str(exc)}, source="reasoning")
 
     def _verify_and_pack(self, text: str, route: Route, trace: Trace, t0: float,
-                         numbers: Sequence[Any] = ()) -> Answer:
+                         numbers: Sequence[Any] = (),
+                         extra: Optional[Dict[str, Any]] = None,
+                         speak_override: str = "") -> Answer:
         t = time.perf_counter()
         ok, issues, cleaned = self.verifier.check(text, numbers=numbers, route=route)
         trace.add("verify", "pass" if ok else f"issues: {issues}", {"ok": ok, "issues": issues}, t)
-        speak = self.verifier.speakable(cleaned or text)
+        speak = speak_override or self.verifier.speakable(cleaned or text)
         return Answer(text=cleaned or text, speak=speak, grounded=route.grounded,
                       confidence=route.confidence, intent=route.intent, skill=route.skill,
                       agent=route.agent, risk=route.risk, value=route.value,
+                      data=dict(extra or {}),
                       ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
 
     def _run_skill(self, text: str, route: Route, trace: Trace, t0: float) -> Optional[Answer]:
@@ -383,7 +386,16 @@ class ReasoningEngine:
             route.grounded = True
         reply = self._phrase_tool_result(route, result)
         numbers = _numbers_in(result.value)
-        return self._verify_and_pack(reply, route, trace, t0, numbers=numbers)
+        extra = result.data if isinstance(result.data, dict) else None
+        # Only RAG overrides the spoken form. Its answer body quotes source code
+        # and line ranges, which a TTS engine would read character by character;
+        # the skill supplies a short spoken version instead. Scoped to this
+        # intent so no other skill's speech behaviour changes.
+        speak = ""
+        if route.intent == "RAG" and extra:
+            speak = str(extra.get("summary_he") or "")
+        return self._verify_and_pack(reply, route, trace, t0, numbers=numbers,
+                                     extra=extra, speak_override=speak)
 
     @staticmethod
     def _phrase_block(route: Route, reason: str, risk: str) -> str:

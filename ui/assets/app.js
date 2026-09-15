@@ -853,6 +853,120 @@
     } catch (_) {}
   }
 
+  // ══════════════════════ local-file retrieval (RAG) ══════════════════════
+  // The panel's whole job is to make the evidence visible. Every answer is
+  // rendered with its citations as separate, clickable rows, and the verdict the
+  // server computed (did each quote really appear in the file it names?) is
+  // shown rather than trusted silently.
+  async function syncRag() {
+    try {
+      const r = await api('/api/rag/status');
+      const s = r.status || {};
+      const el = $('#rag-stats');
+      if (el) el.innerHTML = kv([
+        ['קבצים', s.docs || 0], ['קטעים', s.chunks || 0],
+        ['מונחים', s.distinct_terms || 0], ['נפח', fmtBytes(s.indexed_bytes || 0)],
+      ]);
+      const roots = $('#rag-roots');
+      if (roots && !roots.value && (s.roots || []).length) roots.value = s.roots.join(', ');
+      if (!(s.docs > 0)) {
+        const a = $('#rag-answer');
+        if (a && !a.dataset.userSet) {
+          a.innerHTML = '<span class="rag-none">עדיין לא אינדקסתי אף קובץ. '
+            + 'הכנס תיקייה ולחץ «אנדקס».</span>';
+        }
+      }
+    } catch (_) {}
+  }
+
+  function fmtBytes(n) {
+    if (!n) return '0B';
+    const u = ['B', 'KB', 'MB', 'GB']; let i = 0;
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (i === 0 ? n : n.toFixed(1)) + u[i];
+  }
+
+  function renderRagAnswer(r) {
+    const a = $('#rag-answer'), ul = $('#rag-cites');
+    if (!a) return;
+    a.dataset.userSet = '1';
+    if (!r || r.answer_type === 'none' || !r.grounded) {
+      a.innerHTML = '<span class="rag-none">' + esc(r && r.text ? r.text : 'לא מצאתי תשובה בקבצים.')
+        + '</span>';
+      if (ul) ul.innerHTML = '';
+      return;
+    }
+    const badge = r.answer_type === 'grounded'
+      ? '<span class="rag-badge ok">מעוגן</span>'
+      : '<span class="rag-badge weak">חלש</span>';
+    const verdict = r.verified === false
+      ? '<span class="rag-badge bad">הציטוט לא אומת</span>' : '';
+    a.innerHTML = badge + verdict
+      + '<span class="rag-conf">ביטחון ' + Math.round((r.confidence || 0) * 100) + '%</span>'
+      + '<div class="rag-body">' + esc(r.text || '').replace(/\n/g, '<br>') + '</div>';
+    if (ul) {
+      ul.innerHTML = (r.citations || []).map(c =>
+        '<li><span class="t-ts">' + esc(c.start_line) + '–' + esc(c.end_line) + '</span>'
+        + esc(c.file) + ' · ' + esc((c.quote || '').replace(/\s+/g, ' ').slice(0, 90)) + '</li>'
+      ).join('') || '<li>בלי ציטוטים</li>';
+    }
+  }
+
+  async function ragAsk() {
+    const q = $('#rag-query');
+    const query = q && q.value.trim();
+    if (!query) { toast('מה לחפש בקבצים?', 'warn'); return; }
+    const a = $('#rag-answer');
+    if (a) { a.dataset.userSet = '1'; a.innerHTML = '<span class="rag-none">מחפש בקבצים…</span>'; }
+    try {
+      const r = await api('/api/rag/ask', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, k: 6 }),
+      });
+      renderRagAnswer(r);
+      if (r && r.verified === false) toast('הציטוט לא אומת מול הקובץ', 'err', 6000);
+    } catch (e) {
+      if (a) a.innerHTML = '<span class="rag-none">החיפוש נכשל: ' + esc(String(e.message || e)) + '</span>';
+    }
+  }
+
+  async function ragIndex() {
+    const field = $('#rag-roots');
+    const roots = (field && field.value || '').split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    if (!roots.length) { toast('אין תיקייה לאינדוקס', 'warn'); return; }
+    const a = $('#rag-answer');
+    if (a) { a.dataset.userSet = '1'; a.innerHTML = '<span class="rag-none">סורק את התיקייה…</span>'; }
+    try {
+      const r = await api('/api/rag/index', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roots }),
+      });
+      if (r && r.ok === false) {
+        if (a) a.innerHTML = '<span class="rag-none">' + esc(r.error || 'האינדוקס נחסם') + '</span>';
+        toast(r.error || 'האינדוקס נחסם', 'err', 6000);
+        return;
+      }
+      const secs = (r && r.seconds) || 0;
+      if (a) a.innerHTML = '<span class="rag-ok">אינדקסתי ' + (r.added + r.updated || 0)
+        + ' קבצים · ' + (r.chunks || 0) + ' קטעים · ' + secs + ' שניות'
+        + ((r.skipped ? ' · דילגתי על ' + r.skipped : '') + '</span>');
+      toast('האינדקס מוכן', 'ok');
+      syncRag();
+    } catch (e) {
+      if (a) a.innerHTML = '<span class="rag-none">האינדוקס נכשל: ' + esc(String(e.message || e)) + '</span>';
+    }
+  }
+
+  function wireRag() {
+    const ask = $('#rag-ask-btn'), idx = $('#rag-index-btn');
+    if (ask) ask.addEventListener('click', ragAsk);
+    if (idx) idx.addEventListener('click', ragIndex);
+    const q = $('#rag-query');
+    if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ragAsk(); } });
+    const r = $('#rag-roots');
+    if (r) r.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ragIndex(); } });
+  }
+
   // ══════════════════════════ boot sequence ══════════════════════════
   // If the measurement sequence is still running after this long, open the
   // interface anyway and say so. A slow machine must never read as a dead one.
@@ -1036,7 +1150,7 @@
     ws.onopen = () => {
       wsAlive = true; retry = 600; recomputeState();
       pushEvent({ topic: 'ui.link', data: 'connected to ' + WS, ts: Date.now() / 1000 });
-      syncPermissions(); syncMemory();
+      syncPermissions(); syncMemory(); syncRag();
     };
     ws.onclose = () => { wsAlive = false; recomputeState(); scheduleReconnect(); };
     ws.onerror = () => { wsAlive = false; recomputeState(); };
@@ -2276,6 +2390,10 @@
     setInterval(() => { send({ type: 'ping' }); }, 12000);
     setInterval(() => { api('/api/status').then(renderStatus).catch(() => {}); }, 7000);
     setInterval(syncMemory, 25000);
+    // The index only changes when the user asks for a scan, so this is a
+    // slow poll for coverage numbers, not a freshness mechanism.
+    setInterval(syncRag, 30000);
+    syncRag();
     setInterval(pollFallback, 2000);
     setInterval(() => {
       // uptime pill
@@ -2357,6 +2475,7 @@
     wireModes();
     wirePalette();
     wireTranscript();
+    wireRag();
     wirePanels();
     wireBootSkip();
     recomputeState();

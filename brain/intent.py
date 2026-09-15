@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from brain.math_engine import MathError, extract_expression, try_evaluate  # noqa: E402
 
 INTENTS = (
-    "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE",
+    "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE", "RAG",
     "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
     "HELP", "SAFETY", "UNKNOWN",
 )
@@ -186,6 +186,27 @@ _WHAT_IS = re.compile(
 _FILES = re.compile(r"(קובץ|קבצים|קבצי(?=[\s־\-.,!?]|$)|תיקי(?:יה|ית|ות|ה|ת)|תת־תיקייה"
                      r"|file|folder|directory|json|txt|csv|"
                      r"לקרוא את|לכתוב את|לשמור את|למחוק את|לחפש|חפש)", re.I)
+# Retrieval over the user's own files. Deliberately narrow: every branch requires
+# an explicit "in my files / documents / folder", so this cannot hijack the
+# filesystem intents ("קרא את הקובץ" stays a file read) or the knowledge base.
+_RAG_ASK = re.compile(
+    r"(חפש (לי )?ב(תוך )?(ה)?(קבצים|מסמכים|תיקייה|הערות)"
+    r"|מצא (לי )?ב(תוך )?(ה)?(קבצים|מסמכים|תיקייה)"
+    r"|מה כתוב ב(תוך )?(ה)?(קבצים|מסמכים)"
+    r"|(לפי|מתוך|על פי) (ה)?(קבצים|מסמכים|הערות) (שלי|שלך)"
+    r"|(ה)?(קבצים|מסמכים) (שלי|שלך) (אומרים|מראים)"
+    r"|search (my|the|in my|in the) (files|documents|docs|notes)"
+    r"|grep my (files|documents|notes)"
+    r"|find (it |this )?in my (files|documents|notes)"
+    r"|according to my (files|documents|notes)"
+    r"|what (do|does) my (files|documents|notes) say)", re.I)
+_RAG_INDEX = re.compile(
+    r"(תאנדקס|תסרוק את התיקייה|אנדקס את|בנה אינדקס|אינדוקס מחדש|רענן את האינדקס"
+    r"|index (my|the) (files|documents|folder)"
+    r"|rebuild the index|rescan my files|scan (my|the) folder)", re.I)
+_RAG_STATUS = re.compile(
+    r"(מה מצב האינדקס|כמה קבצים (אינדקסת|יש באינדקס)|מה יש באינדקס"
+    r"|index status|how many files (are|is) indexed|what is indexed)", re.I)
 _APPS = re.compile(r"(פתח את|סגור את|הפעל את|open |close |launch |start |kill |הרג את|מחשבון|דפדפן)", re.I)
 _FILE_VERB = re.compile(r"(קרא|הצג|שמור|כתוב|מחק|ערוך|read|show|save|write|delete|edit|list)", re.I)
 _SCREEN = re.compile(r"(צילום מסך|צלם (את )?(ה)?מסך|תצלם (את )?(ה)?מסך|המסך לצלם|"
@@ -394,6 +415,21 @@ class IntentRouter:
             r = self._route_math(t)
             if r:
                 return r
+
+        # 2b. retrieval over the user's own files (RAG). Sits above SAFETY and
+        # the specialist intents because every branch here requires the user to
+        # have explicitly scoped the question to their files ("מה כתוב בקבצים
+        # על חומת הרשאות"). Without that scoping a security word would win and
+        # the question would be answered from the persona instead of the source.
+        # Index/status first: they are the more specific ask.
+        if _RAG_INDEX.search(t):
+            return Route("RAG", 0.92, "index rebuild request", skill="rag.index",
+                         args={"roots": _extract_path(t), "force": True}, risk="WRITE")
+        if _RAG_STATUS.search(t):
+            return Route("RAG", 0.9, "index status request", skill="rag.status")
+        if _RAG_ASK.search(t):
+            return Route("RAG", 0.88, "local-file retrieval request",
+                         skill="rag.ask", args={"query": t}, agent="argus")
 
         # 3. safety / permissions
         if _SAFETY.search(t):

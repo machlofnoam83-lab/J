@@ -948,3 +948,40 @@ body[data-state="offline"]  #chat-strip .cs-dot { background: var(--red); opacit
   border: 1px solid var(--edge); cursor: pointer;
 }
 #boot-skip:hover { border-color: var(--edge-hot); box-shadow: 0 0 14px rgba(94, 231, 255, .2); }
+
+/* ══════════════════ local-file retrieval (RAG) panel ══════════════════
+   The panel's contract is that evidence is visible: the answer, the confidence,
+   the server's own verification verdict, and each citation as its own row. A
+   refusal is styled distinctly from an answer, because "I did not find it" must
+   never look like a result. */
+#panel-rag .rag-row { display: flex; gap: 6px; margin-top: 6px; }
+#panel-rag .rag-row input {
+  flex: 1 1 auto; min-width: 0;
+  background: rgba(6, 16, 22, .72); color: var(--ice);
+  border: 1px solid var(--edge); padding: 5px 8px;
+  font-family: var(--font-mono); font-size: 10.5px;
+}
+#panel-rag .rag-row input:focus { outline: none; border-color: var(--edge-hot); }
+.btn-mini {
+  flex: 0 0 auto; padding: 5px 10px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em;
+  color: var(--ice); background: rgba(10, 24, 32, .85);
+  border: 1px solid var(--edge);
+}
+.btn-mini:hover { border-color: var(--edge-hot); box-shadow: 0 0 12px rgba(94, 231, 255, .18); }
+.rag-answer {
+  margin-top: 8px; font-size: 11.5px; line-height: 1.65;
+  max-height: 210px; overflow-y: auto;
+}
+.rag-answer .rag-body { margin-top: 5px; white-space: pre-wrap; word-break: break-word; }
+.rag-none { color: var(--text-faint); font-style: italic; }
+.rag-ok { color: var(--ice); }
+.rag-badge {
+  display: inline-block; padding: 1px 7px; margin-inline-end: 6px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em;
+  border: 1px solid var(--edge);
+}
+.rag-badge.ok { color: #7dffb2; border-color: rgba(125, 255, 178, .45); }
+.rag-badge.weak { color: #ffd479; border-color: rgba(255, 212, 121, .45); }
+.rag-badge.bad { color: #ff8d8d; border-color: rgba(255, 141, 141, .55); }
+.rag-conf { font-family: var(--font-mono); font-size: 9px; color: var(--text-faint); }

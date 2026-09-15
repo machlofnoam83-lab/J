@@ -25,6 +25,7 @@ ORDER = [
     "test_skills_security.py",
     "test_coder.py",
     "test_orchestrator.py",
+    "test_rag.py",
     "test_voice.py",
     "test_server.py",
     "test_voice_session.py",

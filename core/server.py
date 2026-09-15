@@ -395,6 +395,145 @@ async def api_stt(request: web.Request) -> web.Response:
     return _json(agent._stt_stats())
 
 
+# ── local-file retrieval (RAG) ──────────────────────────────────────────────
+# Four routes, and the split matters:
+#
+#   GET  /api/rag/status   cheap, polled by the HUD panel
+#   POST /api/rag/search   retrieval only — "show me where"
+#   POST /api/rag/ask      retrieval + cited extractive answer
+#   POST /api/rag/index    the only one that touches the disk
+#
+# ``/api/rag/index`` goes through the same Permission Firewall as every other
+# mutating call, so it is refused outright when the level is SAFE or when the
+# kill switch is engaged — the indexer never gets a private channel around the
+# safety layer just because it happens to be new.
+async def api_rag_status(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        return {"ok": True, "status": eng.status(),
+                "docs": [{"path": d["path"], "chunks": d["chunks"], "bytes": d["bytes"],
+                          "kind": d["kind"], "title": d["title"]}
+                         for d in eng.docs(int(request.query.get("n", 100)))]}
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_search(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "invalid JSON body"}, status=400)
+    query = str(data.get("query") or "").strip()
+    if not query:
+        return _json({"ok": False, "error": "query is required"}, status=400)
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        hits = eng.search(query, k=int(data.get("k") or 8),
+                          path_filter=str(data.get("path_filter") or ""))
+        return {"ok": True, "query": query, "found": len(hits),
+                "hits": [h.to_dict() for h in hits],
+                "expansions": eng.retriever.last_expansions}
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_ask(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "invalid JSON body"}, status=400)
+    query = str(data.get("query") or "").strip()
+    if not query:
+        return _json({"ok": False, "error": "query is required"}, status=400)
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        ans = eng.ask(query, k=int(data.get("k") or 8),
+                      path_filter=str(data.get("path_filter") or ""))
+        verified, problems = eng.verify(ans)
+        payload = ans.to_dict()
+        # The grounding invariant is re-checked against the files on disk for
+        # every answer we serve, and the result is published. A client that
+        # sees verified=false knows not to trust the citations.
+        payload["ok"] = True
+        payload["verified"] = verified
+        payload["verify_problems"] = problems
+        payload["expansions"] = eng.retriever.last_expansions
+        return payload
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_index(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    roots = data.get("roots") or []
+    if isinstance(roots, str):
+        roots = [p.strip() for p in roots.replace("\n", ",").split(",") if p.strip()]
+
+    agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
+
+    def work() -> Dict[str, Any]:
+        decision = agent.firewall.check("rag.index", "WRITE", {"roots": roots})
+        if not decision.allowed:
+            return {"ok": False, "error": f"blocked by permission firewall: {decision.reason}",
+                    "decision": decision.to_dict()}
+        if agent.firewall.dry_run:
+            return {"ok": True, "dry_run": True,
+                    "would_index": [str(r) for r in roots],
+                    "decision": decision.to_dict()}
+        eng = get_engine()
+        report = eng.index(roots or None, force=bool(data.get("force")))
+        report["ok"] = not report.get("error")
+        report["decision"] = decision.to_dict()
+        return report
+
+    try:
+        out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+        return _json(out, status=200 if out.get("ok") else 403)
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_roots(request: web.Request) -> web.Response:
+    """Set which folders are indexed. Never triggers a scan by itself."""
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "invalid JSON body"}, status=400)
+    roots = data.get("roots") or []
+    if isinstance(roots, str):
+        roots = [p.strip() for p in roots.replace("\n", ",").split(",") if p.strip()]
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        clean = eng.set_roots([str(r) for r in roots])
+        return {"ok": True, "roots": clean}
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
 ENROLL_DIR = CONFIG_DATA / "enroll"
 #: what the HUD asks the user to say when training their own voice
 ENROLL_SCRIPT = ["wake", "time", "status", "help", "stop", "joke"]
@@ -1046,6 +1185,11 @@ def build_app() -> web.Application:
     app.router.add_get("/api/download", api_download)
     app.router.add_get("/api/screen/read", api_screen_read)
     app.router.add_get("/api/memory", api_memory)
+    app.router.add_get("/api/rag/status", api_rag_status)
+    app.router.add_post("/api/rag/search", api_rag_search)
+    app.router.add_post("/api/rag/ask", api_rag_ask)
+    app.router.add_post("/api/rag/index", api_rag_index)
+    app.router.add_post("/api/rag/roots", api_rag_roots)
     app.router.add_get("/api/history", api_history)
     app.router.add_get("/api/permissions", api_permissions)
     app.router.add_get("/api/stt", api_stt)

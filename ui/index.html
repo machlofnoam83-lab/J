@@ -152,6 +152,26 @@
       <ul id="memory-list" class="ticker"></ul>
     </section>
 
+    <!-- Local-file retrieval. The panel states its own coverage honestly: if
+         nothing is indexed it says so and offers the folder field, rather than
+         showing an empty result list that looks like "no matches". -->
+    <section class="panel" id="panel-rag">
+      <header><h2>קבצים מקומיים · שליפה</h2><span class="panel-tag">RAG</span></header>
+      <div id="rag-stats" class="kv"></div>
+      <div class="rag-row">
+        <input id="rag-roots" type="text" placeholder="תיקייה לאינדוקס, למשל C:\Users\me\Documents"
+               spellcheck="false" autocomplete="off" />
+        <button id="rag-index-btn" class="btn-mini" title="סורק את התיקייה ובונה אינדקס">אנדקס</button>
+      </div>
+      <div class="rag-row">
+        <input id="rag-query" type="text" placeholder="שאלה מתוך הקבצים…"
+               spellcheck="false" autocomplete="off" />
+        <button id="rag-ask-btn" class="btn-mini" title="תשובה מעוגנת עם ציטוט מקור">חפש</button>
+      </div>
+      <div id="rag-answer" class="rag-answer"></div>
+      <ul id="rag-cites" class="ticker"></ul>
+    </section>
+
   </aside>
 
   <!-- ══════════ center stage ══════════ -->
