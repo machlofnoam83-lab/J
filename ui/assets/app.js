@@ -254,7 +254,7 @@
       `<button class="ma" data-act="del" title="הסר מהמסך">✕</button>` +
       `</span>`;
     el.innerHTML =
-      `<div class="m-head"><span>${esc(head || (kind === 'user' ? 'אדוני' : 'JARVIS'))}</span>` +
+      `<div class="m-head"><span>${esc(head || (kind === 'user' ? 'אדוני' : 'אדיאל'))}</span>` +
       `<span class="m-time">${new Date().toTimeString().slice(0, 8)}</span>${acts}</div>` +
       `<div class="m-body">${body}</div>` +
       (chips ? `<div class="m-meta">${chips}</div>` : '') +
@@ -280,7 +280,7 @@
     const wrap = $('#transcript'); if (!wrap) return null;
     const el = document.createElement('div');
     el.className = 'msg bot';
-    el.innerHTML = `<div class="m-head"><span>JARVIS</span><span class="m-time">מעבד…</span></div>` +
+    el.innerHTML = `<div class="m-head"><span>אדיאל</span><span class="m-time">מעבד…</span></div>` +
                    `<div class="m-body"><span class="typing"><i></i><i></i><i></i></span></div>`;
     const stick = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 160;
     wrap.appendChild(el);
@@ -333,7 +333,7 @@
     if (a.risk && a.risk !== 'SAFE') chips.push({ t: 'סיכון ' + a.risk, k: 'tool' });
     if (a.confidence != null) chips.push({ t: 'ביטחון ' + Math.round(a.confidence * 100) + '%' });
     chips.push({ t: (turn.ms != null ? turn.ms : a.ms || 0).toFixed(0) + 'ms' });
-    addMsg(a.grounded ? 'bot' : 'err', esc(a.text || '…'), turn.voice ? 'JARVIS · 🗣' : 'JARVIS',
+    addMsg(a.grounded ? 'bot' : 'err', esc(a.text || '…'), turn.voice ? 'אדיאל · 🗣' : 'JARVIS',
            { chips, trace: traceHtml(a.trace) });
     countTurns();
   }
@@ -918,7 +918,7 @@
       step();
     });
 
-    await typeLine('J.A.R.V.I.S. — POST SEQUENCE', 'dim');
+    await typeLine('אדיאל — POST SEQUENCE', 'dim');
     await typeLine('Mark VII · offline · zero cloud · zero API keys', 'dim');
     await new Promise(r => setTimeout(r, 180));
 
@@ -1002,7 +1002,7 @@
       const failed = seen; // failures were already toasted as they arrived
       await new Promise(r => setTimeout(r, 140));
       await typeLine(failed ? `— ${failed} subsystem(s) degraded; JARVIS continues with fallbacks —`
-                            : '— all subsystems nominal. welcome home, sir. —', failed ? 'warn' : 'ok');
+                            : '— כל המערכות תקינות. שלום לך, אדוני. —', failed ? 'warn' : 'ok');
       await new Promise(r => setTimeout(r, 420));
     }
     overlay.classList.add('hidden');

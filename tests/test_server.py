@@ -132,7 +132,7 @@ def main() -> int:
         print("\n== HTTP API ==")
         st, hdr, body = get(f"{base}/")
         html = body.decode("utf-8", "replace")
-        check("HUD page served", st == 200 and "J.A.R.V.I.S." in html, f"({len(body)} bytes)")
+        check("HUD page served", st == 200 and "אדיאל" in html, f"({len(body)} bytes)")
         check("HUD page declares Hebrew RTL", 'lang="he"' in html and 'dir="rtl"' in html)
         check("HUD page has a strict CSP", "Content-Security-Policy" in html)
         # the interactive surfaces added since the first HUD: command palette,
@@ -652,7 +652,7 @@ def main() -> int:
         check("bus history retained for the HUD timeline", len(d.get("events", [])) > 20,
               f"({len(d.get('events', []))} events)")
         st, _, body = get(f"{base}/no/such/page")
-        check("unknown path falls back to the HUD shell", st == 200 and b"J.A.R.V.I.S." in body)
+        check("unknown path falls back to the HUD shell", st == 200 and "אדיאל".encode() in body)
         st, hdr, body = post(f"{base}/api/listen", b"NOT_A_WAV_AT_ALL" * 40)
         d = json.loads(body.decode("utf-8", "replace"))
         check("garbage audio is rejected, not crashed", st == 200 and d.get("ok") is False,
