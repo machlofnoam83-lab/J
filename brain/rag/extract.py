@@ -346,7 +346,13 @@ def extract_file(path: Path, *, max_bytes: int = 4 * 1024 * 1024,
         res.skipped = "binary content"
         return res
 
-    text = normalize(text)                    # folds final forms, strips niqqud
+    # NFC only. We deliberately do NOT fold final forms or strip niqqud here:
+    # the indexed text is what the user is shown as a citation, and folding
+    # ם→מ turned every Hebrew quote into "קבצימ"/"איכ מריצימ" — a citation the
+    # reader cannot find in their own file. Matching is unaffected, because
+    # tokenize(), HashedNgramVectorizer and phrase_in() all normalise their own
+    # input internally.
+    text = normalize(text, keep_niqqud=True, fold_finals=False)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     # Collapse pathological runs of blank lines (log files, generated dumps).
     text = re.sub(r"\n{4,}", "\n\n\n", text)

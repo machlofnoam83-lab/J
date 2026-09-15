@@ -387,12 +387,24 @@ class ReasoningEngine:
         reply = self._phrase_tool_result(route, result)
         numbers = _numbers_in(result.value)
         extra = result.data if isinstance(result.data, dict) else None
-        # Only RAG overrides the spoken form. Its answer body quotes source code
-        # and line ranges, which a TTS engine would read character by character;
-        # the skill supplies a short spoken version instead. Scoped to this
-        # intent so no other skill's speech behaviour changes.
         speak = ""
-        if route.intent == "RAG" and extra:
+        if route.intent == "RAG" and extra and extra.get("answer_type"):
+            # Three corrections, all of them things the HUD would otherwise lie
+            # about, scoped to RAG so no other skill's behaviour changes:
+            #
+            # 1. ``route.confidence`` is the router's 0.88 "this looks like a
+            #    file query" — it says nothing about the evidence. Publishing it
+            #    as the answer's confidence showed 88% for an answer the
+            #    retrieval layer had already scored at 0.3.
+            # 2. A refusal still returns ``ok=True`` from the skill (refusing is
+            #    success), which used to light the "grounded" badge on an answer
+            #    that explicitly says it found nothing.
+            # 3. The answer body quotes source code and line ranges, which a TTS
+            #    engine would read character by character; the skill supplies a
+            #    short spoken version instead.
+            route.confidence = float(extra.get("confidence") or route.confidence)
+            if extra.get("answer_type") == "none":
+                route.grounded = False
             speak = str(extra.get("summary_he") or "")
         return self._verify_and_pack(reply, route, trace, t0, numbers=numbers,
                                      extra=extra, speak_override=speak)

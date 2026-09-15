@@ -184,6 +184,7 @@ class RagIndex:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
+        self.closed = False
         self._conn.executescript(SCHEMA)
         self._conn.commit()
         self._ensure_version()
@@ -208,6 +209,11 @@ class RagIndex:
                 self._conn.close()
             except sqlite3.Error:
                 pass
+            finally:
+                # Recorded rather than inferred: sqlite3 raises a generic
+                # ProgrammingError on a closed handle, and callers that share a
+                # process-wide engine have no other way to ask.
+                self.closed = True
 
     def _set_meta(self, key: str, value: str) -> None:
         self._conn.execute(

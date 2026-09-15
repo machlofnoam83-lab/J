@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from brain.rag.answer import GroundedAnswer, compose_answer  # noqa: F401
 from brain.rag.chunk import Chunk, chunk_text  # noqa: F401
-from brain.rag.engine import RAG, RagEngine  # noqa: F401
+from brain.rag.engine import RAG, RagEngine, strip_query_frame  # noqa: F401
 from brain.rag.extract import ExtractResult, decode_text, extract_file, walk_files  # noqa: F401
 from brain.rag.index import RagIndex  # noqa: F401
 from brain.rag.retrieve import Hit, Retriever  # noqa: F401
@@ -29,5 +29,5 @@ __all__ = [
     "ExtractResult", "decode_text", "extract_file", "walk_files",
     "RagIndex", "Retriever", "Hit",
     "GroundedAnswer", "compose_answer",
-    "RagEngine", "RAG",
+    "RagEngine", "RAG", "strip_query_frame",
 ]

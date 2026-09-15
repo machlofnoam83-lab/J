@@ -19,6 +19,7 @@ forget them:
 
 from __future__ import annotations
 
+import re
 import sys
 import time
 from pathlib import Path
@@ -36,6 +37,39 @@ from brain.rag.index import RagIndex, term_counts  # noqa: E402
 from brain.rag.retrieve import Hit, Retriever  # noqa: E402
 from core.bus import BUS  # noqa: E402
 from core.config import CONFIG  # noqa: E402
+
+
+#: The command frame the router matches on, which is *not* part of the question.
+#: Left in the query it becomes three more content terms ("חפש", "קבצים", "שלי")
+#: competing with the two that actually matter, and BM25 dilution plus term
+#: coverage turn a good hit into a refusal. Measured: "מה עושה חומת ההרשאות"
+#: answered at 0.65 confidence, while "חפש בקבצים שלי מה עושה חומת ההרשאות" —
+#: the phrasing the router recognises — answered nothing at all.
+_QUERY_FRAMES = re.compile(
+    r"(חפש(י)?( לי)? ב(תוך )?(ה)?(קבצים|מסמכים|תיקייה|הערות)( שלי| שלך)?"
+    r"|מצא(י)?( לי)? ב(תוך )?(ה)?(קבצים|מסמכים|תיקייה)( שלי| שלך)?"
+    r"|מה כתוב ב(תוך )?(ה)?(קבצים|מסמכים)"
+    r"|(לפי|מתוך|על פי) (ה)?(קבצים|מסמכים|הערות)( שלי| שלך)?"
+    r"|(ה)?(קבצים|מסמכים) (שלי|שלך) (אומרים|מראים)"
+    r"|search (my|the|in my|in the) (files|documents|docs|notes)"
+    r"|grep my (files|documents|notes)"
+    r"|find (it |this )?in my (files|documents|notes)"
+    r"|according to my (files|documents|notes)"
+    r"|what (do|does) my (files|documents|notes) say)", re.I)
+
+
+def strip_query_frame(query: str) -> str:
+    """Remove the "search my files" wrapper, keeping the actual question.
+
+    Falls back to the original text when stripping would leave nothing, so a
+    bare "מה כתוב בקבצים" still searches on its own words instead of becoming
+    an empty query.
+    """
+    q = (query or "").strip()
+    if not q:
+        return ""
+    stripped = re.sub(r"\s{2,}", " ", _QUERY_FRAMES.sub(" ", q)).strip(" ,.;:!?·—-")
+    return stripped if len(stripped) >= 2 else q
 
 
 class RagEngine:
@@ -79,6 +113,10 @@ class RagEngine:
         if stored:
             return [Path(r) for r in stored]
         return self.roots
+
+    @property
+    def closed(self) -> bool:
+        return bool(getattr(self.store, "closed", False))
 
     def close(self) -> None:
         self.store.close()
@@ -188,7 +226,7 @@ class RagEngine:
     def search(self, query: str, *, k: Optional[int] = None,
                path_filter: str = "", kinds: Sequence[str] = ()) -> List[Hit]:
         return self.retriever.search(
-            query, k=int(k or self.config.top_k),
+            strip_query_frame(query), k=int(k or self.config.top_k),
             candidates=int(self.config.rerank_candidates),
             path_filter=path_filter, kinds=kinds)
 
@@ -258,12 +296,18 @@ _ENGINE: Optional[RagEngine] = None
 def get_engine(*, db_path: Optional[Path | str] = None, fresh: bool = False) -> RagEngine:
     """Process-wide engine. ``fresh=True`` is for tests that need a clean index."""
     global _ENGINE
-    if _ENGINE is None or fresh or (db_path and str(Path(db_path)) != str(_ENGINE.db_path)):
-        if _ENGINE is not None:
+    stale = _ENGINE is not None and _ENGINE.closed
+    if _ENGINE is None or fresh or stale \
+            or (db_path and str(Path(db_path)) != str(_ENGINE.db_path)):
+        if _ENGINE is not None and not stale:
             try:
                 _ENGINE.close()
             except Exception:
                 pass
+        # A closed engine used to be handed straight back, because the only test
+        # was ``is None``. Anything sharing the process-wide handle then failed
+        # with "Cannot operate on a closed database" long after whoever closed
+        # it had moved on.
         _ENGINE = RagEngine(db_path=db_path)
     return _ENGINE
 

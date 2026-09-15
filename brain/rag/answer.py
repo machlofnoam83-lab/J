@@ -385,8 +385,13 @@ def verify_answer(answer: GroundedAnswer, sources: Optional[Dict[str, str]] = No
             if text is None:
                 problems.append(f"citation {i}: source file {c.path!r} not provided")
                 continue
-            a = re.sub(r"\s+", " ", normalize(c.quote)).strip()
-            b = re.sub(r"\s+", " ", normalize(text))
+            # Compare the RAW strings, collapsing whitespace only. Normalising
+            # both sides here — which is what the first version did — made the
+            # check blind to exactly the damage it exists to catch: a quote
+            # mangled into "קבצימ" still matched a file containing "קבצים"
+            # because both sides folded final forms before comparing.
+            a = re.sub(r"\s+", " ", c.quote).strip()
+            b = re.sub(r"\s+", " ", text.replace("\r\n", "\n").replace("\r", "\n"))
             if a and a not in b:
                 problems.append(f"citation {i}: quote not found verbatim in {c.path}")
     return (not problems), problems

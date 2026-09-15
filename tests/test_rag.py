@@ -49,7 +49,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from brain.rag.answer import GroundedAnswer, compose_answer, verify_answer  # noqa: E402
+from brain.rag.answer import (  # noqa: E402
+    Citation, GroundedAnswer, compose_answer, verify_answer,
+)
 from brain.rag.chunk import Chunk, chunk_text, split_sentences  # noqa: E402
 from brain.rag.engine import RagEngine  # noqa: E402
 from brain.rag.extract import (  # noqa: E402
@@ -740,6 +742,120 @@ def test_routing() -> None:
         check(f"not hijacked: {text[:28]}… → {want}", got == want, f"got {got}")
 
 
+# --------------------------------------------------- integrated answer path --
+def test_integrated_answer_path(tmp: Path) -> None:
+    """The path the user actually takes: text in → routed → skill → cited answer.
+
+    Router, skills and REST were each tested separately and each passed while
+    the composition was broken in three ways the HUD would have lied about.
+    These assert the composed result.
+    """
+    print("\n── integrated: text → route → skill → cited answer ────────")
+    import skills as skills_mod
+    skills_mod.load_all()
+    from brain.rag import engine as rag_engine_mod
+    from brain.reasoning import ReasoningEngine
+    from security.permissions import PermissionFirewall
+    from skills.registry import REGISTRY
+
+    eng_rag = rag_engine_mod.get_engine(db_path=tmp / "_int.sqlite3", fresh=True)
+    eng_rag.index([tmp])
+
+    eng = ReasoningEngine(skills=REGISTRY, firewall=PermissionFirewall())
+
+    ans = eng.think("חפש בקבצים שלי מה עושה חומת ההרשאות")
+    check("the RAG intent reaches the reasoning loop", ans.intent == "RAG", ans.intent)
+    check("the loop invoked rag.ask", ans.skill == "rag.ask", ans.skill)
+    check("the answer carries citations through the loop",
+          len(ans.data.get("citations") or []) >= 1, str(len(ans.data.get("citations") or [])))
+    check("the loop reports the verifier's verdict", ans.data.get("verified") is True,
+          str(ans.data.get("verify_problems")))
+
+    # 1. The answer's confidence must be the evidence confidence, not the
+    #    router's flat 0.88 "this looks like a file query".
+    rag_conf = ans.data.get("confidence")
+    check("confidence is the EVIDENCE confidence, not the route's",
+          rag_conf is not None and abs(ans.confidence - float(rag_conf)) < 1e-6,
+          f"answer={ans.confidence} rag={rag_conf}")
+    check("the evidence confidence is not the router's default 0.88",
+          abs(ans.confidence - 0.88) > 1e-6, f"{ans.confidence}")
+
+    # 2. The spoken form must be short and must not read source code aloud.
+    check("the spoken form is short enough for TTS", len(ans.speak) < 400,
+          f"{len(ans.speak)} chars")
+    check("the spoken form is not the quoted body",
+          ans.speak != ans.text and len(ans.speak) < len(ans.text),
+          f"speak={len(ans.speak)} text={len(ans.text)}")
+
+    # 3. A refusal must not light the grounded badge.
+    ref = eng.think("חפש בקבצים שלי מה המתכון לעוגת שמרים של סבתא רבא")
+    if ref.data.get("answer_type") == "none":
+        check("a refusal is NOT marked grounded", ref.grounded is False,
+              f"grounded={ref.grounded}")
+        check("a refusal still answers politely", len(ref.text) > 10)
+    else:
+        # The fixture corpus is small; if something did match, it must at least
+        # be honestly reported rather than silently passed.
+        check("refusal case produced a refusal on this corpus", False,
+              f"got {ref.data.get('answer_type')}")
+    eng_rag.close()
+    rag_engine_mod._ENGINE = None      # leave no closed singleton for later tests
+
+
+def test_citations_preserve_hebrew_orthography(tmp: Path) -> None:
+    """A citation must be findable in the user's file, character for character.
+
+    The indexer used to run the text through ``normalize()``, which folds Hebrew
+    final forms (ם→מ, ך→כ, ן→נ, ץ→צ, ף→פ). Every quote the user was shown came
+    out as "קבצימ" / "איכ מריצימ" — orthography no Hebrew document contains, so
+    the reader could not find the cited line in their own file. Matching does
+    not need the folding at ingest: tokenize(), the n-gram vectoriser and
+    phrase_in() all normalise their own input.
+    """
+    print("\n── citations preserve Hebrew final forms ──────────────────")
+    src = tmp / "hebrew.md"
+    body = ("מדריך קצר.\n\n"
+            "איך מריצים את הבדיקות: פותחים את התיקייה ולוחצים על הכפתור.\n"
+            "המערכת שומרת את הקבצים בתיקייה נפרדת, ואין צורך בסיסמה או בהרשאה.\n")
+    src.write_text(body, encoding="utf-8")
+
+    res = extract_file(src, policy=RagPolicy())
+    check("final forms survive extraction", "מריצים" in res.text and "קבצים" in res.text,
+          res.text[14:60])
+    check("no folded-final mangling in the indexed text",
+          "מריצימ" not in res.text and "קבצימ" not in res.text)
+
+    eng = RagEngine(db_path=tmp / "_orth.sqlite3")
+    eng.index([tmp])
+    ans = eng.ask("איך מריצים את הבדיקות", k=4)
+    check("the question still retrieves after the change", ans.grounded, ans.answer_type)
+    quotes = " ".join(c.quote for c in ans.citations)
+    check("the quote keeps real Hebrew orthography",
+          "מריצים" in quotes or "הבדיקות" in quotes, repr(quotes[:80]))
+    check("the quote has no folded-final artefacts",
+          "מריצימ" not in quotes and "בדיקומ" not in quotes, repr(quotes[:80]))
+
+    # The verifier must now be checking RAW text — prove it can catch mangling.
+    verified, problems = eng.verify(ans)
+    check("raw verification passes on a correct quote", verified, str(problems[:1]))
+    for c in ans.citations:
+        mangled = c.quote.replace("ם", "מ").replace("ך", "כ")
+        if mangled != c.quote:
+            fake = GroundedAnswer(query=ans.query, text="", speak="", grounded=True,
+                                  answer_type="grounded", confidence=0.9,
+                                  citations=[Citation(path=c.path, file=c.file,
+                                                      start_line=c.start_line,
+                                                      end_line=c.end_line, heading="",
+                                                      quote=mangled, score=0.5)])
+            m_ok, m_problems = verify_answer(fake, {c.path: src.read_text(encoding="utf-8")})
+            check("the verifier CATCHES a folded-final mangled quote", not m_ok,
+                  str(m_problems[:1]))
+            break
+    else:
+        check("a quote contained a final form to test against", False)
+    eng.close()
+
+
 # --------------------------------------------------------------------- server --
 def test_server(tmp: Path) -> None:
     print("\n── server endpoints ──────────────────────────────────────")
@@ -753,8 +869,7 @@ def test_server(tmp: Path) -> None:
         # Point the process-wide engine at the temp corpus before the app starts,
         # so the handlers under test are the real ones bound to a real index.
         from brain.rag import engine as engine_mod
-        engine_mod._ENGINE = RagEngine(db_path=tmp / "_srv.sqlite3")
-        engine_mod._ENGINE.index([tmp])
+        engine_mod.get_engine(db_path=tmp / "_srv.sqlite3", fresh=True).index([tmp])
 
         app = srv.build_app()
         async with TestClient(TestServer(app)) as client:
@@ -839,6 +954,8 @@ def main() -> int:
         test_confidence_is_not_saturated(tmp)
         test_citation_hygiene(tmp)
         test_phrase_evidence_is_proportional(tmp)
+        test_citations_preserve_hebrew_orthography(tmp)
+        test_integrated_answer_path(tmp)
         test_skills(tmp)
     test_routing()
     with tempfile.TemporaryDirectory() as td:
