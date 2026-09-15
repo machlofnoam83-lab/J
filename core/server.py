@@ -792,14 +792,21 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
     await ws.prepare(request)
     loop = asyncio.get_event_loop()
     client = Client(ws, loop)
-    CLIENTS.append(client)
 
     async def call(fn, *a, **kw):
         return await loop.run_in_executor(EXECUTOR, lambda: fn(*a, **kw))
 
     try:
         agent = await call(get_agent)
+        # Greet before joining the broadcast list. The startup boot runs in a
+        # background thread and, with warm caches, can finish within seconds —
+        # close enough to a new connection that its system.ready event used to
+        # overtake the hello on the wire. The HUD treats a leading event as
+        # harmless, but "the first frame is the greeting" is a contract worth
+        # keeping deterministic; anything emitted in the gap is covered by the
+        # sync the HUD runs on open.
         await client.send({"type": "hello", "status": agent.status()})
+        CLIENTS.append(client)
 
         # ---- background command runners -------------------------------
         async def run_command(data: Dict[str, Any]) -> None:

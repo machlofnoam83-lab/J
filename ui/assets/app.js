@@ -629,6 +629,108 @@
     setInterval(refreshModes, 15000);
   }
 
+  // ── command palette ───────────────────────────────────────────────────────
+  // Sixty tools and twelve postures are a lot to hide behind panels. Ctrl+K
+  // puts all of them one fuzzy match away. Selection goes through the very same
+  // dispatcher as chat and voice, so a non-SAFE pick still meets the firewall and
+  // its confirmation prompt — the palette is a faster hand, not a spare key.
+  let paletteIdx = 0, paletteRows = [];
+
+  async function paletteIndex() {
+    const rows = [];
+    let sk = skillsCache;
+    if (!sk || !sk.length) {
+      try { sk = (await api('/api/skills')).skills || []; skillsCache = sk; } catch (_) { sk = []; }
+    }
+    (sk || []).forEach(s => rows.push({
+      kind: 'skill', id: s.name, label: s.name, sub: s.description || '',
+      tag: s.risk || 'SAFE', hay: `${s.name} ${s.description || ''}`.toLowerCase() }));
+    let md = modesCache;
+    if (!md || !md.length) {
+      try { md = (await api('/api/modes')).modes || []; modesCache = md; } catch (_) { md = []; }
+    }
+    (md || []).forEach(m => rows.push({
+      kind: 'mode', id: m.id, label: `מצב ${m.he}`, sub: m.desc || '',
+      tag: m.active ? 'פעיל' : 'MODE', hay: `מצב ${m.he} ${m.id} ${m.en} ${m.desc || ''}`.toLowerCase() }));
+    return rows;
+  }
+
+  function paletteMatch(rows, q) {
+    const t = (q || '').trim().toLowerCase();
+    if (!t) return rows.slice(0, 40);
+    const toks = t.split(/\s+/);
+    return rows.map(r => {
+      let s = 0, i = -1;
+      for (const tok of toks) {
+        const at = r.hay.indexOf(tok);
+        if (at < 0) return null;
+        s += tok.length * (at === 0 ? 2 : 1);
+        if (i < 0 || at < i) i = at;
+      }
+      return { r, s };
+    }).filter(Boolean).sort((a, b) => b.s - a.s || a.r.hay.length - b.r.hay.length)
+      .slice(0, 40).map(x => x.r);
+  }
+
+  async function renderPalette() {
+    const q = $('#palette-q'); if (!q) return;
+    const rows = paletteMatch(await paletteIndex(), q.value);
+    paletteRows = rows;
+    paletteIdx = Math.min(paletteIdx, Math.max(0, rows.length - 1));
+    const ul = $('#palette-list'); if (!ul) return;
+    ul.innerHTML = rows.length ? rows.map((r, i) =>
+      `<li data-i="${i}" class="${i === paletteIdx ? 'sel' : ''}">`
+      + `<b>${esc(r.label)}</b><span>${esc(String(r.sub).slice(0, 70))}</span>`
+      + `<span class="pk lvl-${esc(String(r.tag).toLowerCase())}">${esc(r.tag)}</span></li>`).join('')
+      : '<li><b>לא נמצא דבר</b><span>נסה מילה אחרת — הכלים, המצבים והפקודות כולם כאן</span></li>';
+    const c = $('#palette-count'); if (c) c.textContent = `${rows.length} תוצאות`;
+    ul.querySelectorAll('li').forEach(li => li.addEventListener('click', () => {
+      paletteIdx = parseInt(li.dataset.i || '0', 10); paletteRun();
+    }));
+  }
+
+  async function paletteRun() {
+    const r = paletteRows[paletteIdx];
+    closePalette();
+    if (!r) return;
+    if (r.kind === 'mode') { setMode(r.id); return; }
+    toast(`מפעיל ${r.label} דרך חומת האש…`, 'good', 3000);
+    try {
+      const d = await post({ type: 'invoke', skill: r.id, args: {} });
+      if (d && d.ok) toast(d.value ? String(d.value).slice(0, 140) : `${r.label}: בוצע`, 'good', 6000);
+      else if (d) toast(d.error || d.message || `${r.label}: נחסם או נכשל`, 'warn', 7000);
+    } catch (e) { toast(`ההפעלה נכשלה: ${e.message}`, 'err', 6000); }
+  }
+
+  function openPalette() {
+    const p = $('#palette'); if (!p) return;
+    p.classList.remove('hidden');
+    paletteIdx = 0;
+    const q = $('#palette-q'); if (q) { q.value = ''; q.focus(); }
+    renderPalette();
+  }
+  function closePalette() { const p = $('#palette'); if (p) p.classList.add('hidden'); }
+
+  function wirePalette() {
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'k') {
+        e.preventDefault();
+        const p = $('#palette');
+        if (p && !p.classList.contains('hidden')) closePalette(); else openPalette();
+        return;
+      }
+      const p = $('#palette');
+      if (!p || p.classList.contains('hidden')) return;
+      if (e.key === 'Escape') { closePalette(); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); paletteIdx = Math.min(paletteRows.length - 1, paletteIdx + 1); renderPalette(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); paletteIdx = Math.max(0, paletteIdx - 1); renderPalette(); }
+      if (e.key === 'Enter') { e.preventDefault(); paletteRun(); }
+    });
+    const q = $('#palette-q'); if (q) q.addEventListener('input', () => { paletteIdx = 0; renderPalette(); });
+    const p = $('#palette');
+    if (p) p.addEventListener('mousedown', e => { if (e.target === p) closePalette(); });
+  }
+
   function wireSecurityPanels() {
     const ba = $('#btn-refresh-audit'); if (ba) ba.addEventListener('click', refreshAudit);
     const bs = $('#btn-refresh-skills'); if (bs) bs.addEventListener('click', refreshSkills);
@@ -2107,6 +2209,7 @@
     wireSecurityPanels();
     wireScreenRead();
     wireModes();
+    wirePalette();
     recomputeState();
     connect();
 

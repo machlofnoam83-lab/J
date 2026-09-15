@@ -130,6 +130,14 @@ def main() -> int:
         check("HUD page served", st == 200 and "J.A.R.V.I.S." in html, f"({len(body)} bytes)")
         check("HUD page declares Hebrew RTL", 'lang="he"' in html and 'dir="rtl"' in html)
         check("HUD page has a strict CSP", "Content-Security-Policy" in html)
+        # the interactive surfaces added since the first HUD: command palette,
+        # posture panel, screen analysis and the sentinel block. A missing one
+        # means the page silently degrades to an older interface.
+        for needle, label in [('id="palette"', "command palette overlay"),
+                              ('id="mode-chips"', "posture panel"),
+                              ('id="screen-read"', "screen analysis block"),
+                              ('id="sentinel-box"', "sentinel block")]:
+            check(f"HUD page carries the {label}", needle in html)
 
         st, hdr, body = get(f"{base}/assets/style.css")
         check("stylesheet served", st == 200 and len(body) > 5000, f"({len(body)} bytes)")
@@ -156,6 +164,13 @@ def main() -> int:
         st, _, d = get_json(f"{base}/api/audit")
         check("/api/audit responds", st == 200 and "stats" in d and "tail" in d,
               f"level={d['stats'].get('level')} entries={d['stats'].get('total')}")
+
+        st, _, d = get_json(f"{base}/api/sentinel")
+        check("/api/sentinel reports the watchdog", st == 200 and "stats" in d and "tail" in d,
+              f"alerts={d['stats'].get('alerts')} acting={d['stats'].get('acting')}")
+        st, _, d = get_json(f"{base}/api/modes")
+        check("/api/modes lists the twelve postures", st == 200 and len(d.get("modes", [])) == 12,
+              f"current={d.get('current')}")
 
         # ── /api/screen/read: the HTTP face of the in-house PNG codec ──────
         # A real PNG written by our own encoder, read back through the route.
