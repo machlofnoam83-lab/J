@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
 import sys
 import threading
 import time
@@ -106,6 +107,12 @@ class JarvisAgent:
                                       memory=self.memory, firewall=self.firewall,
                                       knowledge=self.knowledge, agents=self.agents)
         self.bus_history: List[Dict[str, Any]] = []
+        # Boot progress is shared between the worker thread running the POST and
+        # the HTTP thread serving /api/boot/progress, so it needs its own lock.
+        self._boot_lock = threading.Lock()
+        self._boot_progress: List[Dict[str, Any]] = []
+        self._boot_done = False
+        self._boot_started = 0.0
 
         # ── human-in-the-loop confirmation bridge (HUD ⇄ firewall) ──
         self._confirm_events: Dict[int, threading.Event] = {}
@@ -125,20 +132,76 @@ class JarvisAgent:
             self.bus_history = self.bus_history[-600:]
 
     # ------------------------------------------------------------------ boot --
+    # Two of these checks are expensive by design: voice.stt builds the whole
+    # template bank (~3 minutes in the test suite) and agent.hephaestus writes,
+    # runs and verifies real code. On a slow Windows machine that meant the boot
+    # POST ground for minutes while the HUD sat on a black overlay at a 0% bar —
+    # the interface was not broken, it was faithfully waiting on a response that
+    # never streamed. So each check now runs on its own daemon thread with a
+    # hard timeout, results land in a progress buffer as they complete so the HUD
+    # can fill live, and a check that overruns is reported as overrun and skipped
+    # rather than allowed to hold the whole sequence hostage.
+    CHECK_TIMEOUT = float(os.environ.get("JARVIS_BOOT_CHECK_TIMEOUT", "30"))
+    BOOT_BUDGET = float(os.environ.get("JARVIS_BOOT_BUDGET", "150"))
+
     def boot(self) -> List[Dict[str, Any]]:
         """Honest POST: every line is a real measurement, not theatre."""
         BUS.emit(T.BOOT, {"items": len(BOOT_LINES)}, source=self.name)
+        with self._boot_lock:
+            self._boot_progress = []
+            self._boot_done = False
+            self._boot_started = time.perf_counter()
         report: List[Dict[str, Any]] = []
         for key, label in BOOT_LINES:
-            t = time.perf_counter()
-            ok, detail = self._check(key)
-            ms = (time.perf_counter() - t) * 1000
-            item = {"key": key, "label": label, "ok": ok, "detail": detail, "ms": round(ms, 1)}
+            elapsed = time.perf_counter() - self._boot_started
+            if elapsed > self.BOOT_BUDGET:
+                item = {"key": key, "label": label, "ok": False,
+                        "detail": f"לא נבדק — תקציב האתחול ({self.BOOT_BUDGET:g}s) נגמר",
+                        "ms": 0.0}
+            else:
+                t = time.perf_counter()
+                ok, detail = self._run_check_timed(key, self.CHECK_TIMEOUT)
+                ms = (time.perf_counter() - t) * 1000
+                item = {"key": key, "label": label, "ok": ok, "detail": detail,
+                        "ms": round(ms, 1)}
             report.append(item)
+            with self._boot_lock:
+                self._boot_progress.append(item)
             BUS.emit("boot.item", item, source=self.name)
+        with self._boot_lock:
+            self._boot_done = True
         BUS.emit("system.ready", {"items": len(report),
                                   "failed": sum(1 for r in report if not r["ok"])}, source=self.name)
         return report
+
+    def boot_progress(self) -> Dict[str, Any]:
+        """Items completed so far, so the HUD can fill while the POST runs."""
+        with self._boot_lock:
+            return {"items": list(self._boot_progress), "done": self._boot_done,
+                    "total": len(BOOT_LINES),
+                    "elapsed": round(time.perf_counter() - self._boot_started, 1)
+                    if self._boot_started else 0.0}
+
+    def _run_check_timed(self, key: str, timeout: float) -> Tuple[bool, str]:
+        """Run one check on a daemon thread; never let it hold the sequence."""
+        box: Dict[str, Tuple[bool, str]] = {}
+
+        def work() -> None:
+            try:
+                box["r"] = self._check(key)
+            except BaseException as exc:  # a hung check must not become a crash
+                box["r"] = (False, f"{type(exc).__name__}: {exc}")
+
+        th = threading.Thread(target=work, daemon=True, name=f"boot-{key}")
+        th.start()
+        th.join(timeout)
+        if th.is_alive():
+            # The thread is abandoned on purpose (daemon): whatever it was
+            # waiting on — a subprocess, a device, a lock — keeps going in the
+            # background and simply never reports. Saying so beats hiding it.
+            return False, (f"הבדיקה לא הסתיימה תוך {timeout:g}s "
+                           f"— ממשיכים בלעדיה")
+        return box.get("r", (False, "הבדיקה לא החזירה תוצאה"))
 
     def _check(self, key: str) -> Tuple[bool, str]:
         try:

@@ -227,6 +227,31 @@ body { display: flex; flex-direction: column; }
 }
 .sr-note::before { content: "ⓘ "; color: var(--cyan-dim); }
 
+/* ── operational modes: the twelve postures ───────────────────────────────── */
+.mode-current {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 9px; border: 1px solid var(--edge-hot);
+  background: linear-gradient(90deg, rgba(94,231,255,.09), transparent);
+}
+.mode-current > b {
+  font-size: 13px; color: var(--ice); letter-spacing: .02em;
+  text-shadow: var(--glow-cyan);
+}
+.mode-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.mode-chips .chip {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .03em;
+  padding: 3px 8px; cursor: pointer; color: var(--text-faint);
+  background: rgba(255,255,255,.02); border: 1px solid var(--edge);
+  transition: color .18s, border-color .18s, background .18s;
+}
+.mode-chips .chip:hover { color: var(--ice); border-color: var(--edge-hot); }
+.mode-chips .chip.on {
+  color: var(--cyan); border-color: var(--cyan-dim);
+  background: rgba(94,231,255,.1); box-shadow: var(--glow-cyan);
+}
+.mode-chips .chip.on::before { content: "● "; font-size: 8px; }
+#research-out { white-space: pre-wrap; max-height: 140px; overflow-y: auto; }
+
 /* agents */
 #agent-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 #agent-list li {

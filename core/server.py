@@ -189,6 +189,43 @@ async def api_boot(request: web.Request) -> web.Response:
     return _json({"ok": True, "report": report})
 
 
+async def api_modes(request: web.Request) -> web.Response:
+    """The twelve operational postures and which one is held."""
+    from brain.modes import STATE
+    return _json({"current": STATE.get().id, "modes": STATE.schema(),
+                  "stats": STATE.stats()})
+
+
+async def api_mode_set(request: web.Request) -> web.Response:
+    """Switch posture. SAFE: changing how JARVIS behaves grants no new power —
+    every action still passes the same firewall at its own risk level."""
+    from brain.modes import STATE
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    mid = str((data or {}).get("id") or request.query.get("id") or "").strip()
+    m = STATE.set(mid)
+    if m is None:
+        return _json({"ok": False, "error": f"unknown mode {mid!r}",
+                      "modes": [x["id"] for x in STATE.schema()]}, status=400)
+    BUS.emit("mode.change", {"mode": m.id, "he": m.he}, source="hud")
+    return _json({"ok": True, "mode": m.id, "he": m.he, "en": m.en,
+                  "desc": m.desc_he, "persona": m.persona_he})
+
+
+async def api_boot_progress(request: web.Request) -> web.Response:
+    """Checks completed so far, without waiting for the whole POST.
+
+    The boot POST only returns once every subsystem has been measured, and two of
+    those measurements are minutes-long by design. The HUD used to wait for that
+    single response behind a black overlay, which on a slow machine reads as a
+    dead app. This endpoint lets it stream the results as they land instead.
+    """
+    agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
+    return _json({"ok": True, **agent.boot_progress()})
+
+
 async def api_events(request: web.Request) -> web.Response:
     agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
     return _json({"events": agent.events(int(request.query.get("n", 150)))})
@@ -920,6 +957,9 @@ def build_app() -> web.Application:
     app.router.add_get("/ws", ws_handler)
     app.router.add_get("/api/status", api_status)
     app.router.add_get("/api/boot", api_boot)
+    app.router.add_get("/api/boot/progress", api_boot_progress)
+    app.router.add_get("/api/modes", api_modes)
+    app.router.add_post("/api/mode", api_mode_set)
     app.router.add_get("/api/events", api_events)
     app.router.add_get("/api/skills", api_skills)
     app.router.add_get("/api/audit", api_audit)

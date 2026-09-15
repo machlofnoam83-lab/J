@@ -10,9 +10,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import torch  # noqa: E402
+# torch is an optional dependency at runtime — NeuralCore falls back to a
+# retrieval path without it — but this file tests the neural core itself, so it
+# cannot run without one. A machine without torch therefore gets an explicit
+# SKIP and a zero-failure result, not a traceback: crashing the whole suite over
+# an absent optional extra would read as a regression when nothing regressed,
+# and silently claiming the neural core passed would be worse.
+try:
+    import torch  # noqa: E402
+    from brain.model import JarvisModel, ModelConfig  # noqa: E402
+    _TORCH = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    JarvisModel = ModelConfig = None  # type: ignore[assignment]
+    _TORCH = False
 
-from brain.model import JarvisModel, ModelConfig  # noqa: E402
 from brain.tokenizer import Tokenizer, normalize, stats  # noqa: E402
 
 CORPUS = [
@@ -39,6 +51,15 @@ def main() -> int:
         else:
             fail += 1
             print(f"  FAIL  {name} {info}")
+
+    if not _TORCH:
+        print("  SKIP  torch is not installed on this machine.")
+        print("        The neural core is an optional extra: JARVIS runs on its")
+        print("        retrieval fallback without it, and this file tests the core")
+        print("        itself, so there is nothing honest left to assert here.")
+        print("        Install torch (see requirements.txt) to run these checks.")
+        print(f"\nRESULT: {ok} passed, {fail} failed")
+        return 0
 
     print("== tokenizer ==")
     t0 = time.time()

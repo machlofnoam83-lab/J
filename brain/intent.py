@@ -92,6 +92,23 @@ _MEM_EXPLICIT = re.compile(
     r"(מה (אמרתי|סיפרתי|ביקשתי|שאלתי)|זוכר (מה|את)|מה דיברנו|recall|"
     r"what did i (say|ask|tell)|do you remember)", re.I)
 
+# Mode switching. Routed before the research and system intents because "מצב
+# מנתח" contains the word a telemetry question would use, and "מצב מורה" the word
+# a definition would — the posture change must win over the thing it resembles.
+_MODE_Q = re.compile(
+    r"(מצב (חוקר|מחקר|מתכנת|קוד|תכנות|אבטחה|שומר|מנהל|בית|מזכיר|יומן|מנתח|ניתוח|"
+    r"מורה|לימוד|כתיבה|סופר|מנצח|משימות|צופה|תצפית|בלשן|תרגום|שיחה|חבר|לווייה)|"
+    r"(עבור|תעבור|עברי|switch|change|set) (לי )?(ל)?מצב|באיזה מצב אתה|מה המצב שלך|"
+    r"אילו מצבים יש|רשימת מצבים|research mode|code mode|security mode)", re.I)
+
+# The researcher. Deliberately requires an explicit dig verb or an "everything
+# about" shape, so a plain question still takes its normal specialist route and
+# the researcher stays a posture you ask for, not a grab-bag that swallows chat.
+_RESEARCH_Q = re.compile(
+    r"(תחקור|חקור|תחפש|חפש לי|חפשו לי|מה יש לך על|מה אתה יודע על|תמצא לי כל|"
+    r"כל מה שיש (לך )?על|research|find (me )?(everything|all|anything) (about|on))",
+    re.I)
+
 # Shell execution. `shell.exec` was registered as CRITICAL and described in its own
 # module as "the most dangerous skill JARVIS has, so it is the most heavily guarded
 # one" — but no route ever emitted it, so the blocklist, the executable allowlist,
@@ -409,6 +426,20 @@ class IntentRouter:
         # on the FILES path and "נגן מוזיקה" on the media path.
         if _MEM_EXPLICIT.search(t):
             return Route("MEMORY_QUERY", 0.9, "explicit recall request")
+
+        # 3d. posture and research. Both are explicit requests about *how* JARVIS
+        # should behave rather than about the world, so they sit above the subject
+        # specialists: "מצב מנתח" must change the stance, not report CPU load.
+        if _MODE_Q.search(t):
+            if re.search(r"(באיזה מצב אתה|מה המצב שלך)", t, re.I):
+                return Route("MODE", 0.9, "mode status question", skill="mode.get")
+            if re.search(r"(אילו מצבים יש|רשימת מצבים)", t, re.I):
+                return Route("MODE", 0.9, "mode catalogue request", skill="mode.list")
+            return Route("MODE", 0.92, "mode switch request",
+                         skill="mode.set", args={"mode": t})
+        if _RESEARCH_Q.search(t):
+            return Route("RESEARCH", 0.88, "research request",
+                         skill="research.query", args={"topic": t})
 
         # 4. explicit system intents
         # 4a. shell command. Routed at CRITICAL so the firewall runs check_shell

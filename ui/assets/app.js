@@ -530,6 +530,72 @@
       + '"צלם ונתח" מצלם עכשיו דרך חומת האש ואז מנתח.';
   }
 
+  // ── operational modes ────────────────────────────────────────────────────
+  // Twelve postures from brain/modes.py. Switching one changes what JARVIS
+  // reaches for first; it grants no new power — the firewall still grades every
+  // action at its own risk level, and the panel says so.
+  let modesCache = [];
+
+  function renderModes(r) {
+    if (!r) return;
+    modesCache = r.modes || [];
+    const cur = modesCache.find(m => m.active) || {};
+    const nm = $('#mode-name'); if (nm) nm.textContent = cur.he || '—';
+    const en = $('#mode-en'); if (en) en.textContent = cur.en || '—';
+    const ds = $('#mode-desc'); if (ds) ds.textContent = cur.desc || '';
+    const wrap = $('#mode-chips'); if (!wrap) return;
+    wrap.innerHTML = modesCache.map(m =>
+      `<button class="chip${m.active ? ' on' : ''}" data-mid="${esc(m.id)}" `
+      + `title="${esc(m.desc)}">${esc(m.he)}</button>`).join('');
+  }
+
+  async function refreshModes() {
+    try { renderModes(await api('/api/modes')); }
+    catch (_) { const nm = $('#mode-name'); if (nm) nm.textContent = 'לא זמין'; }
+  }
+
+  async function setMode(mid) {
+    try {
+      const r = await fetch(HTTP + '/api/mode', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: mid }) });
+      const d = await r.json();
+      if (!r.ok || !d.ok) { toast(d && d.error ? d.error : 'החלפת מצב נכשלה', 'warn', 5000); return; }
+      toast(`מצב: ${d.he} — ${d.desc}`, 'good', 5000);
+      renderModes(await api('/api/modes'));
+    } catch (e) { toast('החלפת מצב נכשלה: ' + e.message, 'warn', 5000); }
+  }
+
+  async function runResearch() {
+    const inp = $('#research-topic'), out = $('#research-out');
+    const topic = (inp && inp.value || '').trim();
+    if (!topic) { toast('מה לחקור, אדוני?', 'warn', 4000); return; }
+    if (out) { out.classList.remove('err'); out.textContent = 'חוקר בכל המקורות המקומיים…'; }
+    try {
+      // Same dispatcher the chat uses, so the research runs under the identical
+      // firewall and trace as a spoken request would.
+      const d = await post({ type: 'invoke', skill: 'research.query', args: { topic } });
+      if (out) {
+        out.classList.toggle('err', !(d && d.ok));
+        out.textContent = (d && (d.value || d.error)) || 'לא התקבלה תוצאה.';
+      }
+    } catch (e) {
+      if (out) { out.classList.add('err'); out.textContent = 'החקירה נכשלה: ' + e.message; }
+    }
+  }
+
+  function wireModes() {
+    const wrap = $('#mode-chips');
+    if (wrap) wrap.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (b && b.dataset.mid) setMode(b.dataset.mid);
+    });
+    const br = $('#btn-mode-research'); if (br) br.addEventListener('click', runResearch);
+    const inp = $('#research-topic');
+    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') runResearch(); });
+    refreshModes();
+    setInterval(refreshModes, 15000);
+  }
+
   function wireSecurityPanels() {
     const ba = $('#btn-refresh-audit'); if (ba) ba.addEventListener('click', refreshAudit);
     const bs = $('#btn-refresh-skills'); if (bs) bs.addEventListener('click', refreshSkills);
@@ -566,6 +632,10 @@
   }
 
   // ══════════════════════════ boot sequence ══════════════════════════
+  // If the measurement sequence is still running after this long, open the
+  // interface anyway and say so. A slow machine must never read as a dead one.
+  const BOOT_WATCHDOG_MS = 40000;
+
   async function runBoot() {
     const overlay = $('#boot-overlay'), log = $('#boot-log'), fill = $('#boot-bar-fill');
     overlay.classList.remove('hidden');
@@ -587,23 +657,81 @@
     await typeLine('Mark VII · offline · zero cloud · zero API keys', 'dim');
     await new Promise(r => setTimeout(r, 180));
 
-    let report = [];
-    try { report = (await api('/api/boot')).report || []; }
-    catch (err) { await typeLine('✗ no link to the brain: ' + err.message, 'warn'); }
+    // Kick the measurement off in the background; results stream in through the
+    // progress endpoint so the bar fills per completed check instead of the
+    // overlay sitting empty until the whole (minutes-long) POST returns.
+    const bootPromise = api('/api/boot')
+      .catch(err => ({ ok: false, error: String((err && err.message) || err) }));
 
-    for (let i = 0; i < report.length; i++) {
-      const r = report[i];
-      const tag = r.ok ? '[ OK ]' : '[FAIL]';
-      await typeLine(`${tag}  ${r.key.padEnd(20, '.')}  ${r.label} · ${String(r.detail).slice(0, 90)} (${r.ms}ms)`,
-                     r.ok ? 'ok' : 'warn');
-      fill.style.width = Math.round(((i + 1) / report.length) * 100) + '%';
-      if (!r.ok) toast(`${r.key}: ${r.detail}`, 'warn', 7000);
+    const started = Date.now();
+    let seen = 0, done = false, polled = 0, progressUsable = false, watchdogFired = false;
+    const typeItem = r => typeLine(
+      `${r.ok ? '[ OK ]' : '[FAIL]'}  ${String(r.key).padEnd(20, '.')}  ${r.label} · ${String(r.detail).slice(0, 90)} (${r.ms}ms)`,
+      r.ok ? 'ok' : 'warn');
+
+    while (!done) {
+      let prog = null;
+      try { prog = await api('/api/boot/progress'); progressUsable = true; }
+      catch (_) { prog = null; }
+      polled++;
+
+      if (prog) {
+        const items = prog.items || [];
+        for (let i = seen; i < items.length; i++) {
+          await typeItem(items[i]);
+          if (!items[i].ok) toast(`${items[i].key}: ${items[i].detail}`, 'warn', 7000);
+        }
+        seen = items.length;
+        const total = Math.max(1, prog.total || items.length || 15);
+        fill.style.width = Math.round((seen / total) * 100) + '%';
+        done = !!prog.done;
+      }
+
+      // A server without the progress endpoint: fall back to the single
+      // response rather than polling forever.
+      if (!progressUsable && polled >= 3) {
+        const rep = await bootPromise;
+        const report = (rep && rep.report) || [];
+        for (let i = seen; i < report.length; i++) {
+          await typeItem(report[i]);
+          if (!report[i].ok) toast(`${report[i].key}: ${report[i].detail}`, 'warn', 7000);
+        }
+        seen = report.length;
+        fill.style.width = '100%';
+        if (!report.length) {
+          await typeLine('✗ no link to the brain: ' + ((rep && rep.error) || 'unknown'), 'warn');
+        }
+        done = true;
+        break;
+      }
+
+      if (!done && Date.now() - started > BOOT_WATCHDOG_MS) {
+        watchdogFired = true;
+        await typeLine(`— המדידות עדיין רצות ברקע (${seen} הושלמו); פותח את הממשק עכשיו —`, 'warn');
+        break;
+      }
+      if (!done) await new Promise(r => setTimeout(r, 350));
     }
-    const failed = report.filter(r => !r.ok).length;
-    await new Promise(r => setTimeout(r, 140));
-    await typeLine(failed ? `— ${failed} subsystem(s) degraded; JARVIS continues with fallbacks —`
-                          : '— all subsystems nominal. welcome home, sir. —', failed ? 'warn' : 'ok');
-    await new Promise(r => setTimeout(r, 420));
+
+    if (watchdogFired) {
+      // Keep watching after the reveal so a late failure is still reported, just
+      // never again at the cost of a black screen.
+      (async () => {
+        try {
+          const rep = await bootPromise;
+          const failed = ((rep && rep.report) || []).filter(r => !r.ok);
+          if (failed.length) {
+            toast(`${failed.length} תתי־מערכת לא תקינות: ` + failed.map(f => f.key).join(', '), 'warn', 9000);
+          }
+        } catch (_) {}
+      })();
+    } else {
+      const failed = seen; // failures were already toasted as they arrived
+      await new Promise(r => setTimeout(r, 140));
+      await typeLine(failed ? `— ${failed} subsystem(s) degraded; JARVIS continues with fallbacks —`
+                            : '— all subsystems nominal. welcome home, sir. —', failed ? 'warn' : 'ok');
+      await new Promise(r => setTimeout(r, 420));
+    }
     overlay.classList.add('hidden');
     appState = 'idle';
     recomputeState();
@@ -1944,6 +2072,7 @@
     startClocks();
     wireSecurityPanels();
     wireScreenRead();
+    wireModes();
     recomputeState();
     connect();
 

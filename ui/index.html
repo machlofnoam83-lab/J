@@ -253,6 +253,22 @@
       <canvas id="spark-ram" class="spark"></canvas>
     </section>
 
+    <section class="panel" id="panel-modes">
+      <header><h2>מצבי פעולה · שתים־עשרה עמדות</h2><span class="panel-tag">MODES</span></header>
+      <div id="mode-current" class="mode-current">
+        <b id="mode-name">—</b><span id="mode-en" class="panel-tag">—</span>
+      </div>
+      <p id="mode-desc" class="hint">—</p>
+      <div id="mode-chips" class="mode-chips"></div>
+      <div class="row">
+        <button id="btn-mode-research" title="חוקר: חופר בכל המקורות המקומיים">🔎 חקור עכשיו</button>
+        <input id="research-topic" type="text" placeholder="נושא לחקירה" autocomplete="off">
+      </div>
+      <div id="research-out" class="sr-summary">—</div>
+      <p class="hint">מצב לא מוסיף הרשאות: כל פעולה עדיין עוברת את אותה חומת אש באותה רמת סיכון.
+        המצב נשמר לדיסק, כך ש־JARVIS קם באותה עמדה שבה הושאר.</p>
+    </section>
+
     <section class="panel" id="panel-security">
       <header><h2>חומת הרשאות · יומן ביקורת</h2><span class="panel-tag">FIREWALL</span>
         <button class="mini" id="btn-refresh-audit">רענן</button></header>

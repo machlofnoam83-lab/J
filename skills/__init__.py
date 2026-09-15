@@ -26,6 +26,7 @@ MODULES = (
     "skills.sk_clipboard",
     "skills.sk_shell",
     "skills.sk_media_input",
+    "skills.sk_research",
 )
 
 _loaded = False
