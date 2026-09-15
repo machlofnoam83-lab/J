@@ -252,6 +252,68 @@ async def api_sentinel(request: web.Request) -> web.Response:
     return _json({"stats": s.stats(), "tail": s.tail(int(request.query.get("n", 20)))})
 
 
+# ── the download bundle ─────────────────────────────────────────────────────
+# The HUD's download button used to point at /ui/JARVIS-full.zip, a file nobody
+# ever built: a 404 wearing a feature's clothes. These two routes are the real
+# thing. Stats first, so the interface can state the true size before a byte
+# moves, then the archive itself — built once and reused until a source file is
+# newer than the zip.
+_BUNDLE: Dict[str, Any] = {"path": None, "stamp": 0.0, "bytes": 0, "files": 0, "mb": 0.0}
+
+
+def _bundle_stamp() -> float:
+    """Newest modification time among everything the bundle would ship."""
+    try:
+        from tools.make_bundle import ROOT, iter_shippable
+        return max((p.stat().st_mtime for p in iter_shippable(ROOT)), default=0.0)
+    except Exception:
+        return 0.0
+
+
+def _bundle_build() -> Dict[str, Any]:
+    """Build (or reuse) dist/JARVIS-full.zip. Runs in the executor, never here."""
+    try:
+        from tools.make_bundle import ROOT, bundle_stats, build_bundle
+        dest = ROOT / "dist" / "JARVIS-full.zip"
+        stamp = _bundle_stamp()
+        cached = _BUNDLE.get("path")
+        if cached and Path(cached).exists() and stamp <= _BUNDLE.get("stamp", 0.0):
+            return {"ok": True, "cached": True, "path": cached,
+                    "bytes": _BUNDLE["bytes"], "mb": _BUNDLE["mb"],
+                    "files": _BUNDLE["files"], **bundle_stats()}
+        rep = build_bundle(dest)
+        _BUNDLE.update({"path": str(dest), "stamp": max(stamp, Path(dest).stat().st_mtime),
+                        "bytes": rep["bytes"], "files": rep["files"], "mb": rep["mb"]})
+        return {"ok": True, "cached": False, "path": str(dest), "sha256": rep["sha256"],
+                **bundle_stats(), "zip_bytes": rep["bytes"], "zip_mb": rep["mb"]}
+    except Exception as exc:
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+
+async def api_bundle(request: web.Request) -> web.Response:
+    """What the download contains, measured without compressing anything."""
+    try:
+        from tools.make_bundle import bundle_stats
+        return _json({"ok": True, **bundle_stats()})
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_download(request: web.Request) -> web.Response:
+    """JARVIS-full.zip: code, trained models, voicebank, STT bank and the HUD."""
+    loop = asyncio.get_event_loop()
+    rep = await loop.run_in_executor(EXECUTOR, _bundle_build)
+    if not rep.get("ok") or not rep.get("path"):
+        return _json({"ok": False, "error": rep.get("error", "bundle unavailable")},
+                     status=500)
+    return web.FileResponse(Path(rep["path"]), headers={
+        "Content-Disposition": 'attachment; filename="JARVIS-full.zip"',
+        "X-JARVIS-Files": str(rep.get("files", "")),
+        "X-JARVIS-MB": str(rep.get("mb", "")),
+        "Cache-Control": "no-store",
+    })
+
+
 async def api_screen_read(request: web.Request) -> web.Response:
     """Describe a screenshot, decoding it with the in-house PNG codec.
 
@@ -980,6 +1042,8 @@ def build_app() -> web.Application:
     app.router.add_get("/api/skills", api_skills)
     app.router.add_get("/api/audit", api_audit)
     app.router.add_get("/api/sentinel", api_sentinel)
+    app.router.add_get("/api/bundle", api_bundle)
+    app.router.add_get("/api/download", api_download)
     app.router.add_get("/api/screen/read", api_screen_read)
     app.router.add_get("/api/memory", api_memory)
     app.router.add_get("/api/history", api_history)

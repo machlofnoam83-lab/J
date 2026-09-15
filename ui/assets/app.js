@@ -858,14 +858,57 @@
   // interface anyway and say so. A slow machine must never read as a dead one.
   const BOOT_WATCHDOG_MS = 40000;
 
+  // Skip is a control, not decoration inside the ceremony. The overlay is on
+  // screen from the first paint, but the measurements only begin once the brain
+  // answers — on a cold machine that wait runs to a minute and a half. A button
+  // wired at the *end* of that wait is dead exactly when it is wanted, which is
+  // what made it look broken. So it is wired before anything else, it acts on
+  // shared state, and it works whether or not the boot sequence has started.
+  let bootSkipped = false;
+
+  function skipBoot() {
+    if (bootSkipped) return;
+    bootSkipped = true;
+    const overlay = $('#boot-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    appState = 'idle';
+    recomputeState();
+    toast('הממשק נפתח — המדידות ממשיכות ברקע', 'good', 5000);
+  }
+
+  function wireBootSkip() {
+    const b = $('#boot-skip');
+    if (b && !b.dataset.wired) { b.dataset.wired = '1'; b.onclick = () => skipBoot(); }
+  }
+
+  // Wired the moment this script is parsed — the overlay is already visible and
+  // the brain may be a minute away, so waiting for init() would leave the button
+  // dead for exactly the stretch where it matters.
+  wireBootSkip();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireBootSkip);
+  }
+
   async function runBoot() {
     const overlay = $('#boot-overlay'), log = $('#boot-log'), fill = $('#boot-bar-fill');
+    wireBootSkip();
+    if (bootSkipped) {
+      // Already opened by hand: measure in the background and report failures as
+      // toasts, never as a black screen.
+      overlay.classList.add('hidden');
+      api('/api/boot').then(rep => {
+        const bad = ((rep && rep.report) || []).filter(r => !r.ok);
+        if (bad.length) toast(`${bad.length} תתי־מערכת לא תקינות: ` + bad.map(f => f.key).join(', '), 'warn', 9000);
+      }).catch(() => {});
+      return;
+    }
     overlay.classList.remove('hidden');
     log.innerHTML = '';
     const typeLine = (text, cls) => new Promise(res => {
       const line = document.createElement('div');
       if (cls) line.className = cls;
       log.appendChild(line);
+      if (bootSkipped) { line.textContent = text; res(); return; }
       let i = 0;
       const step = () => {
         line.textContent = text.slice(0, ++i);
@@ -889,14 +932,12 @@
     let seen = 0, done = false, polled = 0, progressUsable = false, watchdogFired = false;
     // The operator outranks the ceremony: skipping reveals the interface now and
     // leaves the measurements running in the background.
-    let skipped = false;
-    const skipBtn = $('#boot-skip');
-    if (skipBtn) skipBtn.onclick = () => { skipped = true; };
+    wireBootSkip();
     const typeItem = r => typeLine(
       `${r.ok ? '[ OK ]' : '[FAIL]'}  ${String(r.key).padEnd(20, '.')}  ${r.label} · ${String(r.detail).slice(0, 90)} (${r.ms}ms)`,
       r.ok ? 'ok' : 'warn');
 
-    while (!done && !skipped) {
+    while (!done && !bootSkipped) {
       let prog = null;
       try { prog = await api('/api/boot/progress'); progressUsable = true; }
       catch (_) { prog = null; }
@@ -932,7 +973,7 @@
         break;
       }
 
-      if (!done && skipped) {
+      if (!done && bootSkipped) {
         watchdogFired = true;
         await typeLine(`— ${seen} מדידות הושלמו; הממשק נפתח לפי בקשתך, השאר רץ ברקע —`, 'warn');
         break;
@@ -2289,16 +2330,25 @@
     if (!HTTP) HTTP = (location.protocol === 'file:') ? 'http://127.0.0.1:8756' : location.origin;
     WS = HTTP.replace(/^http/, 'ws') + '/ws';
 
-    // The bundle lives next to the brain, not next to the page: in Electron the
-    // HUD is loaded from disk, where a relative link would point nowhere.
+    // The bundle is served by the brain, not shipped next to the page: in
+    // Electron the HUD is loaded from disk, where a relative link points nowhere,
+    // and a static zip nobody built was a 404 wearing a feature's clothes.
     const dl = $('#btn-download');
     if (dl) {
-      dl.href = HTTP + '/ui/JARVIS-full.zip';
+      dl.href = HTTP + '/api/download';
       dl.onclick = () => {
         dl.classList.add('busy');
-        toast('מוריד את JARVIS-full.zip (~32MB)…', 'good', 4000);
-        setTimeout(() => dl.classList.remove('busy'), 2500);
+        toast('בונה את JARVIS-full.zip…', 'good', 4000);
+        setTimeout(() => dl.classList.remove('busy'), 3000);
       };
+      // Say the truth about the size before a byte moves.
+      api('/api/bundle').then(b => {
+        if (!b || !b.ok) return;
+        const areas = (b.by_area || []).slice(0, 4)
+          .map(a => `${a.area} ${a.mb}MB`).join(' · ');
+        dl.title = `JARVIS-full.zip · ${b.files} קבצים · ${b.mb}MB מקור`
+                 + `\n${areas}\nלא כולל data/ (המצב הפרטי של המכונה הזאת)`;
+      }).catch(() => {});
     }
 
     startClocks();
@@ -2308,11 +2358,13 @@
     wirePalette();
     wireTranscript();
     wirePanels();
+    wireBootSkip();
     recomputeState();
     connect();
 
-    // wait for the brain, then run the POST sequence
-    for (let i = 0; i < 120; i++) {
+    // wait for the brain, then run the POST sequence — unless the operator has
+    // already opened the interface, in which case this must not hold it hostage
+    for (let i = 0; i < 120 && !bootSkipped; i++) {
       try { const s = await api('/api/status'); renderStatus(s); if (s.telemetry) renderTelemetry(s.telemetry); break; }
       catch (_) { await new Promise(r => setTimeout(r, 800)); }
     }

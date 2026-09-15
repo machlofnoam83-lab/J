@@ -16,14 +16,19 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import io
 import json
+import os
 import socket
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+import zipfile
 from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -182,6 +187,42 @@ def main() -> int:
         st, _, d = get_json(f"{base}/api/sentinel")
         check("/api/sentinel reports the watchdog", st == 200 and "stats" in d and "tail" in d,
               f"alerts={d['stats'].get('alerts')} acting={d['stats'].get('acting')}")
+        st, _, d = get_json(f"{base}/api/bundle")
+        check("/api/bundle measures the download without building it",
+              st == 200 and d.get("ok") and d.get("files", 0) > 300
+              and d.get("bytes", 0) > 10 * 1024 * 1024,
+              f"{d.get('files')} files {d.get('mb')}MB")
+        check("the bundle excludes this machine's private state",
+              all(x in (d.get("excluded") or []) for x in ("data", ".git", ".venv")),
+              str(d.get("excluded"))[:60])
+
+        st, hdr, body = get(f"{base}/api/download")
+        check("/api/download serves a real zip",
+              st == 200 and body[:2] == b"PK" and len(body) > 5 * 1024 * 1024,
+              f"{len(body) // 1024}KB magic={body[:2]!r}")
+        names = zipfile.ZipFile(io.BytesIO(body)).namelist() if body[:2] == b"PK" else []
+        check("the zip carries the whole system under one folder",
+              any(n == "JARVIS/core/server.py" for n in names)
+              and any(n == "JARVIS/ui/index.html" for n in names)
+              and any(n.startswith("JARVIS/models/") for n in names)
+              and any(n.startswith("JARVIS/brain/voicebank/") for n in names),
+              f"{len(names)} entries")
+        check("the zip leaves the machine's transcripts and memory behind",
+              not any(n.startswith("JARVIS/data/") for n in names))
+        check("the old dead link is gone from the HUD",
+              "/ui/JARVIS-full.zip" not in open(
+                  os.path.join(HERE, "..", "ui", "assets", "app.js"),
+                  encoding="utf-8").read())
+
+        # The skip button was dead for the whole wait for the brain, because it
+        # was wired inside the boot ceremony rather than before it. Pin the order.
+        js = open(os.path.join(HERE, "..", "ui", "assets", "app.js"),
+                  encoding="utf-8").read()
+        wired = js.find("\n  wireBootSkip();")
+        waited = js.find("wait for the brain")
+        check("the boot overlay's skip button is wired before the brain wait",
+              0 <= wired < waited, f"wired@{wired} wait@{waited}")
+
         st, _, d = get_json(f"{base}/api/modes")
         check("/api/modes lists the twelve postures", st == 200 and len(d.get("modes", [])) == 12,
               f"current={d.get('current')}")
