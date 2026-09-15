@@ -185,6 +185,7 @@
       <button id="btn-clear-chat" class="mini" title="מחק את היסטוריית השיחה">נקה</button>
     </div>
     <div id="transcript" aria-live="polite"></div>
+    <button id="jump-latest" class="hidden" title="חזור להודעה האחרונה">⬇ חדש</button>
 
     <div id="composer">
       <div id="composer-modes">
@@ -229,6 +230,7 @@
         <span class="kbd">Ctrl+Shift+V</span> שיחה חופשית
         <span class="kbd">Ctrl+Shift+C</span> מסך צ׳אט
         <span class="kbd">Ctrl+Shift+H</span> מערכות
+        <span class="kbd">Ctrl+K</span> פלטת פקודות
         <span class="kbd">Ctrl+Shift+J</span> נעיצה
         <span class="kbd">Ctrl+Shift+Esc</span> <b class="danger">KILL SWITCH</b>
         <label id="mic-pick" title="מיקרופון קלט">🎚
@@ -269,11 +271,25 @@
         המצב נשמר לדיסק, כך ש־JARVIS קם באותה עמדה שבה הושאר.</p>
     </section>
 
-    <section class="panel" id="panel-security">
-      <header><h2>חומת הרשאות · יומן ביקורת</h2><span class="panel-tag">FIREWALL</span>
+    <!-- One firewall panel. There used to be two — "חומת הרשאות · יומן ביקורת"
+         with a bar, and "חומת הרשאות" with the controls — repeating level,
+         dry-run and the allow/block counts on the same screen. Merged: queue and
+         controls on top, audit trail and the sentinel below, one set of numbers. -->
+    <section class="panel" id="panel-firewall">
+      <header><h2>חומת הרשאות · יומן ביקורת · הזקיף</h2><span class="panel-tag">FIREWALL</span>
         <button class="mini" id="btn-refresh-audit">רענן</button></header>
+      <div id="perm-queue"></div>
+      <div class="perm-controls">
+        <select id="sel-level" title="רמת ההרשאות של המערכת">
+          <option value="readonly">readonly</option>
+          <option value="write" selected>write</option>
+          <option value="dangerous">dangerous</option>
+        </select>
+        <label class="toggle" title="מצב הדמיה — בודק מה היה קורה בלי לבצע"><input type="checkbox" id="chk-dryrun" checked><span>dry-run</span></label>
+        <button id="btn-kill" class="danger" title="מתג חירום — עוצר הכול (Ctrl+Shift+Esc)">KILL</button>
+        <button id="btn-revive" title="החזרה לפעולה">REVIVE</button>
+      </div>
       <div id="fw-stats" class="kv"></div>
-      <div class="bar-wrap"><div class="bar" id="bar-fw"></div></div>
       <ul id="audit-stream" class="ticker"></ul>
 
       <div id="sentinel-box">
@@ -304,22 +320,6 @@
       <ul id="event-stream"></ul>
     </section>
 
-    <section class="panel" id="panel-permissions">
-      <header><h2>חומת הרשאות</h2><span class="panel-tag">FIREWALL</span></header>
-      <div id="perm-queue"></div>
-      <div id="perm-stats" class="kv"></div>
-      <div class="perm-controls">
-        <select id="sel-level">
-          <option value="readonly">readonly</option>
-          <option value="write" selected>write</option>
-          <option value="dangerous">dangerous</option>
-        </select>
-        <label class="toggle"><input type="checkbox" id="chk-dryrun" checked><span>dry-run</span></label>
-        <button id="btn-kill" class="danger">KILL</button>
-        <button id="btn-revive">REVIVE</button>
-      </div>
-    </section>
-
   </aside>
 </main>
 
@@ -339,6 +339,10 @@
   <div class="boot-inner">
     <pre id="boot-log"></pre>
     <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+    <div class="boot-foot">
+      <span id="boot-note">מודד כל מערכת בזמן אמת — אפשר להמשיך להשתמש בממשק</span>
+      <button id="boot-skip" title="פתח את הממשק עכשיו; המדידות ממשיכות ברקע">דלג ⏩</button>
+    </div>
   </div>
 </div>
 

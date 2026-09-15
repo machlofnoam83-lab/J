@@ -158,13 +158,6 @@
     $('#pill-security').className = 'pill ' + (sec.killed ? 'bad' : sec.dry_run ? 'warn' : 'ok');
     $('#pill-security').querySelector('b').textContent =
       sec.killed ? 'KILL' : `${(sec.level || '').toLowerCase()}${sec.dry_run ? '·dry' : ''}`;
-    $('#perm-stats').innerHTML = kv([
-      ['רמה', sec.level || '—'],
-      ['dry-run', sec.dry_run ? 'כן' : 'לא'],
-      ['אושר', sec.allowed || 0],
-      ['נחסם', sec.blocked || 0],
-      ['סה״כ', sec.total || 0]
-    ]);
     const lvl = $('#sel-level');
     if (lvl && sec.level && lvl.value !== String(sec.level).toLowerCase()) lvl.value = String(sec.level).toLowerCase();
     const dr = $('#chk-dryrun');
@@ -252,26 +245,46 @@
     const el = document.createElement('div');
     el.className = 'msg ' + kind;
     const chips = (opts && opts.chips || []).map(c => `<span class="chip ${c.k || ''}">${esc(c.t)}</span>`).join('');
+    // Copy / re-speak / drop: a long answer is worth keeping, worth hearing
+    // again and worth clearing off the glass — none of which should need a
+    // round trip through the model.
+    const acts = `<span class="m-acts">` +
+      `<button class="ma" data-act="copy" title="העתק את התוכן">⧉</button>` +
+      `<button class="ma" data-act="speak" title="הקרא שוב בקול">🔊</button>` +
+      `<button class="ma" data-act="del" title="הסר מהמסך">✕</button>` +
+      `</span>`;
     el.innerHTML =
       `<div class="m-head"><span>${esc(head || (kind === 'user' ? 'אדוני' : 'JARVIS'))}</span>` +
-      `<span>${new Date().toTimeString().slice(0, 8)}</span></div>` +
+      `<span class="m-time">${new Date().toTimeString().slice(0, 8)}</span>${acts}</div>` +
       `<div class="m-body">${body}</div>` +
       (chips ? `<div class="m-meta">${chips}</div>` : '') +
       (opts && opts.trace ? `<div class="m-trace">${opts.trace}</div>` : '');
+    // Follow the conversation only while the reader is already at the bottom;
+    // yanking the scroll back mid-read makes history unusable.
+    const stick = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 160;
     wrap.appendChild(el);
     while (wrap.children.length > 90) wrap.removeChild(wrap.firstChild);
-    wrap.scrollTop = wrap.scrollHeight;
+    if (stick) wrap.scrollTop = wrap.scrollHeight;
+    updateJump();
     return el;
+  }
+
+  function updateJump() {
+    const t = $('#transcript'), b = $('#jump-latest');
+    if (!t || !b) return;
+    const far = t.scrollHeight - t.scrollTop - t.clientHeight > 160;
+    b.classList.toggle('hidden', !far);
   }
 
   function addTyping() {
     const wrap = $('#transcript'); if (!wrap) return null;
     const el = document.createElement('div');
     el.className = 'msg bot';
-    el.innerHTML = `<div class="m-head"><span>JARVIS</span><span>מעבד…</span></div>` +
+    el.innerHTML = `<div class="m-head"><span>JARVIS</span><span class="m-time">מעבד…</span></div>` +
                    `<div class="m-body"><span class="typing"><i></i><i></i><i></i></span></div>`;
+    const stick = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 160;
     wrap.appendChild(el);
-    wrap.scrollTop = wrap.scrollHeight;
+    if (stick) wrap.scrollTop = wrap.scrollHeight;
     return el;
   }
 
@@ -391,9 +404,6 @@
       ['אושרו', s.allowed || 0],
       ['נחסמו', s.blocked || 0, (s.blocked || 0) > 0]
     ]);
-    const total = Math.max(1, (s.allowed || 0) + (s.blocked || 0));
-    const bar = $('#bar-fw');
-    if (bar) bar.style.width = Math.round(100 * (s.blocked || 0) / total) + '%';
     const ul = $('#audit-stream');
     if (ul) {
       ul.innerHTML = tail.length ? tail.slice(0, 18).map(r => {
@@ -655,9 +665,24 @@
     return rows;
   }
 
+  const RECENT_KEY = 'jarvis.palette.recent';
+  function paletteRecents() {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch (_) { return []; }
+  }
+  function paletteNoteRecent(id) {
+    try {
+      const list = [id].concat(paletteRecents().filter(x => x !== id)).slice(0, 6);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+    } catch (_) {}
+  }
+
   function paletteMatch(rows, q) {
     const t = (q || '').trim().toLowerCase();
-    if (!t) return rows.slice(0, 40);
+    if (!t) {
+      // Nothing typed yet: lead with what this HUD actually uses.
+      const rec = paletteRecents();
+      return rows.slice().sort((a, b) => rec.indexOf(b.id) - rec.indexOf(a.id)).slice(0, 40);
+    }
     const toks = t.split(/\s+/);
     return rows.map(r => {
       let s = 0, i = -1;
@@ -693,6 +718,7 @@
     const r = paletteRows[paletteIdx];
     closePalette();
     if (!r) return;
+    paletteNoteRecent(r.id);
     if (r.kind === 'mode') { setMode(r.id); return; }
     toast(`מפעיל ${r.label} דרך חומת האש…`, 'good', 3000);
     try {
@@ -710,6 +736,66 @@
     renderPalette();
   }
   function closePalette() { const p = $('#palette'); if (p) p.classList.add('hidden'); }
+
+  // ── transcript actions ──────────────────────────────────────────────────
+  function wireTranscript() {
+    const t = $('#transcript'); if (!t) return;
+    t.addEventListener('scroll', updateJump);
+    t.addEventListener('click', async e => {
+      const btn = e.target.closest('.ma'); if (!btn) return;
+      const msg = btn.closest('.msg'); if (!msg) return;
+      const body = msg.querySelector('.m-body');
+      const text = body ? body.innerText.trim() : '';
+      const act = btn.dataset.act;
+      if (act === 'del') { msg.remove(); countTurns(); updateJump(); return; }
+      if (!text) return;
+      if (act === 'copy') {
+        try {
+          await navigator.clipboard.writeText(text);
+          toast('הועתק ללוח', 'good', 2200);
+        } catch (_) { toast('הדפדפן לא אישר העתקה', 'warn', 4000); }
+        return;
+      }
+      if (act === 'speak') { send({ type: 'speak', text }); return; }
+    });
+    const b = $('#jump-latest');
+    if (b) b.addEventListener('click', () => {
+      const el = $('#transcript');
+      if (el) el.scrollTop = el.scrollHeight;
+      updateJump();
+    });
+  }
+
+  // ── collapsible panels ──────────────────────────────────────────────────
+  // Nine panels on two rails is more instrumentation than any single moment
+  // needs. Folding one away is reversible and remembered per HUD, so the layout
+  // a person builds survives a reload.
+  const PANEL_KEY = 'jarvis.panels.collapsed';
+
+  function readCollapsed() {
+    try { return JSON.parse(localStorage.getItem(PANEL_KEY) || '[]'); } catch (_) { return []; }
+  }
+  function writeCollapsed(list) {
+    try { localStorage.setItem(PANEL_KEY, JSON.stringify(list)); } catch (_) {}
+  }
+
+  function wirePanels() {
+    $$('#grid .panel > header').forEach(h => {
+      h.classList.add('collapsible');
+      h.title = 'לחיצה מקפלת או פותחת את הפאנל';
+    });
+    const folded = readCollapsed();
+    $$('#grid .panel').forEach(p => { if (p.id && folded.indexOf(p.id) >= 0) p.classList.add('collapsed'); });
+    document.addEventListener('click', e => {
+      const hdr = e.target.closest('#grid .panel > header'); if (!hdr) return;
+      if (e.target.closest('button, select, input, label, a')) return;
+      const p = hdr.parentElement; if (!p) return;
+      p.classList.toggle('collapsed');
+      const list = readCollapsed().filter(x => x !== p.id);
+      if (p.classList.contains('collapsed')) list.push(p.id);
+      writeCollapsed(list);
+    });
+  }
 
   function wirePalette() {
     document.addEventListener('keydown', e => {
@@ -801,11 +887,16 @@
 
     const started = Date.now();
     let seen = 0, done = false, polled = 0, progressUsable = false, watchdogFired = false;
+    // The operator outranks the ceremony: skipping reveals the interface now and
+    // leaves the measurements running in the background.
+    let skipped = false;
+    const skipBtn = $('#boot-skip');
+    if (skipBtn) skipBtn.onclick = () => { skipped = true; };
     const typeItem = r => typeLine(
       `${r.ok ? '[ OK ]' : '[FAIL]'}  ${String(r.key).padEnd(20, '.')}  ${r.label} · ${String(r.detail).slice(0, 90)} (${r.ms}ms)`,
       r.ok ? 'ok' : 'warn');
 
-    while (!done) {
+    while (!done && !skipped) {
       let prog = null;
       try { prog = await api('/api/boot/progress'); progressUsable = true; }
       catch (_) { prog = null; }
@@ -841,6 +932,11 @@
         break;
       }
 
+      if (!done && skipped) {
+        watchdogFired = true;
+        await typeLine(`— ${seen} מדידות הושלמו; הממשק נפתח לפי בקשתך, השאר רץ ברקע —`, 'warn');
+        break;
+      }
       if (!done && Date.now() - started > BOOT_WATCHDOG_MS) {
         watchdogFired = true;
         await typeLine(`— המדידות עדיין רצות ברקע (${seen} הושלמו); פותח את הממשק עכשיו —`, 'warn');
@@ -2210,6 +2306,8 @@
     wireScreenRead();
     wireModes();
     wirePalette();
+    wireTranscript();
+    wirePanels();
     recomputeState();
     connect();
 

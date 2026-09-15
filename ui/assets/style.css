@@ -345,10 +345,9 @@ body { display: flex; flex-direction: column; }
 #skills-list { max-height: 190px; }
 #skills-list li { cursor: default; }
 #skills-stats { cursor: pointer; }
-#bar-fw { background: linear-gradient(90deg, rgba(255,110,110,.55), rgba(255,150,90,.85)); }
 
 /* ─────────────────────────── stage ─────────────────────────── */
-#stage { display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; }
+#stage { position: relative; display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; }
 
 #reactor-wrap {
   position: relative; flex: 0 0 320px; height: 320px;
@@ -903,3 +902,49 @@ body[data-state="offline"]  #chat-strip .cs-dot { background: var(--red); opacit
   body:not(.chat-mode) #grid { grid-template-columns: 260px minmax(0,1fr); }
   body:not(.chat-mode) #rail-right { display: none; }
 }
+
+/* ── HUD refinements: actions, folding, and a way out of the boot overlay ─── */
+
+/* transcript message actions — quiet until the pointer arrives */
+.m-acts { display: inline-flex; gap: 3px; margin-inline-start: 6px; opacity: .22; }
+.msg:hover .m-acts { opacity: 1; }
+.ma {
+  background: transparent; border: 1px solid transparent; color: var(--text-dim);
+  font-size: 10px; line-height: 1; padding: 2px 4px; cursor: pointer;
+}
+.ma:hover { border-color: var(--edge-hot); color: var(--ice); }
+.m-time { white-space: nowrap; }
+
+/* jump to the newest line, only while the reader is genuinely behind */
+#jump-latest {
+  position: absolute; bottom: 152px; inset-inline-end: 26px; z-index: 12;
+  padding: 6px 12px; font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--ice); background: rgba(8, 18, 26, .92);
+  border: 1px solid var(--edge-hot); cursor: pointer;
+  box-shadow: 0 0 18px rgba(94, 231, 255, .22);
+}
+#jump-latest:hover { background: rgba(16, 34, 46, .96); }
+#jump-latest.hidden { display: none; }
+
+/* collapsible panels: fold away what this moment does not need, and remember it */
+#grid .panel > header.collapsible { cursor: pointer; user-select: none; }
+#grid .panel > header.collapsible::after {
+  content: '▾'; font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-faint); margin-inline-start: 6px;
+}
+#grid .panel.collapsed > header.collapsible::after { content: '▸'; }
+#grid .panel.collapsed > *:not(header) { display: none; }
+#grid .panel.collapsed { flex: 0 0 auto; }
+
+/* boot overlay footer */
+.boot-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 8px; font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-faint);
+}
+#boot-skip {
+  padding: 4px 12px; font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--ice); background: rgba(10, 22, 30, .8);
+  border: 1px solid var(--edge); cursor: pointer;
+}
+#boot-skip:hover { border-color: var(--edge-hot); box-shadow: 0 0 14px rgba(94, 231, 255, .2); }

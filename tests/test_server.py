@@ -136,8 +136,22 @@ def main() -> int:
         for needle, label in [('id="palette"', "command palette overlay"),
                               ('id="mode-chips"', "posture panel"),
                               ('id="screen-read"', "screen analysis block"),
-                              ('id="sentinel-box"', "sentinel block")]:
+                              ('id="sentinel-box"', "sentinel block"),
+                              ('id="boot-skip"', "boot overlay skip"),
+                              ('id="jump-latest"', "jump to latest")]:
             check(f"HUD page carries the {label}", needle in html)
+        # two panels both titled "חומת הרשאות" — one carrying a bar, one the
+        # controls — repeated level, dry-run and the allow/block counts on the
+        # same screen. The merge is pinned here so the duplication cannot creep
+        # back in as "just a small addition".
+        check("exactly one firewall panel is served",
+              html.count('id="panel-firewall"') == 1
+              and 'id="panel-permissions"' not in html
+              and 'id="panel-security"' not in html)
+        check("the firewall panel owns queue, controls, audit and sentinel",
+              all(n in html for n in ('id="perm-queue"', 'id="sel-level"',
+                                      'id="audit-stream"', 'id="sentinel-box"')))
+        check("the redundant block-percentage bar is gone", 'id="bar-fw"' not in html)
 
         st, hdr, body = get(f"{base}/assets/style.css")
         check("stylesheet served", st == 200 and len(body) > 5000, f"({len(body)} bytes)")
