@@ -227,6 +227,23 @@ def main() -> int:
     check("conversation history retained", len(h) >= 5, f"({len(h)} turns)")
     check("history entries are HUD-ready dicts", all("user" in t and "answer" in t for t in h))
 
+    # Trace timing. `Trace.started` used to be seeded from time.time() while
+    # to_dict() subtracted it from time.perf_counter() — two clocks with unrelated
+    # reference points — so every trace published total_ms as roughly -1.79e12.
+    # Nothing read the field, so nothing caught it. This pins the invariant: a
+    # duration must be a small positive number, on the same clock it was measured.
+    print("\n== trace timing ==")
+    tr_turn = J.handle_text("מה השעה")
+    tr = (tr_turn.get("answer") or {}).get("trace") or {}
+    total = tr.get("total_ms")
+    check("trace publishes a total_ms at all", total is not None, str(total))
+    check("trace total_ms is not negative", isinstance(total, (int, float)) and total >= 0,
+          str(total))
+    check("trace total_ms is a plausible duration, not an epoch",
+          isinstance(total, (int, float)) and total < 600000, str(total))
+    check("trace records the steps it took", len(tr.get("steps") or []) > 0,
+          f"{len(tr.get('steps') or [])} steps")
+
     print("\n== event bus wiring ==")
     seen: list[str] = []
     BUS.on("jarvis.test.*", lambda e: seen.append(e.topic))

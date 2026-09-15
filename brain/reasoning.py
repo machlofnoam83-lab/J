@@ -48,7 +48,11 @@ class Step:
 @dataclass
 class Trace:
     steps: List[Step] = field(default_factory=list)
-    started: float = field(default_factory=time.time)
+    # perf_counter, not time.time: to_dict() subtracts this from perf_counter to
+    # get an elapsed duration, and the two clocks have unrelated reference
+    # points. Mixing them published total_ms as roughly -1.79e12 — a number no
+    # reader could mistake for a duration, but one that made every trace useless.
+    started: float = field(default_factory=time.perf_counter)
 
     def add(self, kind: str, detail: str, data: Optional[Dict[str, Any]] = None, t0: float = 0.0) -> Step:
         step = Step(kind=kind, detail=detail, data=data or {},
