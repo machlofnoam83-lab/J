@@ -149,6 +149,52 @@ class Person:
                 "summary_he": self.summary_he[:120]}
 
 
+def _parse_birthday(birthday: str) -> Optional[tuple]:
+    """(year, month, day) from the handful of shapes people actually type.
+
+    Returns None rather than guessing: a reminder fired on the wrong day is
+    worse than no reminder, because it teaches the user to ignore the others.
+    """
+    s = str(birthday or "").strip()
+    if not s:
+        return None
+    m = re.search(r"(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})", s)
+    if m:
+        year, month, day = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    else:
+        m = re.search(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", s)
+        if not m:
+            return None
+        day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if not (1 <= month <= 12 and 1 <= day <= 31 and 1900 <= year <= 2200):
+        return None
+    return year, month, day
+
+
+def days_until_birthday(birthday: str, today: Optional[Any] = None) -> Optional[int]:
+    """Days until the next occurrence, 0 meaning today.
+
+    Feb 29 rolls to Feb 28 in a common year rather than being skipped — someone
+    born on the 29th still has a birthday, and silently dropping them from the
+    list once every four years is the kind of small wrongness nobody notices
+    until they do.
+    """
+    parsed = _parse_birthday(birthday)
+    if parsed is None:
+        return None
+    import datetime as dt
+    year, month, day = parsed
+    today = today or dt.date.today()
+    for y in (today.year, today.year + 1):
+        try:
+            nxt = dt.date(y, month, day)
+        except ValueError:
+            nxt = dt.date(y, month, 28)          # Feb 29 in a common year
+        if nxt >= today:
+            return (nxt - today).days
+    return None                                  # pragma: no cover
+
+
 def _years_since(birthday: str) -> Optional[int]:
     """Parse a handful of honest date shapes. Returns None rather than guessing."""
     s = str(birthday or "").strip()

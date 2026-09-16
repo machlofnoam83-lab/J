@@ -168,14 +168,16 @@ class SkillTest(unittest.TestCase):
         # ``name=`` argument every records skill takes.
         return self.reg.invoke(skill, kw, permission_granted=True)
 
-    def test_seven_skills_are_registered(self):
+    def test_the_dossier_skills_are_registered(self):
         names = {s.name for s in self.reg.all() if s.name.startswith("records.")}
         self.assertEqual(names, {"records.add", "records.find", "records.list",
                                  "records.whoami", "records.update",
-                                 "records.remove", "records.link"})
+                                 "records.remove", "records.link",
+                                 "records.upcoming"})
 
     def test_reading_is_safe_and_writing_is_not(self):
-        for name in ("records.find", "records.list", "records.whoami"):
+        for name in ("records.find", "records.list", "records.whoami",
+                     "records.upcoming"):
             self.assertEqual(self.reg.get(name).risk, "SAFE", name)
         for name in ("records.add", "records.update", "records.remove",
                      "records.link"):
@@ -279,6 +281,103 @@ class RoutingTest(unittest.TestCase):
         self.assertEqual(self.r.route("מה השעה").intent, "TIME")
         self.assertEqual(self.r.route("כמה זה 2 ועוד 2").intent, "MATH")
         self.assertEqual(self.r.route("מי מולי").skill, "vision.who")
+
+
+class BirthdayTest(unittest.TestCase):
+    """Upcoming birthdays — the payoff for having stored a date at all.
+
+    Reading is SAFE and needs no face. Scheduling is a side effect, so it stays
+    behind the same permission as any other dossier write. A date that will not
+    parse is skipped rather than guessed at: a reminder on the wrong day teaches
+    the user to ignore all the others.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import os
+        from skills import load_all
+        cls._saved_env = os.environ.get("JARVIS_RECORDS_DIR")
+        load_all()
+
+    @classmethod
+    def tearDownClass(cls):
+        import os
+        if cls._saved_env is None:
+            os.environ.pop("JARVIS_RECORDS_DIR", None)
+        else:
+            os.environ["JARVIS_RECORDS_DIR"] = cls._saved_env
+
+    def setUp(self):
+        import datetime as dt
+        import os
+        os.environ["JARVIS_RECORDS_DIR"] = tempfile.mkdtemp(prefix="bday_")
+        from agents.records import get_store
+        self.st = get_store(fresh=True)
+        self.today = dt.date.today()
+
+    def _rel(self, n):
+        import datetime as dt
+        d = self.today + dt.timedelta(days=n)
+        return f"{d.year}-{d.month:02d}-{d.day:02d}"
+
+    def _inv(self, **kw):
+        from skills import REGISTRY
+        return REGISTRY.invoke("records.upcoming", kw, permission_granted=True)
+
+    def test_days_until_parses_both_shapes_and_rejects_rubbish(self):
+        import datetime as dt
+        from agents.records import days_until_birthday as d
+        t = dt.date(2026, 9, 16)
+        self.assertEqual(d("1991-03-14", t), d("14/03/1991", t))
+        self.assertEqual(d("2020-09-16", t), 0)
+        self.assertEqual(d("2020-09-20", t), 4)
+        self.assertIsNone(d("", t))
+        self.assertIsNone(d("garbage", t))
+        self.assertIsNone(d("2020-13-45", t))
+
+    def test_feb_29_rolls_to_feb_28_in_a_common_year(self):
+        """Someone born on the 29th still has a birthday."""
+        import datetime as dt
+        from agents.records import days_until_birthday as d
+        # 2027 is a common year
+        self.assertEqual(d("1988-02-29", dt.date(2027, 2, 27)), 1)
+
+    def test_upcoming_is_sorted_nearest_first(self):
+        self.st.add(name="רחוק", birthday=self._rel(20))
+        self.st.add(name="דנה", birthday=self._rel(4), relationship="אחות")
+        self.st.add(name="נועם", birthday=self._rel(0), relationship="חבר")
+        r = self._inv(days=30)
+        self.assertTrue(r.ok, r.error)
+        self.assertEqual([p["name"] for p in r.value["people"]],
+                         ["נועם", "דנה", "רחוק"])
+        self.assertIn("היום", r.data["text_he"])
+        self.assertIn("דנה", r.data["text_he"])
+
+    def test_unparseable_dates_are_skipped_not_guessed(self):
+        self.st.add(name="זבל", birthday="garbage")
+        self.st.add(name="ריק")
+        r = self._inv(days=365)
+        self.assertEqual(r.value["count"], 0)
+        self.assertIn("אין ימי הולדת", r.data["text_he"])
+
+    def test_the_window_is_clamped_not_crashed(self):
+        self.assertEqual(self._inv(days="abc").value["window_days"], 30)
+        self.assertEqual(self._inv(days=99999).value["window_days"], 365)
+        self.assertEqual(self._inv(days=-5).value["window_days"], 0)
+
+    def test_remind_schedules_only_future_birthdays(self):
+        """Today's birthday is already here; a reminder for now is just noise."""
+        self.st.add(name="נועם", birthday=self._rel(0))
+        self.st.add(name="דנה", birthday=self._rel(4))
+        r = self._inv(days=30, remind=True)
+        self.assertEqual([s["name"] for s in r.value["scheduled"]], ["דנה"])
+        self.assertTrue(r.value["scheduled"][0]["ok"])
+
+    def test_reading_needs_no_permission_and_no_face(self):
+        from skills import REGISTRY
+        self.assertEqual(REGISTRY.get("records.upcoming").risk, "SAFE")
+        r = REGISTRY.invoke("records.upcoming", {})
+        self.assertTrue(r.ok, r.error)
 
 
 class RealStoreUntouchedTest(unittest.TestCase):

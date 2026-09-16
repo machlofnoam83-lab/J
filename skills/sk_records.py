@@ -319,3 +319,87 @@ def records_link(person_id: str = "", face_id: str = "", **_: Any) -> SkillResul
         ok=True, skill="records.link", ms=ms(), value=person.to_dict(),
         data={"text_he": f"חיברתי את הפנים לרשומה של {person.name}. "
                          f"מעכשיו כשהמצלמה תזהה אותו — אדע מי זה."})
+
+
+@REGISTRY.register(
+    "records.upcoming",
+    risk="SAFE",
+    description_he="מי חוגג יום הולדת בקרוב — ואפשר לקבוע על זה תזכורת",
+    description_en="Upcoming birthdays from the dossier, optionally scheduled",
+    triggers_he=("מי חוגג", "ימי הולדת", "יום הולדת בקרוב", "מזל טוב למי"),
+    triggers_en=("upcoming birthdays", "who has a birthday"),
+)
+def records_upcoming(days: Any = 30, remind: Any = False, **_: Any) -> SkillResult:
+    """Upcoming birthdays, nearest first.
+
+    Reading is SAFE and needs no face — being told a birthday is coming is not
+    an action. Scheduling a reminder *is* a side effect, so it stays behind the
+    same write permission as any other dossier mutation.
+
+    A birthday with no parseable date is skipped rather than guessed at: a
+    reminder on the wrong day teaches the user to ignore all the others.
+    """
+    t0 = time.perf_counter()
+    ms = lambda: (time.perf_counter() - t0) * 1000          # noqa: E731
+    try:
+        window = int(days)
+    except (TypeError, ValueError):
+        window = 30
+    window = max(0, min(window, 365))
+
+    from agents.records import days_until_birthday
+    try:
+        st = _store()
+        people = [p for p in st._people.values()]
+    except Exception as exc:                               # pragma: no cover
+        return SkillResult(ok=False, error=f"records unavailable: {exc}",
+                           skill="records.upcoming", ms=ms())
+
+    hits = []
+    for p in people:
+        d = days_until_birthday(p.birthday)
+        if d is not None and d <= window:
+            hits.append((d, p))
+    hits.sort(key=lambda x: (x[0], x[1].name.lower()))
+
+    if not hits:
+        return SkillResult(
+            ok=True, skill="records.upcoming", ms=ms(),
+            value={"count": 0, "window_days": window},
+            data={"text_he": f"אין ימי הולדת רשומים ב‑{window} הימים הקרובים."})
+
+    def _phrase(d: int) -> str:
+        if d == 0:
+            return "היום"
+        if d == 1:
+            return "מחר"
+        return f"בעוד {d} ימים"
+
+    lines = [f"{p.name} — {_phrase(d)}" + (f" ({p.relationship})" if p.relationship else "")
+             for d, p in hits]
+    text = "ימי הולדת קרובים: " + "; ".join(lines) + "."
+
+    scheduled = []
+    if str(remind).lower() in ("1", "true", "yes", "on"):
+        # Scheduling writes, so it goes through the registry's own permission
+        # gate rather than reaching into the scheduler directly.
+        from skills import REGISTRY as _REG
+        for d, p in hits:
+            if d == 0:
+                continue                     # today is already here; a reminder
+                                             # for now is just noise
+            minutes = max(1.0, d * 24 * 60 - 9 * 60)   # 09:00 on the day
+            r = _REG.invoke("scheduler.remind",
+                            {"minutes": minutes,
+                             "message": f"יום הולדת של {p.name}"})
+            scheduled.append({"name": p.name, "in_days": d, "ok": bool(r.ok)})
+        if scheduled:
+            text += f" קבעתי {len(scheduled)} תזכורות."
+
+    return SkillResult(
+        ok=True, skill="records.upcoming", ms=ms(),
+        value={"count": len(hits), "window_days": window,
+               "people": [{"name": p.name, "in_days": d,
+                           "relationship": p.relationship} for d, p in hits],
+               "scheduled": scheduled},
+        data={"text_he": text})
