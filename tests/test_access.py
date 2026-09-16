@@ -35,10 +35,12 @@ sys.path.insert(0, str(ROOT / "tests"))
 from test_scene import identity, render, screen_like  # noqa: E402
 
 import core.server as srv  # noqa: E402
+from agents.jarvis import JarvisAgent  # noqa: E402
 from brain.access import AccessGate, get_gate  # noqa: E402
 from brain.presence import PresenceTracker, get_presence  # noqa: E402
 from brain.reasoning import ReasoningEngine  # noqa: E402
 from brain.intent import IntentRouter  # noqa: E402
+from security.permissions import PermissionFirewall  # noqa: E402
 from vision.faces import FaceGate, FaceStore, encode_frame  # noqa: E402
 from vision.scene import describe  # noqa: E402
 
@@ -51,7 +53,11 @@ class _Room:
         self.store = FaceStore(path=Path(tempfile.mkdtemp(prefix="acc_")) / "g.json")
         self.gate = FaceGate(self.store, firewall=None, debounce=1)
         srv.FACE_STATE["store"], srv.FACE_STATE["gate"] = self.store, self.gate
-        self.presence = PresenceTracker(ttl=12.0)
+        # The singleton, not a private tracker. ``_who_is_here()`` and the
+        # skills both read ``get_presence()``, so a harness that observed into
+        # its own tracker would leave the singleton empty and every identity
+        # check would compare '' to '' — passing for the wrong reason.
+        self.presence = get_presence(fresh=True)
         # Every verdict is audited to disk now, so the harness must point the
         # log somewhere disposable — otherwise a test run quietly appends to the
         # real logs/access.jsonl.
@@ -236,6 +242,116 @@ class BrainAccessTest(unittest.TestCase):
             eng.access.enabled = False
             a = eng.think("מה השעה")
             self.assertTrue(a.grounded)
+
+
+class _BridgeStub:
+    """The minimum shape _confirm_bridge touches, without booting the agent.
+
+    Constructing a real JarvisAgent builds a neural core, a knowledge store and
+    a coder — minutes of work to test one method. The stub carries exactly the
+    attributes the method reads, and the real ``_confirm_bridge`` and
+    ``_who_is_here`` are bound onto it unbound, so the code under test is the
+    shipping code and not a reimplementation of it.
+    """
+
+    def __init__(self, firewall, timeout=2.0):
+        import itertools
+        import threading as _t
+        self.firewall = firewall
+        self.confirm_timeout = timeout
+        self.name = "jarvis"
+        self._confirm_events = {}
+        self._confirm_verdicts = {}
+        self._confirm_requests = {}
+        self._confirm_seq = itertools.count(1)
+
+    _confirm_bridge = JarvisAgent._confirm_bridge
+    _who_is_here = staticmethod(JarvisAgent._who_is_here)
+
+
+class ConfirmBindingTest(unittest.TestCase):
+    """A CRITICAL approval belongs to the person who was in frame when it was asked.
+
+    Without this the prompt is a token that outlives the person: the owner asks
+    for something CRITICAL, walks away, and whoever sits down next can approve a
+    request they never made.
+    """
+
+    def _make(self, r, change, verdict=True):
+        """Wire a real firewall to a stub agent whose confirm bridge is the
+        shipping ``JarvisAgent._confirm_bridge``.
+
+        ``change`` runs while the prompt is open, which is the whole scenario
+        under test: the person in front of the camera is not necessarily the
+        person who was there when the action was asked for.
+        """
+        fw = PermissionFirewall()
+        fw.set_level("WRITE")
+        stub = _BridgeStub(fw)
+        box = {"stub": stub, "change": change}
+        box["bridge"] = lambda req: JarvisAgent._confirm_bridge(stub, req)
+
+        def hook(request):
+            def answer():
+                time.sleep(0.05)
+                box["change"]()
+                rid = next(iter(stub._confirm_events))
+                stub._confirm_verdicts[rid] = verdict
+                stub._confirm_events[rid].set()
+            import threading as _t
+            _t.Thread(target=answer, daemon=True).start()
+            return box["bridge"](request)
+
+        fw.on_confirm(hook)
+        return fw
+
+    def test_approval_is_honoured_when_the_same_person_is_still_there(self):
+        with _Room() as r:
+            img = render(identity(11), seed=5)
+            r.enrol_owner(img)
+            r.see(img)
+            fw = self._make(r, lambda: None)          # nobody moves
+            d = fw.check("system.shutdown", "CRITICAL", {})
+            self.assertTrue(d.allowed, d.reason)
+
+    def test_approval_is_discarded_when_the_face_changed(self):
+        with _Room() as r:
+            img = render(identity(11), seed=5)
+            r.enrol_owner(img)
+            r.see(img)
+            other = render(identity(31), seed=9)
+            fw = self._make(r, lambda: r.see(other))   # someone else sits down
+            d = fw.check("system.shutdown", "CRITICAL", {})
+            self.assertFalse(d.allowed)
+
+    def test_approval_is_discarded_when_the_room_empties(self):
+        with _Room() as r:
+            img = render(identity(11), seed=5)
+            r.enrol_owner(img)
+            short = PresenceTracker(ttl=0.05)
+            short.observe(r.store.recognize(img), None, r.gate)
+            import brain.presence as bp
+            saved = bp._TRACKER
+            bp._TRACKER = short
+            try:
+                fw = self._make(r, lambda: time.sleep(0.08))   # lease expires
+                d = fw.check("system.shutdown", "CRITICAL", {})
+                self.assertFalse(d.allowed)
+            finally:
+                bp._TRACKER = saved
+
+    def test_a_headless_run_is_unaffected(self):
+        """No presence at all compares '' to '' and behaves as before."""
+        with _Room() as r:
+            import brain.presence as bp
+            saved = bp._TRACKER
+            bp._TRACKER = None
+            try:
+                fw = self._make(r, lambda: None)
+                d = fw.check("system.shutdown", "CRITICAL", {})
+                self.assertTrue(d.allowed, d.reason)
+            finally:
+                bp._TRACKER = saved
 
 
 class AuditTrailTest(unittest.TestCase):

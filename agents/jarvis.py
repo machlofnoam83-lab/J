@@ -363,12 +363,22 @@ class JarvisAgent:
         """Called on a worker thread by the firewall. Blocks until the human answers.
 
         Fail-closed: no answer inside ``confirm_timeout`` ⇒ denied.
+
+        The approval is also bound to whoever was in front of the camera when it
+        was asked. Without that, the prompt is a token that outlives the person:
+        the owner asks for something CRITICAL, walks away, and whoever sits down
+        next can click approve on a request they never made. So the identity is
+        captured here and re-checked when the answer lands — if the face changed
+        or the lease expired while the prompt was open, the answer is discarded
+        and the action is denied.
         """
         req_id = next(self._confirm_seq)
+        asker = self._who_is_here()
         payload = dict(request)
         payload["id"] = req_id
         payload["timeout_s"] = self.confirm_timeout
         payload["asked_at"] = time.time()
+        payload["asker"] = asker
         event = threading.Event()
         self._confirm_events[req_id] = event
         self._confirm_verdicts[req_id] = False
@@ -385,9 +395,35 @@ class JarvisAgent:
         if not answered:
             BUS.emit("security.permission.timeout", payload, source=self.name)
             return False
+
+        # Re-check the face before honouring the click.
+        now_who = self._who_is_here()
+        if now_who != asker:
+            BUS.emit("security.permission.stale", {
+                "id": req_id, "asker": asker, "now": now_who, **payload},
+                source=self.name)
+            return False
+
         BUS.emit("security.permission.answer" if verdict else T.PERMISSION_DENY,
                  {"id": req_id, "allow": verdict, **payload}, source=self.name)
         return verdict
+
+    @staticmethod
+    def _who_is_here() -> str:
+        """Identity currently in frame, or '' when nobody is.
+
+        Returns '' rather than raising when presence is unavailable, so a
+        headless run compares '' to '' and behaves exactly as it did before
+        this check existed.
+        """
+        try:
+            from brain.presence import get_presence
+            p = get_presence().current()
+        except Exception:                                  # pragma: no cover
+            return ""
+        if p is None or not getattr(p, "known", False) or getattr(p, "stale", True):
+            return ""
+        return str(getattr(p, "identity", "") or "")
 
     def pending_permissions(self) -> List[Dict[str, Any]]:
         return list(self._confirm_requests.values())
