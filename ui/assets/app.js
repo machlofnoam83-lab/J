@@ -1641,7 +1641,7 @@
       if (!frame) return;
       busy = true;
       try {
-        const r = await fetch('/api/faces/recognize', {
+        const r = await fetch(HTTP + '/api/faces/recognize', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(frame)
         });
         const res = await r.json();
@@ -1663,13 +1663,24 @@
           }
         } else Vision._said = null;
       } catch (e) {
-        if (!silent) toast('אין חיבור למוח לזיהוי פנים', 'err');
+        // Report what actually failed. This used to print one fixed sentence for
+        // every possible failure — a dead server, a CORS refusal, a TypeError in
+        // the renderer — which made an unfixable mystery out of a one-line bug.
+        // A refusal you cannot read is a refusal nobody can fix.
+        if (!silent) {
+          const why = (e && e.message) ? String(e.message) : String(e);
+          const net = (e && (e.name === 'TypeError' || /fetch|network|load/i.test(why)));
+          toast(net
+            ? 'אין חיבור למוח לזיהוי פנים — ' + why
+            : 'זיהוי הפנים נכשל — ' + why, 'err', 8000);
+          console.error('[vision.look]', e);
+        }
       } finally { busy = false; }
     }
 
     async function refresh() {
       try {
-        const res = await (await fetch('/api/faces')).json();
+        const res = await (await fetch(HTTP + '/api/faces')).json();
         const gate = res.gate || {};
         const chk = el('chk-gate');
         if (chk) chk.checked = !!gate.armed;
@@ -1706,7 +1717,7 @@
 
     async function admin(action, extra) {
       try {
-        const r = await fetch('/api/faces/admin', {
+        const r = await fetch(HTTP + '/api/faces/admin', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ action }, extra || {}))
         });
@@ -1766,7 +1777,7 @@
       if (!frame) { toast('עדיין אין תמונה מהמצלמה', 'warn'); return; }
       const cnt = el('enroll-count');
       try {
-        const r = await (await fetch('/api/faces/enroll', {
+        const r = await (await fetch(HTTP + '/api/faces/enroll', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ name, level: (lvlEl && lvlEl.value) || 'SAFE' }, frame))
         })).json();
