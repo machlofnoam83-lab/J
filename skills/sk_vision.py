@@ -228,14 +228,35 @@ def vision_enroll(name: str = "", note: str = "") -> SkillResult:
     except Exception:                                  # pragma: no cover
         pass
 
+    # Open the dossier in the same breath. The gallery now holds a vector and a
+    # name; the records store holds the story. Linking them here means the user
+    # never has to copy an id by hand, and "who is this" can be answered with
+    # more than a label the moment a face is recognised.
+    #
+    # Best-effort by design: a records store that will not open must not undo an
+    # enrolment that already succeeded.
+    dossier = None
+    try:
+        from agents.records import get_store
+        rec_store = get_store()
+        existing = rec_store.by_face(person.id)
+        if existing is None:
+            dossier = rec_store.add(name=person.name, face_id=person.id,
+                                    relationship="owner" if person.role == "owner" else "")
+    except Exception:                                  # pragma: no cover
+        dossier = None
+
     if person.role == "owner":
         text = (f"נרשמת כ‑{person.name} — וזו ההרשמה הראשונה, אז אתה הבעלים "
                 f"עם הרשאות מלאות ({person.level}).")
     else:
         text = (f"נרשמת כ‑{person.name}. ההרשאה שלך {person.level} — "
                 f"הבעלים הוא {(store.owner() or type('', (), {'name': '—'})).name}.")
+    if dossier is not None:
+        text += " פתחתי גם רשומה — אפשר להוסיף לה גיל, סיפור ותמונה."
     return SkillResult(ok=True, value=text, data={
         "text_he": text, "person": person.to_dict(),
         "is_owner": person.role == "owner",
         "was_empty_gallery": empty_before,
-        "level": person.level, "samples": len(person.vectors)})
+        "level": person.level, "samples": len(person.vectors),
+        "dossier_id": (dossier.id if dossier is not None else None)})

@@ -307,6 +307,95 @@ class BlockPhrasingTest(unittest.TestCase):
         self.assertTrue(out.strip())
 
 
+class AutoDossierTest(unittest.TestCase):
+    """Enrolling a face opens the matching dossier in the same breath.
+
+    The gallery holds a vector and a name; the records store holds the story.
+    Linking them at enrolment time is what lets "who is this" be answered with
+    more than a label, and it removes the step where the user would otherwise
+    have to copy a person id by hand.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import os
+        from skills import load_all
+        cls._saved_env = os.environ.get("JARVIS_RECORDS_DIR")
+        cls.tmp = tempfile.mkdtemp(prefix="enrdoss_")
+        os.environ["JARVIS_RECORDS_DIR"] = cls.tmp
+        load_all()
+
+    @classmethod
+    def tearDownClass(cls):
+        import os
+        if cls._saved_env is None:
+            os.environ.pop("JARVIS_RECORDS_DIR", None)
+        else:
+            os.environ["JARVIS_RECORDS_DIR"] = cls._saved_env
+
+    def setUp(self):
+        # A fresh dossier per test, not per class. Person ids are derived from
+        # a whole-second timestamp, so two tests inside the same second mint the
+        # same id and the second one finds the first one's dossier already
+        # linked — which reads as "no dossier was created".
+        import os
+        os.environ["JARVIS_RECORDS_DIR"] = tempfile.mkdtemp(prefix="enrdoc_")
+        from agents.records import get_store
+        get_store(fresh=True)
+
+    def _store(self):
+        from agents.records import get_store
+        return get_store()
+
+    def test_enrolling_opens_a_dossier_linked_by_face_id(self):
+        with _Harness() as h:
+            h.see(render(identity(11), seed=5))
+            r = _enroll({"name": "OSCAR"})
+            self.assertTrue(r.ok, r.error)
+            pid = r.data["person"]["id"]
+            rec = self._store().by_face(pid)
+            self.assertIsNotNone(rec, "no dossier was linked to the new face")
+            self.assertEqual(rec.name, "OSCAR")
+            self.assertEqual(rec.relationship, "owner")
+
+    def test_the_reply_mentions_the_dossier(self):
+        with _Harness() as h:
+            h.see(render(identity(11), seed=5))
+            r = _enroll({"name": "OSCAR"})
+            self.assertIn("רשומה", r.data["text_he"])
+            self.assertTrue(r.data["dossier_id"])
+
+    def test_a_second_person_gets_their_own_dossier(self):
+        with _Harness() as h:
+            h.see(render(identity(11), seed=5))
+            _enroll({"name": "OSCAR"})
+            h.see(render(identity(31), seed=9))
+            r = _enroll({"name": "דנה"})
+            self.assertTrue(r.ok, r.error)
+            people = self._store().list()
+            self.assertEqual(len(people), 2)
+            self.assertNotEqual(people[0]["face_id"], people[1]["face_id"])
+
+    def test_a_dossier_is_never_duplicated_for_one_face(self):
+        """Re-enrolling the same face adds a sample, not a second person."""
+        with _Harness() as h:
+            img = render(identity(11), seed=5)
+            h.see(img)
+            first = _enroll({"name": "OSCAR"})
+            h.see(img)
+            _enroll({"name": "OSCAR"})
+            people = self._store().list()
+            self.assertEqual(len(people), 1)
+            self.assertEqual(people[0]["face_id"], first.data["person"]["id"])
+
+    def test_a_refused_enrolment_opens_nothing(self):
+        """The guards still govern: no face, no dossier either."""
+        with _Harness() as h:
+            r = _enroll({"name": "Nobody"})
+            self.assertFalse(r.ok)
+            self.assertEqual(self._store().list(), [])
+
+
 class ProductionGalleryUntouchedTest(unittest.TestCase):
     """These tests must not write to the real gallery the way an earlier run did."""
 

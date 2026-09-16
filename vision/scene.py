@@ -221,6 +221,24 @@ def measure_liveness(rgb: np.ndarray, box: Tuple[int, int, int, int]) -> Livenes
     long straight run. It fired on genuine faces and separated nothing, so it is
     gone rather than tuned until it looked convincing. Detecting a printed photo
     remains an open weakness; detecting a screen does not.
+
+    A second attempt was measured rather than built, and the measurement is the
+    reason there is no detector. Simulated prints against the synthetic gallery:
+
+        matte paper   chroma 13.11-16.90   specular 0.0      moire 2.99-6.04   -> live
+        glossy print  chroma 13.94-14.87   specular 0.032-0.068                -> live
+        real faces    chroma 11.99-16.08   specular 0.0      moire 3.03-6.27   -> live
+
+    Every range overlaps. The structural problem is that ``moire < MOIRE_SUSPECT``
+    is counted as positive evidence of life when it is only evidence of *not a
+    screen*, so a matte sheet scores two hits and reads live.
+
+    Fixing that needs a signal the synthetic gallery does not have: specular is
+    exactly 0.0 on every rendered face, because the renderer draws no sebum
+    highlight, and the only frame-to-frame motion available is per-seed renderer
+    noise — a real person sitting still looks identical to a photograph. A rule
+    tuned here would be tuned against a straw man and would fail on the first
+    real webcam. So it is documented instead of shipped.
     """
     a = np.asarray(rgb)
     rgb_p, y_p = _patch(a, box, pad=0.0)
