@@ -133,13 +133,32 @@ class AccessGate:
         if p is None:
             return self._record(self._no_tracker(skill), skill)
 
-        # A suspect frame is not a person. Gating on it is the whole point: the
-        # alternative is that a phone screen becomes a session.
+        # A suspect frame is not proof of a person — but it is also not proof of
+        # a screen, and treating it as proof was the bug this replaces. The
+        # detector was measured against this corpus and it cannot separate a
+        # real face from a photograph (documented in vision/scene.py: every
+        # range overlaps). Wiring a detector that weak to the harshest possible
+        # verdict locked an identified owner out of plain conversation because
+        # one scalar, moire >= 12.0, decided he was a display.
+        #
+        # What a suspect frame actually risks is that a photo could *act*. It
+        # cannot. Permissions are already clamped to SAFE server-side the moment
+        # liveness says suspect (api_faces_recognize sets withheld="liveness").
+        # So subtract capability — which is what vision is allowed to do — and
+        # leave the conversation alone. Talking to a photograph costs nothing;
+        # letting one enrol itself or write to disk does not.
         if getattr(p, "liveness", "") == "suspect":
+            if skill in _ALWAYS_ALLOWED or not skill:
+                return self._record(Verdict(
+                    True, "liveness_suspect_readonly",
+                    "הפריים נראה כמו מסך או תצלום, אז אני לא נותן הרשאות — אבל "
+                    "לדבר אפשר. בוא פיזית מול המצלמה ואחזיר את כל הגישה.",
+                    needs_scan=True, identity=getattr(p, "name", ""),
+                    level="SAFE", age=float(getattr(p, "age", 0.0))), skill)
             return self._record(Verdict(
                 False, "liveness_suspect",
-                "הפריים נראה כמו מסך או תצלום, לא כמו פנים חיות. בוא פיזית מול "
-                "המצלמה ואני אסרוק אותך.",
+                "הפריים נראה כמו מסך או תצלום, לא כמו פנים חיות — ולכן שום פעולה "
+                "שמשנה משהו. בוא פיזית מול המצלמה ואני אסרוק אותך.",
                 needs_scan=True, identity=getattr(p, "name", ""),
                 level=getattr(p, "level", ""), age=float(getattr(p, "age", 0.0))), skill)
 

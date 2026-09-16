@@ -127,13 +127,58 @@ class GateUnitTest(unittest.TestCase):
             self.assertEqual(v.reason, "identified")
             self.assertEqual(v.identity, "OSCAR")
 
-    def test_a_photograph_is_not_a_person(self):
+    def test_a_photograph_may_talk_but_never_act(self):
+        """A suspect frame gets no more than an empty room does, and never writes.
+
+        The previous version of this test asserted a hard refusal on every
+        skill. That encoded an incoherence: the gate let an *empty room* ask a
+        general question (no_face_but_allowed) but refused a face that merely
+        looked like a screen. A photograph therefore had less access than no
+        person at all — and since the detector cannot actually tell a real face
+        from a print (measured in vision/scene.py), the practical effect was
+        that real people were locked out of conversation.
+
+        What a suspect frame risks is that a photo could *act*. Capability is
+        already clamped to SAFE server-side, so the gate subtracts and stops
+        there: conversation allowed, anything that changes state refused.
+        """
         with _Room() as r:
             img = screen_like(render(identity(31), seed=7), period=4)
             r.see(img, with_scene=True)
-            v = r.g.check("files.read")
-            self.assertFalse(v.allowed)
-            self.assertEqual(v.reason, "liveness_suspect")
+
+            # Conversation has no skill attached — that is the case that matters,
+            # because it is what was actually being refused in the field.
+            talk = r.g.check("", risk="SAFE")
+            self.assertTrue(talk.allowed)
+            self.assertEqual(talk.reason, "liveness_suspect_readonly")
+
+            # Same door an empty room gets, and no wider.
+            vision = r.g.check("vision.who", risk="SAFE")
+            self.assertTrue(vision.allowed)
+            self.assertEqual(vision.reason, "liveness_suspect_readonly")
+
+            # Anything that is not on that door is refused, whatever its risk.
+            self.assertFalse(r.g.check("time.now", risk="SAFE").allowed)
+
+            for risk in ("WRITE", "CRITICAL"):
+                v = r.g.check("files.write", risk=risk)
+                self.assertFalse(v.allowed, f"{risk} must be refused on a suspect frame")
+                self.assertEqual(v.reason, "liveness_suspect")
+
+    def test_a_suspect_frame_never_out_ranks_an_empty_room(self):
+        """The coherence check: suspect <= nobody, for every risk level."""
+        with _Room() as r:
+            img = screen_like(render(identity(31), seed=7), period=4)
+            r.see(img, with_scene=True)
+            suspect = {risk: r.g.check("files.read", risk=risk).allowed
+                       for risk in ("SAFE", "WRITE", "CRITICAL")}
+        with _Room() as r:                      # nobody in the room at all
+            nobody = {risk: r.g.check("files.read", risk=risk).allowed
+                      for risk in ("SAFE", "WRITE", "CRITICAL")}
+        for risk in suspect:
+            self.assertLessEqual(
+                int(suspect[risk]), int(nobody[risk]),
+                f"{risk}: a suspect frame was granted more than an empty room")
 
     def test_leaving_the_room_ends_the_session(self):
         with _Room() as r:
@@ -394,8 +439,13 @@ class AuditTrailTest(unittest.TestCase):
         with _Room() as r:
             r.see(screen_like(render(identity(31), seed=7), period=4),
                   with_scene=True)
-            r.g.check("files.write")
-            self.assertEqual(r.audit_lines()[-1]["reason"], "liveness_suspect")
+            # risk must be passed explicitly: check() defaults to SAFE, and a
+            # SAFE call on a suspect frame is now permitted read-only. The audit
+            # line that matters is the refusal of something that changes state.
+            r.g.check("files.write", risk="WRITE")
+            rec = r.audit_lines()[-1]
+            self.assertEqual(rec["reason"], "liveness_suspect")
+            self.assertFalse(rec["allowed"])
 
     def test_an_unwritable_log_never_stops_the_gate(self):
         """A full disk must not become a denial-of-service on the front door."""
