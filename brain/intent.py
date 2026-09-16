@@ -74,7 +74,19 @@ _SMALLTALK = re.compile(
     r"(מה איתך|מה אצלך|מה קורה|מה חדש|מה העניינים|מה המצב"
     r"|איך עבר עליך|איך היום שלך|איך אתה מסתדר|איך היה היום שלך"
     r"|מה שלומך|מה נשמע|מה מצבך|איך אתה מרגיש"
-    r"|what'?s up|how'?s it going|how are you)", re.I)
+    # Lines that were measured routing to UNKNOWN 0.25 and drawing the canned
+    # refusal. ReasoningEngine has a canned answer for each of these; without a
+    # pattern here the category is never named and the answer never runs.
+    r"|עייף|עייפה|מותש|אין לי כוח"
+    r"|יש לי רעיון|רעיון חדש|חשבתי על"
+    r"|מה (ה)?תוכניות|מה יש לנו היום|מה מתוכנן|סדר (לי )?את היום"
+    r"|קשה לי|לא בסדר|מרגיש רע|יום גרוע"
+    r"|מתכון|איך מכינים"
+    r"|מה יכולות"
+    r"|what'?s up|how'?s it going|how are you"
+    r"|I have an idea|got an idea|what'?s the plan|plans for today"
+    r"|recipe|how do I (make|cook)"
+    r"|so tired|exhausted|burnt out|having a hard time|bad day)", re.I)
 _IDENTITY = re.compile(r"(מי אתה|מה השם שלך|מי זה ג'רוויס|(ספר|תספר|תגיד) לי (על )?(עצמך|עליך)"
                        r"|על עצמך|מי אתה בכלל|הצג את עצמך"
                        r"|who are you|what are you|your name|(tell me )?about yourself"

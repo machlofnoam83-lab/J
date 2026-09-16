@@ -711,7 +711,17 @@ class ReasoningEngine:
         ("thanks", re.compile(r"תודה|thanks|thank you|מעולה|יופי|כל הכבוד", re.I)),
         ("opinion", re.compile(r"מה דעתך|מה אתה חושב|האם אתה מאמין|what do you think", re.I)),
         ("learning", re.compile(r"ללמוד|לימוד|יכולת למידה|learn", re.I)),
-        ("capability", re.compile(r"מה אתה (יודע|מסוגל)|היכולות שלך|what can you do", re.I)),
+        ("capability", re.compile(r"מה אתה (יודע|מסוגל)|היכולות שלך|מה יכולות|what can you do", re.I)),
+        # Categories below were added because they were measured failing: each of
+        # these lines used to route to UNKNOWN 0.25 and draw the canned refusal.
+        # A canned answer the router cannot name is dead text.
+        ("tired", re.compile(r"עייף|עייפה|מותש|אין לי כוח| exhausted|so tired|burn(ed|t) out", re.I)),
+        ("idea", re.compile(r"יש לי רעיון|רעיון חדש|חשבתי על|I have an idea|got an idea", re.I)),
+        ("plans", re.compile(r"מה (ה)?תוכניות|מה יש לנו היום|מה מתוכנן|סדר (לי )?את היום|"
+                             r"what'?s (the )?plan|plans for today", re.I)),
+        ("sympathy", re.compile(r"קשה לי|לא בסדר|מרגיש רע|יום גרוע|"
+                                r"having a hard time|not feeling (good|great)|bad day", re.I)),
+        ("recipe", re.compile(r"מתכון|איך מכינים|תן לי מתכון|recipe|how (do I|to) (make|cook)", re.I)),
         ("greeting", re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|צהריים טובים|hello|hi|hey)", re.I)),
     )
 
