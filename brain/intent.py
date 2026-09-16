@@ -759,11 +759,25 @@ class IntentRouter:
         m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|אחוזים?|אחוז|percent|per cent)\s*"
                       r"(?:מ|מתוך|מן|of)?\s*[-–—־]?\s*(\d+(?:\.\d+)?)", text, re.I)
         if m:
-            p, of = float(m.group(1)), float(m.group(2))
-            return Route("MATH", 0.97, "percentage", skill="math.percent", args={"p": p, "of": of},
-                         value=p * of / 100.0,
-                         reply_he=f"{_num(p)} אחוז מ־{_num(of)} הם {_num(p * of / 100.0)}.",
-                         grounded=True)
+            # Guard: this rule answers *only* the percent part. If the sentence
+            # carries more arithmetic — "15% מ־240 ותוסיף 30" — returning here
+            # silently discards the rest and answers 36 to a question whose
+            # answer is 66, at confidence 0.97. A confident wrong number is
+            # worse than no number. Let the general evaluator take it instead;
+            # it parses the whole expression and gets 66.
+            tail = text[m.end():]
+            head = text[:m.start()]
+            leftover = re.sub(r"[\s.,;:!?·׃]", "", head + tail)
+            leftover = re.sub(r"(?i)^(כמה|מה|תחשב|חשב|תן|calculate|compute|what|howmuch|is)", "", leftover)
+            extra_ops = bool(re.search(
+                r"(?:ועוד|ותוסיף|תוסיף|ומוסיף|הוסף|פחות|ותחסר|תחסר|מינוס|כפול|ותכפול|תכפול"
+                r"|חלקי|ותחלק|תחלק|\+|-|\*|/)", leftover))
+            if not extra_ops:
+                p, of = float(m.group(1)), float(m.group(2))
+                return Route("MATH", 0.97, "percentage", skill="math.percent", args={"p": p, "of": of},
+                             value=p * of / 100.0,
+                             reply_he=f"{_num(p)} אחוז מ־{_num(of)} הם {_num(p * of / 100.0)}.",
+                             grounded=True)
         if ("מחלק משותף" in text or "gcd" in low) and re.search(r"\d+\D+\d+", text):
             nums = [int(x) for x in re.findall(r"\d+", text)][:2]
             if len(nums) == 2:
