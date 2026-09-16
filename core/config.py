@@ -31,7 +31,11 @@ for _d in (MODELS, CORPUS / "generated", VOICEBANK, DATA, LOGS):
 class BrainConfig:
     """Neural core settings."""
 
-    size: str = "nano"                 # nano | micro | core
+    # nano2x is double nano's parameters (6,194,176 -> 12,388,352 at vocab 8057)
+    # at the same depth and context, so only capacity moved. JarvisModel.load()
+    # reads the size out of the checkpoint itself, so an older nano checkpoint
+    # still loads at nano — this default governs fresh training, not loading.
+    size: str = "nano2x"               # nano | nano2x | micro | core
     device: str = "cpu"                # cpu | cuda (auto-detected)
     backend: str = "auto"              # auto | torch | onnx | numpy
     max_tokens: int = 512

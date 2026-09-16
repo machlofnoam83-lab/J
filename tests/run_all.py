@@ -21,6 +21,7 @@ RESULT = re.compile(r"RESULT:\s*(\d+)\s*passed,\s*(\d+)\s*failed")
 # order matters only for readability: brain → cognition → action → integration
 ORDER = [
     "test_brain_smoke.py",
+    "test_model_sizes.py",
     "test_intent_math.py",
     "test_skills_security.py",
     "test_coder.py",

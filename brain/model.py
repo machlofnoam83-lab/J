@@ -30,6 +30,12 @@ import torch.nn.functional as F
 SIZES: Dict[str, Dict[str, Any]] = {
     #        d_model layers heads kv_heads  ffn_mult  ctx   ~params
     "nano":  dict(n_embd=256, n_layer=6,  n_head=4, n_kv_head=2, ffn_mult=2.5, block_size=512),
+    # Exactly double nano, at vocab 8057: 6,194,176 -> 12,388,352 params (2.000x).
+    # Width carries the doubling rather than depth, because a wider 6-layer stack
+    # keeps head_dim at 96 (healthy) and the same inference shape as nano, while
+    # a deeper stack at this scale gets harder to train without careful init.
+    # Same block_size, so context behaviour is unchanged — only capacity moved.
+    "nano2x": dict(n_embd=384, n_layer=6, n_head=4, n_kv_head=2, ffn_mult=2.5, block_size=512),
     "micro": dict(n_embd=384, n_layer=10, n_head=6, n_kv_head=2, ffn_mult=2.5, block_size=1024),
     "core":  dict(n_embd=512, n_layer=16, n_head=8, n_kv_head=4, ffn_mult=3.0, block_size=2048),
     # ------------------------------------------------------------------
