@@ -214,6 +214,30 @@ _VISION_Q = re.compile(
     r"|who (is (this|there|in front)|do you see|am i)"
     r"|what (do you see|level am i)"
     r"|list (the )?(faces|enrolled))", re.I)
+# Enrolment is an act, not a question, so it is matched ahead of _VISION_Q —
+# "רשום אותי" must not be answered with "there is someone in front of the camera".
+# The name is extracted separately; the brain never invents one.
+_ENROLL_Q = re.compile(
+    r"(רשום (אותי|את הפנים|את הפרצוף|אותו|אותה|אותנו)"
+    r"|תרשום (אותי|את הפנים|את הפרצוף)"
+    r"|תכיר (אותי|את הפנים|את הפרצוף)"
+    r"|תזכור (אותי|את הפנים|את הפרצוף)"
+    r"|תוסיף (אותי|את הפנים) (לגלריה|לרשימה|לזיהוי)"
+    r"|הרשמה (לזיהוי פנים|לפנים)"
+    r"|אני רוצה להירשם"
+    r"|(enroll|register|remember) (me|my face|this face)"
+    r"|add (me|my face) to (the )?(gallery|faces))", re.I)
+
+# Where a name can hide in the request. Deliberately explicit — a bare "אני"
+# would happily capture the next verb as somebody's name.
+_NAME_PATTERNS = (
+    re.compile(r"(?:בשם|בשמי|שמי|שמי הוא|השם שלי(?: הוא)?|קוראים לי|קוראים לו|קוראים לה)"
+               r"[\s:]+([^\s,.;:!?]+)", re.I),
+    re.compile(r"\bmy name is\s+([^\s,.;:!?]+)", re.I),
+    re.compile(r"\bcall me\s+([^\s,.;:!?]+)", re.I),
+    re.compile(r"\bname (?:him|her|them|it)\s+([^\s,.;:!?]+)", re.I),
+)
+
 _RAG_INDEX = re.compile(
     r"(תאנדקס|תסרוק את התיקייה|אנדקס את|בנה אינדקס|אינדוקס מחדש|רענן את האינדקס"
     r"|index (my|the) (files|documents|folder)"
@@ -429,6 +453,21 @@ class IntentRouter:
             r = self._route_math(t)
             if r:
                 return r
+
+        # 2a-i. enrolment. Ahead of the room questions because "רשום אותי" is an
+        # act, not a question — routing it to vision.who would answer "there is
+        # someone in front of the camera" and do nothing. CRITICAL because the
+        # first face into an empty gallery becomes the owner with every
+        # permission; the firewall asks a human before it runs.
+        if _ENROLL_Q.search(t):
+            name = ""
+            for pat in _NAME_PATTERNS:
+                m = pat.search(t)
+                if m:
+                    name = m.group(1).strip("״׳\"'")
+                    break
+            return Route("VISION", 0.93, "face enrolment request",
+                         skill="vision.enroll", args={"name": name}, risk="CRITICAL")
 
         # 2a. questions about the room. Ahead of SAFETY, because "מה מותר לי"
         # would otherwise be answered from the persona instead of from the camera

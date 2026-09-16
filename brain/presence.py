@@ -59,6 +59,17 @@ class Presence:
     summary_he: str = ""
     age: float = 0.0
     withheld: str = ""
+    # The encoded face from the frame that produced this answer. This is what
+    # makes enrolment possible from the brain at all: before it, recognize()
+    # computed a vector and discarded it, so there was nothing left to enrol
+    # from and "register me" could only ever be a refusal.
+    # Never serialised — 4096 floats must not ride out to the HUD every frame.
+    vector: Optional[Any] = None
+
+    @property
+    def has_face(self) -> bool:
+        """True when there is an encoded face available to enrol."""
+        return self.vector is not None and not self.stale
 
     @property
     def is_owner(self) -> bool:
@@ -112,6 +123,11 @@ class PresenceTracker:
                 p.known = known
                 p.confidence = float(getattr(match, "confidence", 0.0) or 0.0)
                 p.people = int(getattr(match, "faces", 0) or 0)
+                # Keep the encoded face, whatever the identification verdict was.
+                # An unknown stranger is exactly the case enrolment exists for, so
+                # dropping the vector when known is False would defeat the purpose.
+                v = getattr(match, "vector", None)
+                p.vector = v if v is not None else None
                 if known:
                     p.identity = getattr(match, "identity", None)
                     p.name = getattr(match, "name", "") or "—"

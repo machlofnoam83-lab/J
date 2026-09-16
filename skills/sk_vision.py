@@ -15,6 +15,7 @@ only ``vision.faces.FaceGate`` does the second one.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -137,3 +138,104 @@ def vision_permission(risk: str = "WRITE") -> SkillResult:
         "text_he": text, "allowed": allowed, "requested": risk,
         "active_level": p.level, "reason_he": why,
         "presence": p.to_dict()})
+
+
+# ──────────────────────────────────────────────────────────── enrolment ──
+# This is the one vision skill that changes the world rather than describing it,
+# and it is CRITICAL for a concrete reason: the first face into an empty gallery
+# becomes the owner with CRITICAL, so "register me" is not a convenience, it is
+# the granting of every permission in the system. The firewall therefore asks a
+# human in the HUD before it runs, and refuses outright while the firewall sits
+# at SAFE — which is exactly the state an unidentified stranger produces.
+
+_NAME_STOP = frozenset({
+    "אותי", "אותו", "אותה", "את", "של", "לי", "זה", "הזה", "הזו", "בבקשה",
+    "פנים", "פרצוף", "מצלמה", "גלריה", "רשום", "תרשום", "תכיר", "תוסיף",
+})
+
+
+def _clean_name(raw: str) -> str:
+    """A name is a word a person would actually be called. Never guess one."""
+    for tok in re.split(r"[\s,.;:!?\-]+", str(raw or "").strip()):
+        tok = tok.strip("״׳\"'")
+        if not tok or tok.lower() in _NAME_STOP:
+            continue
+        if not re.search(r"[A-Za-z\u0590-\u05FF]", tok):
+            continue
+        return tok[:24]
+    return ""
+
+
+@REGISTRY.register(
+    "vision.enroll", risk="CRITICAL", agent="jarvis",
+    description_he="רושם את הפנים שמופיעות עכשיו מול המצלמה לזיהוי — ההרשמה הראשונה הופכת לבעלים",
+    description_en="Enrols the face currently in front of the camera; the first enrolment becomes the owner",
+    required=("name",),
+    triggers_he=("רשום אותי", "תכיר אותי", "תרשום את הפנים", "תוסיף אותי לגלריה"),
+    triggers_en=("enroll me", "register my face", "remember my face"),
+)
+def vision_enroll(name: str = "", note: str = "") -> SkillResult:
+    store = _gallery()
+    if store is None:
+        return SkillResult(ok=False, error="גלריית הפנים לא זמינה",
+                           data={"text_he": "גלריית הפנים לא זמינה כרגע."})
+
+    p = _tracker().current()
+
+    # Guard 1 — there has to be a face. The vector comes from the frame the
+    # camera actually saw; this skill never runs detection itself.
+    if not p.has_face:
+        text = ("אין לי פנים לרשום — המצלמה לא קלטה פרצוף בפריים האחרון, "
+                "או שהתצפית כבר ישנה מדי.")
+        return SkillResult(ok=False, error="no face available to enrol",
+                           data={"text_he": text})
+
+    # Guard 2 — never enrol something the liveness check called an artefact.
+    # Enrolling a photograph of a person would plant their identity in the
+    # gallery permanently, which is far worse than a single failed unlock.
+    if p.liveness == "suspect":
+        text = ("לא רשמתי. הפריים נראה כמו מסך או תמונה ולא כמו פנים חיות, "
+                "ורישום של תצלום היה שותל זהות קבועה בגלריה.")
+        return SkillResult(ok=False, error="liveness suspect — refusing to enrol",
+                           data={"text_he": text, "withheld": "liveness"})
+
+    # Guard 3 — a name is a fact about the world, not something to invent.
+    clean = _clean_name(name)
+    if not clean:
+        text = ("אני צריך שם כדי לרשום. תגיד למשל «רשום אותי בשם דנה», "
+                "ואני לא ממציא שם בעצמי.")
+        return SkillResult(ok=False, error="no usable name given",
+                           data={"text_he": text})
+
+    empty_before = not store.list()
+    try:
+        person = store.enroll(clean, p.vector, level="SAFE",
+                              note=str(note or "")[:120])
+    except Exception as exc:
+        return SkillResult(ok=False, error=f"enrolment failed: {exc}",
+                           data={"text_he": f"הרישום נכשל: {exc}"})
+
+    # Refresh the firewall and the brain together, so the very next question is
+    # answered as the person who was just enrolled rather than as a stranger.
+    try:
+        from core.server import get_faces
+        _store, gate = get_faces()
+        gate.observe(None)
+        from vision.faces import Match
+        _tracker().observe(Match(person.id, person.name, person.level,
+                                 p.confidence, 0.0, 1, True, role=person.role,
+                                 vector=p.vector))
+    except Exception:                                  # pragma: no cover
+        pass
+
+    if person.role == "owner":
+        text = (f"נרשמת כ‑{person.name} — וזו ההרשמה הראשונה, אז אתה הבעלים "
+                f"עם הרשאות מלאות ({person.level}).")
+    else:
+        text = (f"נרשמת כ‑{person.name}. ההרשאה שלך {person.level} — "
+                f"הבעלים הוא {(store.owner() or type('', (), {'name': '—'})).name}.")
+    return SkillResult(ok=True, value=text, data={
+        "text_he": text, "person": person.to_dict(),
+        "is_owner": person.role == "owner",
+        "was_empty_gallery": empty_before,
+        "level": person.level, "samples": len(person.vectors)})

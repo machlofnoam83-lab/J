@@ -467,6 +467,12 @@ class Match:
     faces: int
     known: bool
     role: str = "guest"              # "owner" only for the first face enrolled
+    # The encoded face itself. Without this the vector that recognize() just
+    # computed died on the floor, so the brain could say who was in front of it
+    # but could never enrol them — there was nothing left to enrol from.
+    # Deliberately excluded from to_dict(): 4096 floats have no business riding
+    # out to the HUD on every frame.
+    vector: Optional[Any] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {"identity": self.identity, "name": self.name, "level": self.level,
@@ -752,8 +758,9 @@ class FaceStore:
             p = self.get(pid)
             if p is not None:
                 return Match(p.id, p.name, p.level, conf, resid, len(found), True,
-                             role=p.role)
-        return Match(None, "לא מזוהה", "SAFE", conf, resid, len(found), False)
+                             role=p.role, vector=primary.vector)
+        return Match(None, "לא מזוהה", "SAFE", conf, resid, len(found), False,
+                     vector=primary.vector)
 
 
 # ═══════════════════════════ presence-gated privilege ═══════════════════════

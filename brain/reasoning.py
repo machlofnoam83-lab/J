@@ -499,7 +499,6 @@ class ReasoningEngine:
         return self._verify_and_pack(reply, route, trace, t0, numbers=numbers,
                                      extra=extra, speak_override=speak)
 
-    @staticmethod
     def _phrase_block(self, route: Route, reason: str, risk: str) -> str:
         if "kill switch" in reason:
             return "מתג החירום מופעל, אדוני. שום פעולה לא תתבצע עד שתשחרר אותו."

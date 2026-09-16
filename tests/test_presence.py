@@ -162,15 +162,18 @@ class VisionSkillsTest(unittest.TestCase):
         load_all()
         cls.reg = REGISTRY
 
-    def test_four_vision_skills_registered(self):
+    def test_the_vision_skills_are_registered(self):
         names = {s.name for s in self.reg.all() if s.name.startswith("vision.")}
         self.assertEqual(names, {"vision.who", "vision.scene", "vision.gallery",
-                                 "vision.permission"})
+                                 "vision.permission", "vision.enroll"})
 
-    def test_vision_skills_are_safe_to_ask(self):
-        """Asking who is in the room must never be a privileged action."""
+    def test_asking_about_the_room_is_never_privileged(self):
+        """Reading the camera must not need a permission; changing it must."""
         for name in ("vision.who", "vision.scene", "vision.gallery", "vision.permission"):
             self.assertEqual(self.reg.get(name).risk, "SAFE", name)
+
+    def test_enrolment_is_the_one_privileged_vision_act(self):
+        self.assertEqual(self.reg.get("vision.enroll").risk, "CRITICAL")
 
     def test_who_reports_the_owner(self):
         get_presence(fresh=True).observe(
