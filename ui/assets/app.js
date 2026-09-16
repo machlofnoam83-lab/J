@@ -1644,22 +1644,34 @@
         const r = await fetch(HTTP + '/api/faces/recognize', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(frame)
         });
-        const res = await r.json();
-        if (!res.ok) { if (!silent) toast(res.error || 'הזיהוי נכשל', 'err'); return; }
+        // A non-JSON body is a *server* failure, not a missing cable. Before
+        // this, an HTML/plain-text 500 page made r.json() throw and the catch
+        // below announced "no connection to the brain" — the one sentence that
+        // sends you looking in exactly the wrong place.
+        let res;
+        try { res = await r.json(); }
+        catch (je) {
+          throw new Error(`השרת החזיר ${r.status} במקום JSON — ` +
+                          String(await r.text()).slice(0, 120));
+        }
+        if (!res.ok) { if (!silent) toast(res.error || 'הזיהוי נכשל', 'err', 8000); return; }
         last = res;
-        badge(res.match, res.gate);
-        scene(res.scene, res.gate);
+        // Every field below is optional. A partial response used to throw a
+        // TypeError that the catch then reported as a network outage.
+        const match = res.match || {}, gate = res.gate || {};
+        badge(match, gate);
+        scene(res.scene, gate);
         drawBoxes(res);
-        stat([['זוהו', `${res.match.faces} פנים`, res.match.faces > 0],
-              ['ביטחון', `${Math.round((res.match.confidence || 0) * 100)}%`, res.match.known],
-              ['הרשאה פעילה', res.gate.level, res.gate.level !== 'SAFE'],
-              ['מנוע', res.gate.armed ? 'מחובר לחומת האש' : 'מנותק', res.gate.armed]]);
-        if (res.gate.identity && res.match.known) {
-          const who = res.match.name;
+        stat([['זוהו', `${match.faces || 0} פנים`, (match.faces || 0) > 0],
+              ['ביטחון', `${Math.round((match.confidence || 0) * 100)}%`, !!match.known],
+              ['הרשאה פעילה', gate.level || 'SAFE', (gate.level || 'SAFE') !== 'SAFE'],
+              ['מנוע', gate.armed ? 'מחובר לחומת האש' : 'מנותק', !!gate.armed]]);
+        if (gate.identity && match.known) {
+          const who = match.name;
           if (!Vision._said || Vision._said !== who) {
             Vision._said = who;
-            pushEvent({ topic: 'vision.identity', data: { name: who, level: res.gate.level,
-                        confidence: res.match.confidence }, ts: Date.now() / 1000 });
+            pushEvent({ topic: 'vision.identity', data: { name: who, level: gate.level,
+                        confidence: match.confidence }, ts: Date.now() / 1000 });
           }
         } else Vision._said = null;
       } catch (e) {

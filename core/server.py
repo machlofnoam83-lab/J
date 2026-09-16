@@ -612,7 +612,7 @@ async def api_enroll(request: web.Request) -> web.Response:
                              "גם משפטים אחרים אל התווית שלה")
         return res
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     BUS.emit("stt.enrolled", {"label": label, "ok": bool(out.get("ok")),
                               "score": out.get("score"), "bank": out.get("bank")},
              source="server")
@@ -855,6 +855,29 @@ async def api_faces(request: web.Request) -> web.Response:
                                  "between": round(store._between, 3)}})
 
 
+async def _run_work(work, loop, what: str) -> Dict[str, Any]:
+    """Run a vision worker and never let an internal failure escape as a 500.
+
+    Measured failure this replaces: any exception raised inside `work`
+    propagated out of run_in_executor, aiohttp answered with a *plain-text*
+    "500 Internal Server Error" page, and the HUD's `await r.json()` then threw
+    JSONDecodeError on that text. look() caught it and printed "no connection
+    to the face-recognition brain" — so a server-side crash was reported to the
+    user as a network outage, and the real reason went only to the server
+    console where nobody was looking. The user cannot fix what they cannot see.
+    """
+    try:
+        out = await loop.run_in_executor(EXECUTOR, work)
+    except Exception as exc:  # noqa: BLE001 - the whole point is to catch anything
+        import traceback
+        traceback.print_exc()
+        out = {"ok": False, "error": f"{what} failed: {type(exc).__name__}: {exc}",
+               "error_kind": type(exc).__name__}
+    if not isinstance(out, dict):
+        out = {"ok": False, "error": f"{what} returned {type(out).__name__}"}
+    return out
+
+
 async def api_faces_recognize(request: web.Request) -> web.Response:
     """POST /api/faces/recognize — who is this, and what may they do?"""
     store, gate = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_faces)
@@ -900,7 +923,7 @@ async def api_faces_recognize(request: web.Request) -> web.Response:
                 "boxes": [f.to_dict() for f in found],
                 "frame": {"w": int(frame.shape[1]), "h": int(frame.shape[0])}}
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     return _json(out, status=200 if out.get("ok") else 400)
 
 
@@ -938,7 +961,7 @@ async def api_faces_enroll(request: web.Request) -> web.Response:
                 "warning": None if face.eyes else
                 "העיניים לא אותרו — היישור לפי תיבת הפנים בלבד, פחות מדויק"}
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     return _json(out, status=200 if out.get("ok") else 400)
 
 
@@ -1002,7 +1025,7 @@ async def api_faces_admin(request: web.Request) -> web.Response:
             return {"ok": True, "gate": gate.poll()}
         return {"ok": False, "error": "action must be remove|set_level|arm|disarm|poll|configure"}
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     return _json(out, status=200 if out.get("ok") else 400)
 
 
@@ -1140,7 +1163,7 @@ async def api_command(request: web.Request) -> web.Response:
         return dispatch_command(agent, data, capture_audio=True)
 
     try:
-        out = await loop.run_in_executor(EXECUTOR, work)
+        out = await _run_work(work, loop, "vision")
     except Exception as exc:
         out = {"type": "error", "message": f"{type(exc).__name__}: {exc}"}
     return _json(out)
