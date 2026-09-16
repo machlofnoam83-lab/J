@@ -29,7 +29,7 @@ from brain.math_engine import MathError, extract_expression, try_evaluate  # noq
 
 INTENTS = (
     "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE", "RAG",
-    "VISION", "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
+    "VISION", "PLAN", "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
     "HELP", "SAFETY", "UNKNOWN",
 )
 

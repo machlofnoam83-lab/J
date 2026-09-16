@@ -28,6 +28,7 @@ ORDER = [
     "test_rag.py",
     "test_scene.py",
     "test_presence.py",
+    "test_deliberate.py",
     "test_voice.py",
     "test_server.py",
     "test_voice_session.py",

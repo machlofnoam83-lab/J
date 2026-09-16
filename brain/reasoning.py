@@ -262,6 +262,16 @@ class ReasoningEngine:
         self.presence = presence
         self.cfg = config or CONFIG.reasoning
         self.verifier = Verifier(knowledge)
+        # Multi-step planning. Constructed last because it calls back into this
+        # engine to execute each subgoal through the ordinary pipeline.
+        try:
+            from brain.deliberate import Deliberator
+            self.deliberator: Optional[Any] = Deliberator(self)
+        except Exception:                                      # pragma: no cover
+            self.deliberator = None
+        # Re-entrancy guard: a subgoal must never be split again, or a plan could
+        # recurse into itself.
+        self._deliberating = False
         self.history: List[Tuple[str, str]] = []
         self.persona = CONFIG.persona
         self._smalltalk_turn = 0
@@ -295,6 +305,18 @@ class ReasoningEngine:
                           who.to_dict(), t)
             except Exception:                                  # pragma: no cover
                 who = None
+
+        # 0b ---------------------------------------------------- deliberate --
+        # A request that genuinely asks for several things gets planned, executed
+        # step by step, and repaired where a step fails — instead of the first
+        # pattern that matches winning and the rest being dropped on the floor.
+        # Gated so an ordinary single question never pays for it.
+        if (self.deliberator is not None and not self._deliberating
+                and self.deliberator.wants(text)):
+            planned = self.deliberator.run(text, trace, t0)
+            if planned is not None:
+                self._remember(text, planned.text)
+                return planned
 
         # 1 ------------------------------------------------------- intent --
         t = time.perf_counter()
