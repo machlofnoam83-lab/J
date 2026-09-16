@@ -28,6 +28,7 @@ MODULES = (
     "skills.sk_media_input",
     "skills.sk_research",
     "skills.sk_rag",
+    "skills.sk_vision",
 )
 
 _loaded = False

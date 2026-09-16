@@ -29,7 +29,7 @@ from brain.math_engine import MathError, extract_expression, try_evaluate  # noq
 
 INTENTS = (
     "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE", "RAG",
-    "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
+    "VISION", "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
     "HELP", "SAFETY", "UNKNOWN",
 )
 
@@ -200,6 +200,20 @@ _RAG_ASK = re.compile(
     r"|find (it |this )?in my (files|documents|notes)"
     r"|according to my (files|documents|notes)"
     r"|what (do|does) my (files|documents|notes) say)", re.I)
+# Questions about the room itself. These are unambiguous — nobody says "מי מולי"
+# meaning anything else — so they sit ahead of the security/permission branch,
+# which would otherwise catch "מה מותר לי" and answer it from the persona
+# instead of from the camera.
+_VISION_Q = re.compile(
+    r"(מי (מולי|מול המצלמה|זה|אתה רואה|נמצא (פה|כאן|מולי))"
+    r"|מה (אתה רואה|יש מולך|המצלמה רואה|רואה מולי)"
+    r"|(תאר|תסתכל על) (את )?(החדר|המצלמה)"
+    r"|מי (רשום|אתה מכיר|הבעלים)"
+    r"|(מה|איזו) (מותר לי|ההרשאה( שלי)?|רמת ההרשאה)"
+    r"|למה (אתה לא מרשה|אסור לי)"
+    r"|who (is (this|there|in front)|do you see|am i)"
+    r"|what (do you see|level am i)"
+    r"|list (the )?(faces|enrolled))", re.I)
 _RAG_INDEX = re.compile(
     r"(תאנדקס|תסרוק את התיקייה|אנדקס את|בנה אינדקס|אינדוקס מחדש|רענן את האינדקס"
     r"|index (my|the) (files|documents|folder)"
@@ -415,6 +429,24 @@ class IntentRouter:
             r = self._route_math(t)
             if r:
                 return r
+
+        # 2a. questions about the room. Ahead of SAFETY, because "מה מותר לי"
+        # would otherwise be answered from the persona instead of from the camera
+        # — and the camera is the thing that actually determines the answer.
+        if _VISION_Q.search(t):
+            skill, conf, why = "vision.who", 0.9, "who is present"
+            if re.search(r"(מה אתה רואה|מה יש מולך|המצלמה רואה|תאר (את )?החדר|"
+                         r"what do you see|describe)", t, re.I):
+                skill, conf, why = "vision.scene", 0.9, "scene description"
+            elif re.search(r"(מי רשום|מי אתה מכיר|מי הבעלים|רשימת הפנים|"
+                           r"list (the )?(faces|enrolled)|who is (enrolled|the owner))",
+                           t, re.I):
+                skill, conf, why = "vision.gallery", 0.9, "gallery listing"
+            elif re.search(r"(מותר לי|ההרשאה|רמת ההרשאה|למה (אתה לא מרשה|אסור)|"
+                           r"what level|why not allowed|what am i allowed)", t, re.I):
+                skill, conf, why = "vision.permission", 0.9, "active permission"
+            return Route("VISION", conf, why, skill=skill,
+                         args={"risk": "WRITE"} if skill == "vision.permission" else {})
 
         # 2b. retrieval over the user's own files (RAG). Sits above SAFETY and
         # the specialist intents because every branch here requires the user to

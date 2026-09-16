@@ -241,6 +241,7 @@ class ReasoningEngine:
         knowledge=None,
         agents: Optional[Dict[str, Any]] = None,
         config=None,
+        presence=None,
     ) -> None:
         self.core = core
         self.router = router or IntentRouter(knowledge=knowledge)
@@ -249,6 +250,16 @@ class ReasoningEngine:
         self.firewall = firewall
         self.knowledge = knowledge
         self.agents = agents or {}
+        # Who is in front of the camera. Lazy by design: importing brain.presence
+        # unconditionally would pull vision into every headless test run, and the
+        # tracker is a no-op when nothing has ever observed a frame.
+        if presence is None:
+            try:
+                from brain.presence import get_presence
+                presence = get_presence()
+            except Exception:                                  # pragma: no cover
+                presence = None
+        self.presence = presence
         self.cfg = config or CONFIG.reasoning
         self.verifier = Verifier(knowledge)
         self.history: List[Tuple[str, str]] = []
@@ -267,6 +278,24 @@ class ReasoningEngine:
 
         BUS.emit(T.BRAIN_THINK_START, {"text": text[:120]}, source="reasoning")
 
+        # 0 ------------------------------------------------------ presence --
+        # Who is in front of the camera, before deciding anything. This is the
+        # step that was missing entirely: the firewall already knew, the brain
+        # did not, so it could not greet by name or explain a refusal in terms
+        # the user could act on. Read-only and cheap — it never runs detection.
+        who: Optional[Any] = None
+        if self.presence is not None:
+            t = time.perf_counter()
+            try:
+                who = self.presence.current()
+                trace.add("presence",
+                          f"{who.name} · {who.level} · {who.role}" if who.known
+                          else (f"{who.people} in frame, unidentified" if who.people
+                                else "nobody in frame"),
+                          who.to_dict(), t)
+            except Exception:                                  # pragma: no cover
+                who = None
+
         # 1 ------------------------------------------------------- intent --
         t = time.perf_counter()
         route = self.router.route(text)
@@ -284,7 +313,21 @@ class ReasoningEngine:
         # 3 --------------------------------------- deterministic resolution --
         if route.reply_he and route.grounded:
             t = time.perf_counter()
-            answer = self._verify_and_pack(route.reply_he, route, trace, t0, numbers=[route.value])
+            # Everything this branch itself produced or cited is traceable, and
+            # only that. Two real cases, both of which used to be masked because
+            # the verdict was discarded:
+            #   * arithmetic — "17 * 23 שווה 391" contains the operands as well as
+            #     the result, and they live in route.args['expr'], not route.value;
+            #   * a knowledge answer — route.value is a dict whose 'answer' field
+            #     is the cited source, so "Oct 31 שווה Dec 25" carries figures that
+            #     came from the fact itself.
+            # Walking route.value picks up both a bare result and the numbers
+            # inside a source payload; the question and the user's own text are
+            # included so a restated figure is not treated as invented.
+            answer = self._verify_and_pack(
+                route.reply_he, route, trace, t0,
+                numbers=[*_numbers_in(route.value), *_numbers_in(route.args),
+                         *_numbers_in(text)])
             trace.add("answer", "grounded deterministic answer", {"grounded": True}, t)
             self._remember(text, answer.text)
             return answer
@@ -348,11 +391,32 @@ class ReasoningEngine:
         t = time.perf_counter()
         ok, issues, cleaned = self.verifier.check(text, numbers=numbers, route=route)
         trace.add("verify", "pass" if ok else f"issues: {issues}", {"ok": ok, "issues": issues}, t)
+
+        # The verdict used to be logged here and then ignored: the answer went out
+        # at full confidence whether or not it had passed. That is the difference
+        # between having a verifier and actually thinking — so a failure now
+        # changes the answer.
+        grounded = route.grounded
+        confidence = route.confidence
+        if not ok:
+            bad = set(issues)
+            if any("unverified number" in i for i in bad):
+                # A number we cannot trace is exactly the thing JARVIS must not
+                # assert. Drop the claim of grounding and say so; never present an
+                # untraced figure as if it had come from a tool.
+                grounded = False
+                confidence = min(confidence, 0.35)
+            else:
+                confidence = min(confidence, 0.5)
         speak = speak_override or self.verifier.speakable(cleaned or text)
-        return Answer(text=cleaned or text, speak=speak, grounded=route.grounded,
-                      confidence=route.confidence, intent=route.intent, skill=route.skill,
+        data = dict(extra or {})
+        data["verified"] = bool(ok)
+        if issues:
+            data["verify_issues"] = list(issues)
+        return Answer(text=cleaned or text, speak=speak, grounded=grounded,
+                      confidence=confidence, intent=route.intent, skill=route.skill,
                       agent=route.agent, risk=route.risk, value=route.value,
-                      data=dict(extra or {}),
+                      data=data,
                       ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
 
     def _run_skill(self, text: str, route: Route, trace: Trace, t0: float) -> Optional[Answer]:
@@ -414,7 +478,7 @@ class ReasoningEngine:
                                      extra=extra, speak_override=speak)
 
     @staticmethod
-    def _phrase_block(route: Route, reason: str, risk: str) -> str:
+    def _phrase_block(self, route: Route, reason: str, risk: str) -> str:
         if "kill switch" in reason:
             return "מתג החירום מופעל, אדוני. שום פעולה לא תתבצע עד שתשחרר אותו."
         if "confirmation" in reason:
@@ -422,6 +486,17 @@ class ReasoningEngine:
                     f"אני מבקש אישור במסך לפני שאגע במערכת.")
         if "protected" in reason:
             return f"חסמתי את הפעולה: הנתיב המבוקש נמצא באזור מוגן. {reason}."
+        # A level block is the one case where the camera explains it better than
+        # the firewall does. "action is CRITICAL but the firewall is set to SAFE"
+        # is true and useless; naming who is (or is not) in front of the lens
+        # tells the user what to actually do about it.
+        if "but the firewall is set to" in reason and self.presence is not None:
+            try:
+                why = self.presence.explain(risk)
+                if why:
+                    return f"לא ביצעתי את הפעולה. {why}"
+            except Exception:                                  # pragma: no cover
+                pass
         return f"לא ביצעתי את הפעולה. הסיבה: {reason}."
 
     @staticmethod

@@ -886,6 +886,15 @@ async def api_faces_recognize(request: web.Request) -> web.Response:
             state["withheld_reason"] = scene.summary_he
             if state.get("level") not in ("SAFE",):
                 state["level"] = "SAFE"
+        # Feed the brain. This is the wire that was missing: without it the
+        # reasoning engine had no idea anybody was in the room, because the only
+        # connection was FaceGate pushing a level into the firewall behind the
+        # brain's back. Now every frame updates what the brain believes.
+        try:
+            from brain.presence import get_presence
+            get_presence().observe(match, scene, gate)
+        except Exception:
+            pass
         return {"ok": True, "match": match.to_dict(), "gate": state,
                 "scene": scene.to_dict(),
                 "boxes": [f.to_dict() for f in found],
