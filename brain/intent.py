@@ -63,6 +63,18 @@ _HELP_Q = re.compile(r"(מה אתה (יודע|מסוגל|עושה|טוב)|מה (
                      r"|what can you do|what do you do|your (abilities|skills))", re.I)
 _GREET = re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|צהריים טובים|hello|hi|hey|good (morning|evening))\b", re.I)
 _THANKS = re.compile(r"(תודה|thanks|thank you|מעולה|יופי|all good)", re.I)
+# Everyday Hebrew openers. Before this pattern existed the router's only
+# SMALLTALK rule was gratitude, so "מה איתך" and "מה קורה" — the two most
+# natural things a person says to an assistant — fell through to UNKNOWN 0.25
+# and drew the canned "I have no certain answer" refusal. ReasoningEngine's
+# SMALLTALK_CATEGORIES already knew how to answer these; it was simply never
+# reached, because the category lookup only runs *after* the router has
+# already decided SMALLTALK. Routing and answering must agree.
+_SMALLTALK = re.compile(
+    r"(מה איתך|מה אצלך|מה קורה|מה חדש|מה העניינים|מה המצב"
+    r"|איך עבר עליך|איך היום שלך|איך אתה מסתדר|איך היה היום שלך"
+    r"|מה שלומך|מה נשמע|מה מצבך|איך אתה מרגיש"
+    r"|what'?s up|how'?s it going|how are you)", re.I)
 _IDENTITY = re.compile(r"(מי אתה|מה השם שלך|מי זה ג'רוויס|(ספר|תספר|תגיד) לי (על )?(עצמך|עליך)"
                        r"|על עצמך|מי אתה בכלל|הצג את עצמך"
                        r"|who are you|what are you|your name|(tell me )?about yourself"
@@ -650,6 +662,10 @@ class IntentRouter:
             return Route("GREETING", 0.9, "greeting")
         if _THANKS.search(t) and len(t) < 30:
             return Route("SMALLTALK", 0.8, "gratitude")
+        # Short social openers, checked after the specific ones so that a
+        # greeting or an identity question still wins when both match.
+        if _SMALLTALK.search(t) and len(t) < 40:
+            return Route("SMALLTALK", 0.82, "social opener")
 
         # 9. grounded knowledge lookup
         if self.knowledge is not None:

@@ -700,7 +700,14 @@ class ReasoningEngine:
     SMALLTALK_CATEGORIES: Tuple[Tuple[str, re.Pattern], ...] = (
         ("bye", re.compile(r"להתראות|ביי|נתראה|לילה טוב|bye|good ?night", re.I)),
         ("joke", re.compile(r"בדיחה|תצחיק|מצחיק|joke|funny", re.I)),
-        ("howareyou", re.compile(r"מה שלומך|מה נשמע|איך אתה מרגיש|מה מצבך|how are you", re.I)),
+        # "מה איתך" / "מה קורה" are the most natural Hebrew openers there are and
+        # both used to fall through to UNKNOWN 0.25 — the assistant answered its
+        # own canned refusal to the two friendliest things a person can say.
+        ("howareyou", re.compile(
+            r"מה שלומך|מה נשמע|איך אתה מרגיש|מה מצבך|"
+            r"מה איתך|מה אצלך|מה קורה|מה חדש|מה העניינים|"
+            r"איך עבר עליך|איך היום שלך|איך אתה מסתדר|"
+            r"how are you|what'?s up|how'?s it going", re.I)),
         ("thanks", re.compile(r"תודה|thanks|thank you|מעולה|יופי|כל הכבוד", re.I)),
         ("opinion", re.compile(r"מה דעתך|מה אתה חושב|האם אתה מאמין|what do you think", re.I)),
         ("learning", re.compile(r"ללמוד|לימוד|יכולת למידה|learn", re.I)),
