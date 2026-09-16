@@ -260,8 +260,21 @@ _GATE: Optional[AccessGate] = None
 
 
 def get_gate(presence: Any = None, fresh: bool = False) -> AccessGate:
-    """Process-wide gate, bound to the brain's presence tracker."""
+    """Process-wide gate, bound to the brain's presence tracker.
+
+    When called with no argument it falls back to the presence singleton rather
+    than binding ``None`` for good. That was a real bug: the first caller in a
+    process decided whether the gate could ever see a face, and an HTTP handler
+    that ran before the brain was constructed won — leaving ``/api/access``
+    reporting an empty room even while the camera was identifying the owner.
+    """
     global _GATE
+    if presence is None:
+        try:
+            from brain.presence import get_presence
+            presence = get_presence()
+        except Exception:                                  # pragma: no cover
+            presence = None
     if fresh or _GATE is None:
         _GATE = AccessGate(presence=presence)
     elif presence is not None and _GATE.presence is None:

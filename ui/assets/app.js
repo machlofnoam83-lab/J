@@ -967,6 +967,153 @@
     if (r) r.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ragIndex(); } });
   }
 
+  // ══════════════════════ ediyel records · the people dossier ══════════════════════
+  // The gallery knows a face; this knows the person. Photo is a path, never
+  // bytes, and every field is something the user stated — the panel does not
+  // infer age from a face or guess a relationship from a name.
+
+  async function syncRecords() {
+    try {
+      const r = await api('/api/records');
+      const el = $('#records-stats');
+      const s = (r && r.stats) || {};
+      if (el) el.innerHTML = kv([
+        ['אנשים', s.people || 0], ['עם פנים', s.with_face || 0],
+        ['עם תמונה', s.with_photo || 0], ['עם סיפור', s.with_story || 0],
+      ]);
+      renderRecordList((r && r.people) || []);
+    } catch (e) { /* the panel degrades, it does not break the HUD */ }
+    syncAccess();
+  }
+
+  async function syncAccess() {
+    const box = $('#rec-access');
+    if (!box) return;
+    try {
+      const a = await api('/api/access');
+      const open = a && a.known;
+      box.className = 'rag-answer';
+      box.innerHTML = '<span class="' + (open ? 'rag-ok' : 'rag-none') + '">'
+        + esc(a && a.explain_he || 'שער הגישה לא זמין') + '</span>';
+      // Disabling the form rather than letting it fail on submit: a button that
+      // always errors teaches people to stop trying.
+      ['#rec-add', '#rec-link'].forEach(sel => {
+        const b = $(sel); if (b) b.disabled = !open;
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  function renderRecordList(people) {
+    const ul = $('#rec-list');
+    if (!ul) return;
+    if (!people.length) { ul.innerHTML = '<li>אין רשומות עדיין</li>'; return; }
+    ul.innerHTML = people.map(p => {
+      const bits = [esc(p.name)];
+      if (p.relationship) bits.push(esc(p.relationship));
+      if (p.age != null) bits.push('בן/בת ' + esc(p.age));
+      const tags = [];
+      if (p.has_photo) tags.push('תמונה');
+      if (p.face_id) tags.push('מזוהה');
+      return '<li data-id="' + esc(p.id) + '">' + bits.join(' · ')
+        + (tags.length ? ' <span class="rag-none">[' + tags.join(', ') + ']</span>' : '')
+        + '</li>';
+    }).join('');
+  }
+
+  function recMsg(text, ok) {
+    const m = $('#rec-msg');
+    if (m) m.innerHTML = '<span class="' + (ok ? 'rag-ok' : 'rag-none') + '">'
+      + esc(text || '') + '</span>';
+  }
+
+  async function recWrite(action, extra) {
+    const body = Object.assign({ action }, extra || {});
+    try {
+      const r = await api('/api/records', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r && r.ok === false) {
+        // needs_scan means the gate closed, not that the request was wrong.
+        // Saying which one is the difference between a fixable refusal and a
+        // wall.
+        recMsg(r.needs_scan ? (r.text_he || 'חובה להיסרק לפני כתיבה')
+                            : (r.error || 'נחסם'), false);
+        toast(r.needs_scan ? 'צריך סריקת פנים' : (r.error || 'נחסם'), 'err', 6000);
+        syncAccess();
+        return null;
+      }
+      recMsg((r && r.text_he) || 'בוצע', true);
+      toast((r && r.text_he) || 'בוצע', 'ok');
+      syncRecords();
+      return r;
+    } catch (e) {
+      recMsg('הבקשה נכשלה: ' + String(e.message || e), false);
+      return null;
+    }
+  }
+
+  async function recAdd() {
+    const name = ($('#rec-name') && $('#rec-name').value || '').trim();
+    if (!name) { recMsg('אני צריך שם כדי לפתוח רשומה.', false); return; }
+    const ageRaw = ($('#rec-age') && $('#rec-age').value || '').trim();
+    const r = await recWrite('add', {
+      name,
+      relationship: ($('#rec-rel') && $('#rec-rel').value || '').trim(),
+      age: ageRaw === '' ? null : Number(ageRaw),
+      birthday: ($('#rec-bday') && $('#rec-bday').value || '').trim(),
+      photo: ($('#rec-photo') && $('#rec-photo').value || '').trim(),
+      story: ($('#rec-story') && $('#rec-story').value || '').trim(),
+    });
+    if (r) ['#rec-name', '#rec-rel', '#rec-age', '#rec-bday', '#rec-photo', '#rec-story']
+      .forEach(s => { const e = $(s); if (e) e.value = ''; });
+  }
+
+  async function recLink() {
+    // Link whoever the camera currently recognises, so the two stores meet
+    // without the user copying an id by hand.
+    let faceId = '';
+    try {
+      const f = await api('/api/faces');
+      faceId = (f && f.gate && f.gate.identity) || '';
+    } catch (e) { /* ignore */ }
+    if (!faceId) { recMsg('אין פנים מזוהות כרגע — סרוק קודם.', false); return; }
+    const id = ($('#rec-list') && $('#rec-list').firstElementChild
+                && $('#rec-list').firstElementChild.dataset.id) || '';
+    if (!id) { recMsg('אין רשומה לחבר אליה. פתח רשומה קודם.', false); return; }
+    await recWrite('link', { person_id: id, face_id: faceId });
+  }
+
+  async function recFind() {
+    const q = ($('#rec-query') && $('#rec-query').value || '').trim();
+    if (!q) { syncRecords(); return; }
+    try {
+      const r = await api('/api/records?q=' + encodeURIComponent(q));
+      const people = (r && r.people) || [];
+      renderRecordList(people);
+      recMsg(people.length ? people.length + ' התאמות' : 'אין רשומה על «' + q + '»',
+             people.length > 0);
+    } catch (e) {
+      recMsg('החיפוש נכשל: ' + String(e.message || e), false);
+    }
+  }
+
+  function wireRecords() {
+    const add = $('#rec-add'), link = $('#rec-link'), find = $('#rec-find');
+    const refresh = $('#rec-refresh');
+    if (add) add.addEventListener('click', recAdd);
+    if (link) link.addEventListener('click', recLink);
+    if (find) find.addEventListener('click', recFind);
+    if (refresh) refresh.addEventListener('click', () => syncRecords());
+    ['#rec-name', '#rec-query'].forEach(sel => {
+      const e = $(sel);
+      if (e) e.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') { ev.preventDefault(); sel === '#rec-query' ? recFind() : recAdd(); }
+      });
+    });
+    syncRecords();
+  }
+
   // ══════════════════════════ boot sequence ══════════════════════════
   // If the measurement sequence is still running after this long, open the
   // interface anyway and say so. A slow machine must never read as a dead one.
@@ -2521,6 +2668,7 @@
     wirePalette();
     wireTranscript();
     wireRag();
+    wireRecords();
     wirePanels();
     wireBootSkip();
     recomputeState();

@@ -184,6 +184,46 @@
       <ul id="rag-cites" class="ticker"></ul>
     </section>
 
+    <section class="panel" id="panel-records">
+      <header><h2>ediyel records · אנשים</h2><span class="panel-tag">RECORDS</span></header>
+      <div id="records-stats" class="kv"></div>
+
+      <!-- The dossier form. Every field here is a fact you told JARVIS, never
+           something it inferred — the photo is a path, the age is what you said,
+           and a birthday overrides a stored age because that one never goes stale. -->
+      <div class="rag-row">
+        <input id="rec-name" type="text" placeholder="שם" spellcheck="false" autocomplete="off" />
+        <input id="rec-rel" type="text" placeholder="קרבה / תפקיד" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <input id="rec-age" type="number" min="0" max="130" placeholder="גיל" />
+        <input id="rec-bday" type="text" placeholder="יום הולדת 1991-03-14" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <input id="rec-photo" type="text" placeholder="נתיב תמונה (לא חובה)" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <textarea id="rec-story" rows="3" placeholder="הסיפור — מה שתרצה שאדע כשהוא נכנס" spellcheck="false"></textarea>
+      </div>
+      <div class="row">
+        <button id="rec-add" class="btn-mini" title="פותח רשומה חדשה">＋ רשומה</button>
+        <button id="rec-link" class="btn-mini" title="מחבר את הפנים שזוהו עכשיו לרשומה">🔗 חבר פנים</button>
+        <button id="rec-refresh" class="btn-mini" title="טוען מחדש">⟳</button>
+      </div>
+
+      <div class="rag-row">
+        <input id="rec-query" type="text" placeholder="חיפוש לפי שם, קרבה, תגית או מילה בסיפור…"
+               spellcheck="false" autocomplete="off" />
+        <button id="rec-find" class="btn-mini">חפש</button>
+      </div>
+
+      <!-- What the gate is doing right now. A refusal you cannot explain is a
+           refusal people work around, so the reason is printed, not hidden. -->
+      <div id="rec-access" class="rag-answer"></div>
+      <ul id="rec-list" class="ticker"></ul>
+      <div id="rec-msg" class="rag-answer"></div>
+    </section>
+
   </aside>
 
   <!-- ══════════ center stage ══════════ -->

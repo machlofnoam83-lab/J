@@ -1006,6 +1006,116 @@ async def api_faces_admin(request: web.Request) -> web.Response:
     return _json(out, status=200 if out.get("ok") else 400)
 
 
+async def api_access(request: web.Request) -> web.Response:
+    """GET /api/access — is the door open, and why.
+
+    The HUD polls this so the user can see *why* JARVIS is refusing instead of
+    guessing. A gate that silently says no teaches people to stop asking.
+    """
+    def work() -> Dict[str, Any]:
+        try:
+            from brain.access import get_gate
+            g = get_gate()
+            return {"ok": True, **g.state(), "explain_he": g.explain()}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 500)
+
+
+async def api_records(request: web.Request) -> web.Response:
+    """GET /api/records — the dossier list, or one person when ?id= is given.
+
+    Never returns a face vector: this endpoint is about the story, not the
+    biometric. The gallery owns the vector and has its own endpoint.
+    """
+    def work() -> Dict[str, Any]:
+        try:
+            from agents.records import get_store
+            st = get_store()
+            pid = request.query.get("id", "").strip()
+            if pid:
+                p = st.get(pid)
+                return ({"ok": True, "person": p.to_dict()} if p
+                        else {"ok": False, "error": f"no such person: {pid}"})
+            q = request.query.get("q", "").strip()
+            if q:
+                return {"ok": True, "query": q,
+                        "people": [p.to_dict() for p in st.find(q)]}
+            return {"ok": True, "people": st.list(), "stats": st.stats()}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
+async def api_records_write(request: web.Request) -> web.Response:
+    """POST /api/records — add, update, link or remove a dossier.
+
+    Goes through the skill registry rather than calling the store directly, so
+    the firewall sees it and the same guards apply as when the request arrives
+    by voice. A UI that bypasses the permission layer would be a second, weaker
+    front door into the same data.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "body must be JSON"}, status=400)
+    action = str(data.get("action") or "add").strip().lower()
+    skill = {"add": "records.add", "update": "records.update",
+             "remove": "records.remove", "link": "records.link"}.get(action)
+    if skill is None:
+        return _json({"ok": False,
+                      "error": "action must be add|update|remove|link"}, status=400)
+
+    def work() -> Dict[str, Any]:
+        from skills import REGISTRY, load_all
+        from security.permissions import FIREWALL
+        from brain.access import get_gate
+        load_all()
+        args = {k: v for k, v in data.items() if k != "action"}
+        reg_skill = REGISTRY.get(skill)
+        risk = reg_skill.risk if reg_skill else "WRITE"
+
+        # Access before permission. Measured, this mattered: with no face in
+        # frame the firewall sits at its default and a WRITE went straight
+        # through, while an identified owner at SAFE was refused. That is
+        # exactly backwards from the rule — whoever has not been scanned does
+        # nothing, and the camera is what raises the ceiling, not what lowers it.
+        verdict = get_gate().check(skill, risk=risk)
+        if not verdict.allowed:
+            return {"ok": False, "skill": skill, "error": verdict.reason,
+                    "text_he": verdict.text_he, "needs_scan": verdict.needs_scan}
+
+        # Ask the firewall next, then tell the registry the answer. The registry
+        # has its own blunt gate that refuses anything above SAFE unless it is
+        # told permission was granted; calling it without that argument does not
+        # consult the firewall at all, it just always says no. So the firewall
+        # decides here exactly as it does for a voice request, and a HUD that
+        # could write dossiers nobody may dictate would be a second, weaker
+        # front door into the same data.
+        decision = FIREWALL.check(skill, risk, args, agent="ediyel_records")
+        if not decision.allowed:
+            return {"ok": False, "skill": skill, "error": decision.reason,
+                    "needs_confirmation": bool(
+                        getattr(decision, "requires_confirmation", False))}
+
+        res = REGISTRY.invoke(skill, args, permission_granted=True)
+        payload = {"ok": res.ok, "skill": skill, "ms": round(res.ms, 1)}
+        if res.error:
+            payload["error"] = res.error
+        if res.value is not None:
+            payload["value"] = res.value
+        if res.data:
+            payload["text_he"] = res.data.get("text_he", "")
+        return payload
+
+    out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
 async def api_command(request: web.Request) -> web.Response:
     """REST twin of the WebSocket — used when a proxy will not upgrade sockets."""
     loop = asyncio.get_event_loop()
@@ -1245,6 +1355,11 @@ def build_app() -> web.Application:
     app.router.add_post("/api/faces/recognize", api_faces_recognize)
     app.router.add_post("/api/faces/enroll", api_faces_enroll)
     app.router.add_post("/api/faces/admin", api_faces_admin)
+    # ediyel records + the access gate. Reads are GET, writes go through the
+    # skill registry so the firewall sees them exactly as it sees a voice request.
+    app.router.add_get("/api/access", api_access)
+    app.router.add_get("/api/records", api_records)
+    app.router.add_post("/api/records", api_records_write)
     app.router.add_post("/api/command", api_command)
     # Unknown /api/* must answer as JSON for every method. Registered before the
     # UI catch-all below (aiohttp resolves resources in registration order), so

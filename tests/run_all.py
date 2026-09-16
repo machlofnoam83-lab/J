@@ -31,6 +31,7 @@ ORDER = [
     "test_enroll.py",
     "test_access.py",
     "test_records.py",
+    "test_records_api.py",
     "test_deliberate.py",
     "test_voice.py",
     "test_server.py",
