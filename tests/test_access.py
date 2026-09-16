@@ -52,8 +52,19 @@ class _Room:
         self.gate = FaceGate(self.store, firewall=None, debounce=1)
         srv.FACE_STATE["store"], srv.FACE_STATE["gate"] = self.store, self.gate
         self.presence = PresenceTracker(ttl=12.0)
-        self.g = AccessGate(presence=self.presence)
+        # Every verdict is audited to disk now, so the harness must point the
+        # log somewhere disposable — otherwise a test run quietly appends to the
+        # real logs/access.jsonl.
+        self.audit = Path(tempfile.mkdtemp(prefix="accaudit_")) / "access.jsonl"
+        self.g = AccessGate(presence=self.presence, audit_path=self.audit)
         return self
+
+    def audit_lines(self):
+        import json as _json
+        if not self.audit.exists():
+            return []
+        return [_json.loads(x) for x in
+                self.audit.read_text(encoding="utf-8").strip().split("\n") if x]
 
     def __exit__(self, *exc):
         srv.FACE_STATE["store"], srv.FACE_STATE["gate"] = self._saved
@@ -225,6 +236,65 @@ class BrainAccessTest(unittest.TestCase):
             eng.access.enabled = False
             a = eng.think("מה השעה")
             self.assertTrue(a.grounded)
+
+
+class AuditTrailTest(unittest.TestCase):
+    """Every decision leaves a trace — including the ones that said yes.
+
+    An audit trail that records only refusals cannot answer the question an
+    access control is actually asked later, which is "who got in".
+    """
+
+    def test_refusals_and_grants_both_reach_disk(self):
+        with _Room() as r:
+            r.g.check("files.read")            # no face -> refused
+            r.g.check("vision.enroll")         # no face -> allowed (the door)
+            lines = r.audit_lines()
+            self.assertEqual(len(lines), 2)
+            self.assertFalse(lines[0]["allowed"])
+            self.assertTrue(lines[1]["allowed"])
+
+    def test_the_record_names_what_was_attempted(self):
+        """A verdict without the skill is half a log line."""
+        with _Room() as r:
+            r.g.check("files.write")
+            rec = r.audit_lines()[0]
+            self.assertEqual(rec["skill"], "files.write")
+            self.assertEqual(rec["reason"], "no_face")
+            self.assertTrue(rec["needs_scan"])
+
+    def test_an_identified_person_is_recorded_by_name(self):
+        with _Room() as r:
+            img = render(identity(11), seed=5)
+            r.enrol_owner(img)
+            r.see(img)
+            r.g.check("time.now")
+            rec = r.audit_lines()[-1]
+            self.assertTrue(rec["allowed"])
+            self.assertEqual(rec["reason"], "identified")
+            self.assertEqual(rec["identity"], "OSCAR")
+
+    def test_a_suspect_frame_is_audited_as_such(self):
+        with _Room() as r:
+            r.see(screen_like(render(identity(31), seed=7), period=4),
+                  with_scene=True)
+            r.g.check("files.write")
+            self.assertEqual(r.audit_lines()[-1]["reason"], "liveness_suspect")
+
+    def test_an_unwritable_log_never_stops_the_gate(self):
+        """A full disk must not become a denial-of-service on the front door."""
+        with _Room() as r:
+            g = AccessGate(presence=r.presence,
+                           audit_path=Path("/no/such/dir/x.jsonl"))
+            v = g.check("time.now")
+            self.assertIsNotNone(v.reason)
+
+    def test_history_is_bounded_in_memory(self):
+        with _Room() as r:
+            for _ in range(250):
+                r.g.check("files.read")
+            self.assertLessEqual(len(r.g.history), 200)
+            self.assertEqual(len(r.g.tail(5)), 5)
 
 
 def main() -> int:

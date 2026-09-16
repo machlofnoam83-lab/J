@@ -125,6 +125,9 @@ def main() -> int:
         check("/api/access reports no face", d.get("has_face") is False)
         check("/api/access explains itself in Hebrew",
               bool(d.get("explain_he")), repr(d.get("explain_he"))[:60])
+        check("/api/access carries the audit trail",
+              isinstance(d.get("tail"), list) and "audit_file" in d,
+              f"audit_file={d.get('audit_file')}")
 
         st, d = get_json(f"{base}/api/records")
         check("/api/records lists with no camera", st == 200 and d.get("ok") is True)

@@ -31,15 +31,24 @@ do. This decides whether the conversation happens at all.
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Enabled by default. The user asked for this as the behaviour, not as an option;
 # the escape hatch exists so a headless CI run or a machine with no camera can
 # still exercise the rest of the brain.
 _ENV = "JARVIS_ACCESS_GATE"
+
+# Every verdict is written here, alongside the firewall's own audit log. A gate
+# that refuses without leaving a trace cannot be argued with, audited, or
+# debugged after the fact — and "who was let in, and who was turned away" is
+# precisely the question an access control is asked later.
+_DEFAULT_AUDIT = Path(os.environ.get("JARVIS_ACCESS_AUDIT",
+                                     str(Path("logs") / "access.jsonl")))
 
 # What is still allowed with no verified face. Kept deliberately tiny: these are
 # the two things that let someone *become* allowed.
@@ -109,6 +118,7 @@ class AccessGate:
     allow_guests_readonly: bool = field(
         default_factory=lambda: _env_flag("JARVIS_ACCESS_GUESTS", False))
     history: List[Dict[str, Any]] = field(default_factory=list)
+    audit_path: Path = field(default_factory=lambda: Path(_DEFAULT_AUDIT))
     _last_verdict: Optional[Verdict] = field(default=None, repr=False)
 
     # ------------------------------------------------------------------ public
@@ -117,11 +127,11 @@ class AccessGate:
         """The single question: may this turn proceed?"""
         if not self.enabled:
             return self._record(Verdict(True, "gate_disabled",
-                                        "שער הגישה כבוי בהגדרות."))
+                                        "שער הגישה כבוי בהגדרות."), skill)
 
         p = self._now()
         if p is None:
-            return self._record(self._no_tracker(skill))
+            return self._record(self._no_tracker(skill), skill)
 
         # A suspect frame is not a person. Gating on it is the whole point: the
         # alternative is that a phone screen becomes a session.
@@ -131,10 +141,10 @@ class AccessGate:
                 "הפריים נראה כמו מסך או תצלום, לא כמו פנים חיות. בוא פיזית מול "
                 "המצלמה ואני אסרוק אותך.",
                 needs_scan=True, identity=getattr(p, "name", ""),
-                level=getattr(p, "level", ""), age=float(getattr(p, "age", 0.0))))
+                level=getattr(p, "level", ""), age=float(getattr(p, "age", 0.0))), skill)
 
         if not getattr(p, "has_face", False):
-            return self._record(self._needs_scan(skill))
+            return self._record(self._needs_scan(skill), skill)
 
         if bool(getattr(p, "stale", False)):
             return self._record(Verdict(
@@ -142,7 +152,7 @@ class AccessGate:
                 "עבר זמן מאז הפעם האחרונה שראיתי אותך — הסריקה פגה. תסתכל "
                 "למצלמה ואני אמשיך.",
                 needs_scan=True, identity=getattr(p, "name", ""),
-                level=getattr(p, "level", ""), age=float(getattr(p, "age", 0.0))))
+                level=getattr(p, "level", ""), age=float(getattr(p, "age", 0.0))), skill)
 
         # A face we do not know. Enrolment is always allowed — that is the door.
         if not getattr(p, "known", False):
@@ -152,7 +162,7 @@ class AccessGate:
                     "אני רואה אותך אבל עדיין לא זיהיתי. אפשר לרשום אותך.",
                     identity=getattr(p, "name", ""),
                     level=getattr(p, "level", ""),
-                    age=float(getattr(p, "age", 0.0))))
+                    age=float(getattr(p, "age", 0.0))), skill)
             if not self.allow_guests_readonly:
                 return self._record(Verdict(
                     False, "unknown_face",
@@ -160,20 +170,20 @@ class AccessGate:
                     "תגיד «רשום אותי בשם …» ואז אוכל לעזור.",
                     needs_scan=True, identity=getattr(p, "name", ""),
                     level=getattr(p, "level", ""),
-                    age=float(getattr(p, "age", 0.0))))
+                    age=float(getattr(p, "age", 0.0))), skill)
             if skill in _GUEST_ALLOWED:
                 return self._record(Verdict(
                     True, "guest_readonly",
                     "אורח — קריאה בלבד.", identity=getattr(p, "name", ""),
                     level=getattr(p, "level", ""),
-                    age=float(getattr(p, "age", 0.0))))
+                    age=float(getattr(p, "age", 0.0))), skill)
             return self._record(Verdict(
                 False, "guest_blocked",
                 "אני רואה אותך אבל לא זיהיתי, ולכן אני לא מבצע פעולות. "
                 "תגיד «רשום אותי בשם …» או שיזהו אותך קודם.",
                 needs_scan=True, identity=getattr(p, "name", ""),
                 level=getattr(p, "level", ""),
-                age=float(getattr(p, "age", 0.0))))
+                age=float(getattr(p, "age", 0.0))), skill)
 
         # Known. The firewall decides what they may do; this only confirms that
         # a real, live, current person is the one asking.
@@ -182,7 +192,7 @@ class AccessGate:
             f"זיהיתי את {getattr(p, 'name', '')}.",
             identity=getattr(p, "name", ""),
             level=getattr(p, "level", ""),
-            age=float(getattr(p, "age", 0.0))))
+            age=float(getattr(p, "age", 0.0))), skill)
 
     def state(self) -> Dict[str, Any]:
         """What the HUD shows: is the door open, and why."""
@@ -248,12 +258,37 @@ class AccessGate:
             "אין מצלמה מחוברת, ואני לא מבצע פעולות בלי סריקת פנים.",
             needs_scan=True)
 
-    def _record(self, v: Verdict) -> Verdict:
+    def _record(self, v: Verdict, skill: str = "") -> Verdict:
         self._last_verdict = v
-        self.history.append({"t": time.time(), **v.to_dict()})
+        rec = {"t": time.time(), "skill": skill, **v.to_dict()}
+        self.history.append(rec)
         if len(self.history) > 200:
             del self.history[:-200]
+        self._audit(rec)
         return v
+
+    def _audit(self, rec: Dict[str, Any]) -> None:
+        """Append one verdict to disk and publish it on the bus.
+
+        Both sinks are best-effort: a full disk or a bus with no listener must
+        never stop the gate from deciding. But the write is attempted on every
+        verdict including the allowed ones, because an audit trail that only
+        records refusals cannot answer "who got in".
+        """
+        try:
+            self.audit_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.audit_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+        except OSError:
+            pass
+        try:
+            from core.bus import BUS
+            BUS.emit("security.access", rec, source="access")
+        except Exception:                                  # pragma: no cover
+            pass
+
+    def tail(self, n: int = 25) -> List[Dict[str, Any]]:
+        return self.history[-n:]
 
 
 _GATE: Optional[AccessGate] = None

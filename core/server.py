@@ -1016,7 +1016,16 @@ async def api_access(request: web.Request) -> web.Response:
         try:
             from brain.access import get_gate
             g = get_gate()
-            return {"ok": True, **g.state(), "explain_he": g.explain()}
+            # The tail rides along with the state so the HUD can show the last
+            # few decisions without a second endpoint. An access control whose
+            # history you cannot read is one nobody can argue with or audit.
+            try:
+                n = int(request.query.get("tail", "10"))
+            except ValueError:
+                n = 10
+            return {"ok": True, **g.state(), "explain_he": g.explain(),
+                    "audit_file": str(g.audit_path),
+                    "tail": g.tail(max(0, min(n, 100)))}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
