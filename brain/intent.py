@@ -29,7 +29,8 @@ from brain.math_engine import MathError, extract_expression, try_evaluate  # noq
 
 INTENTS = (
     "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE", "RAG",
-    "VISION", "PLAN", "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
+    "VISION", "RECORDS", "PLAN", "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY",
+    "GREETING", "SMALLTALK",
     "HELP", "SAFETY", "UNKNOWN",
 )
 
@@ -237,6 +238,36 @@ _NAME_PATTERNS = (
     re.compile(r"\bcall me\s+([^\s,.;:!?]+)", re.I),
     re.compile(r"\bname (?:him|her|them|it)\s+([^\s,.;:!?]+)", re.I),
 )
+
+# ediyel records — the people dossier. Matched ahead of KNOWLEDGE and RAG,
+# because "what do you know about Dana" is a question about a person you told
+# JARVIS about, not a question about the world or about the files on disk.
+_RECORDS_ADD = re.compile(
+    r"(תוסיף (לרשומות|רשומה|אותו|אותה) (לרשומות)?)"
+    r"|תשמור (רשומה|אותו|אותה)"
+    r"|תתעד (את )?(האיש|הבחור|האישה|אותו|אותה)"
+    r"|תפתח (רשומה|תיק) (על|עבור)"
+    r"|add (?:a )?(?:record|dossier)|remember this person", re.I)
+
+# "מי רשום" alone is ambiguous between the face gallery and the dossier, and the
+# gallery wins: it is the thing that actually decides who may act. The dossier
+# list needs the word "רשומות" to be claimed.
+_RECORDS_LIST = re.compile(
+    r"(מי רשום ברשומות|רשימת (ה)?אנשים|כל הרשומות|מי יש (לך )?ברשומות)"
+    r"|(list (the )?people in (the )?records|who is in the records)", re.I)
+
+_RECORDS_WHOAMI = re.compile(
+    r"(מי אני|אתה יודע מי אני|תגיד לי מי אני)"
+    r"|(who am i)", re.I)
+
+# The negative lookahead matters. "ספר לי על עצמך" is a question about JARVIS,
+# not a dossier lookup, and this branch runs well ahead of the IDENTITY one — so
+# without it the assistant answers "tell me about yourself" by searching its own
+# people file and reporting that it has no record of you.
+_RECORDS_FIND = re.compile(
+    r"(?:מה אתה יודע על|תגיד לי על|ספר לי על|מי זה|מי זאת|מה יש לך על|"
+    r"רשומה (?:של|על)|who is|tell me about|what do you know about)"
+    r"\s+(?!(?:עצמך|עליך|אותך|עצמי|yourself|you\b|me\b))", re.I)
 
 _RAG_INDEX = re.compile(
     r"(תאנדקס|תסרוק את התיקייה|אנדקס את|בנה אינדקס|אינדוקס מחדש|רענן את האינדקס"
@@ -468,6 +499,26 @@ class IntentRouter:
                     break
             return Route("VISION", 0.93, "face enrolment request",
                          skill="vision.enroll", args={"name": name}, risk="CRITICAL")
+
+        # 2a-ii. ediyel records. Ahead of KNOWLEDGE/RAG: "what do you know about
+        # Dana" is about a person you told JARVIS about, not about the world.
+        # Adding is WRITE and is routed with an empty name — the skill refuses
+        # rather than inventing one, for the same reason enrolment does.
+        if _RECORDS_WHOAMI.search(t):
+            return Route("RECORDS", 0.9, "who am I", skill="records.whoami")
+        if _RECORDS_LIST.search(t):
+            return Route("RECORDS", 0.9, "list dossiers", skill="records.list")
+        if _RECORDS_ADD.search(t):
+            return Route("RECORDS", 0.88, "add a dossier", skill="records.add",
+                         args={"name": ""}, risk="WRITE")
+        if _RECORDS_FIND.search(t):
+            m = re.search(
+                r"(?:מה אתה יודע על|תגיד לי על|ספר לי על|מי זה|מי זאת|"
+                r"מה יש לך על|רשומה (?:של|על)|who is|tell me about|"
+                r"what do you know about)\s+([^\s?.!,;]+)", t, re.I)
+            query = m.group(1).strip("״׳\"'") if m else ""
+            return Route("RECORDS", 0.88 if query else 0.7, "look up a person",
+                         skill="records.find", args={"query": query})
 
         # 2a. questions about the room. Ahead of SAFETY, because "מה מותר לי"
         # would otherwise be answered from the persona instead of from the camera

@@ -32,6 +32,30 @@ SIZES: Dict[str, Dict[str, Any]] = {
     "nano":  dict(n_embd=256, n_layer=6,  n_head=4, n_kv_head=2, ffn_mult=2.5, block_size=512),
     "micro": dict(n_embd=384, n_layer=10, n_head=6, n_kv_head=2, ffn_mult=2.5, block_size=1024),
     "core":  dict(n_embd=512, n_layer=16, n_head=8, n_kv_head=4, ffn_mult=3.0, block_size=2048),
+    # ------------------------------------------------------------------
+    # The three below are the requested targets, not things this machine can
+    # train. Measured, at vocab 8057:
+    #
+    #   agent  d=640  L=16  ~100.2M params   0.40 GB fp32
+    #   large  d=1024 L=24  ~0.37B  params   1.50 GB fp32    4.5 GB with Adam
+    #   giant  d=1536 L=24  ~0.83B  params   3.30 GB fp32   10.0 GB with Adam
+    #
+    # The development box this was measured on has 2 cores and 3939 MB of RAM.
+    # At those numbers "giant" does not fit in memory even for inference, and
+    # nothing above "core" can be trained here at all — Adam keeps two extra
+    # copies of every weight, so training cost is roughly 3x the fp32 size
+    # before activations. Eleven agents at 100M each is 1.10B params, 4.4 GB
+    # resident if they are all loaded at once.
+    #
+    # They are declared so the target is written down and the training script
+    # will accept the name, and so nobody has to re-derive the arithmetic to
+    # find out why it does not run. Reaching them needs either a GPU or a
+    # machine with an order of magnitude more RAM. They are deliberately not
+    # the default.
+    # ------------------------------------------------------------------
+    "agent": dict(n_embd=640,  n_layer=16, n_head=16, n_kv_head=4, ffn_mult=4.0, block_size=2048),
+    "large": dict(n_embd=1024, n_layer=24, n_head=16, n_kv_head=4, ffn_mult=4.0, block_size=2048),
+    "giant": dict(n_embd=1536, n_layer=24, n_head=16, n_kv_head=4, ffn_mult=4.0, block_size=4096),
 }
 
 

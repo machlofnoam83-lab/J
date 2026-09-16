@@ -260,6 +260,15 @@ class ReasoningEngine:
             except Exception:                                  # pragma: no cover
                 presence = None
         self.presence = presence
+        # The access gate: presence as a precondition, not as advice. Everything
+        # else treats an unidentified person politely; this decides whether the
+        # conversation happens at all. Built here rather than imported at module
+        # scope so a headless run with no camera still constructs an engine.
+        try:
+            from brain.access import get_gate
+            self.access = get_gate(presence)
+        except Exception:                                  # pragma: no cover
+            self.access = None
         self.cfg = config or CONFIG.reasoning
         self.verifier = Verifier(knowledge)
         # Multi-step planning. Constructed last because it calls back into this
@@ -305,6 +314,28 @@ class ReasoningEngine:
                           who.to_dict(), t)
             except Exception:                                  # pragma: no cover
                 who = None
+
+        # 0a -------------------------------------------------------- access --
+        # Presence as a precondition, not as advice. The user's rule: whoever has
+        # no access does nothing, and every time somebody walks in they must be
+        # scanned. This runs before intent, before memory, before any skill —
+        # there is no point classifying a request we are not allowed to act on.
+        #
+        # The gate cannot know the skill yet, so it is asked the general question
+        # first. If it says no, we still let the request be *classified*, because
+        # "register me" and "who is in the room" are precisely the things an
+        # unscanned person must be able to say. The skill-level re-check happens
+        # in _run_skill, where the name is known.
+        access_verdict = None
+        if self.access is not None:
+            try:
+                access_verdict = self.access.check()
+                trace.add("access",
+                          f"{'open' if access_verdict.allowed else 'closed'}"
+                          f" · {access_verdict.reason}",
+                          access_verdict.to_dict())
+            except Exception:                                  # pragma: no cover
+                access_verdict = None
 
         # 0b ---------------------------------------------------- deliberate --
         # A request that genuinely asks for several things gets planned, executed
@@ -449,6 +480,21 @@ class ReasoningEngine:
 
         t = time.perf_counter()
         trace.add("plan", f"invoke {route.skill} with {route.args}", {"risk": skill.risk}, t)
+
+        # Access before permission. The firewall asks "is this person allowed to
+        # do this?"; the gate asks the prior question, "is there an identified,
+        # live, current person at all?" Enrolment and the room questions are
+        # exempt, because those are how an unscanned person becomes scannable —
+        # without that exception the gate is a locked door with no handle.
+        if self.access is not None:
+            t = time.perf_counter()
+            av = self.access.check(route.skill, risk=skill.risk)
+            trace.add("access",
+                      f"{route.skill}: {'open' if av.allowed else 'closed'}"
+                      f" · {av.reason}", av.to_dict(), t)
+            if not av.allowed:
+                return self._verify_and_pack(av.text_he, route, trace, t0,
+                                             extra={"access": av.to_dict()})
 
         decision = None
         if self.firewall is not None:

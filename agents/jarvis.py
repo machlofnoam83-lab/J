@@ -108,8 +108,18 @@ class JarvisAgent:
                                    decay_half_life_days=CONFIG.memory.decay_half_life_days)
         self.router = IntentRouter(knowledge=self.knowledge, skills=REGISTRY, config=CONFIG)
         self.coder = HephaestusAgent(core=self.core, memory=self.memory)
+        # ediyel records: the people dossier. Kept out of the face store on
+        # purpose — the gallery holds a vector, this holds the story, and they
+        # are joined by face_id only when a face has actually been enrolled.
+        try:
+            from agents.records import get_agent as _get_records
+            self.records = _get_records()
+        except Exception:                                  # pragma: no cover
+            self.records = None
         self.agents: Dict[str, Any] = {"hephaestus": self.coder, "mnemosyne": self.memory,
                                        "argus": self, "hermes": self}
+        if self.records is not None:
+            self.agents["ediyel_records"] = self.records
         self.engine = ReasoningEngine(core=self.core, router=self.router, skills=REGISTRY,
                                       memory=self.memory, firewall=self.firewall,
                                       knowledge=self.knowledge, agents=self.agents)

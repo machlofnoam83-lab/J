@@ -102,8 +102,15 @@ def test_runner_is_hardened():
     src = (ROOT / "tests" / "run_all.py").read_text(encoding="utf-8")
     check("children are told to speak UTF-8", 'PYTHONIOENCODING": "utf-8"' in src
           and 'PYTHONUTF8": "1"' in src)
+    # Was "env=CHILD_ENV" verbatim. That asserted the spelling of a variable
+    # rather than the property, and broke the moment the runner picked between
+    # two environments (the access gate is off for headless modules). What has
+    # to stay true is that subprocess.run is given an env at all, and that it
+    # is one built from CHILD_ENV.
     check("the child environment is actually passed to subprocess.run",
-          "env=CHILD_ENV" in src)
+          "env=" in src and "CHILD_ENV" in src and "GATE_OFF" in src)
+    check("the gate-off environment is derived from CHILD_ENV, not built apart",
+          "{**CHILD_ENV" in src)
     check("decoding can never abort a run", 'errors="replace"' in src)
     check("the runner reconfigures its own stdout so Hebrew prints on cp862",
           "reconfigure(encoding=\"utf-8\"" in src)

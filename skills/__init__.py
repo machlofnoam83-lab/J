@@ -29,6 +29,7 @@ MODULES = (
     "skills.sk_research",
     "skills.sk_rag",
     "skills.sk_vision",
+    "skills.sk_records",
 )
 
 _loaded = False

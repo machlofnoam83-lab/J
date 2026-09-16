@@ -29,6 +29,8 @@ ORDER = [
     "test_scene.py",
     "test_presence.py",
     "test_enroll.py",
+    "test_access.py",
+    "test_records.py",
     "test_deliberate.py",
     "test_voice.py",
     "test_server.py",
@@ -49,6 +51,14 @@ def main() -> int:
     # "no RESULT line" while actually passing. Force both ends to UTF-8 and never
     # let an undecodable byte abort a test run.
     CHILD_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
+
+    # The access gate refuses to act with no face in frame, which is exactly
+    # right in production and exactly wrong for a test that is checking RAG or
+    # the voice pipeline and has no camera attached. So headless modules run
+    # with the gate off, and the one module that tests the gate turns it back
+    # on itself. Disabling it here rather than in each test keeps the intent in
+    # one place: "these suites are not about access control."
+    GATE_OFF = {**CHILD_ENV, "JARVIS_ACCESS_GATE": "0"}
     for _stream in (sys.stdout, sys.stderr):
         try:
             _stream.reconfigure(encoding="utf-8", errors="replace")
@@ -77,9 +87,10 @@ def main() -> int:
         print(f"\n── {f.name} " + "─" * max(0, 60 - len(f.name)))
         t0 = time.perf_counter()
         try:
+            env = CHILD_ENV if f.name == "test_access.py" else GATE_OFF
             proc = subprocess.run([sys.executable, str(f)], cwd=str(HERE.parent),
                                   capture_output=True, text=True, timeout=1800,
-                                  encoding="utf-8", errors="replace", env=CHILD_ENV)
+                                  encoding="utf-8", errors="replace", env=env)
             out = (proc.stdout or "") + (proc.stderr or "")
         except subprocess.TimeoutExpired:
             print(f"  TIMEOUT after 1800s")

@@ -168,7 +168,8 @@ class RagConfig:
 @dataclass
 class AgentConfig:
     orchestrator: str = "jarvis"
-    agents: tuple = ("jarvis", "hephaestus", "mnemosyne", "argus", "hermes")
+    agents: tuple = ("jarvis", "hephaestus", "mnemosyne", "argus", "hermes",
+                     "ediyel_records")
     coder_sandbox: str = str(DATA / "sandbox")
     coder_max_repairs: int = 3
     coder_timeout: float = 20.0
