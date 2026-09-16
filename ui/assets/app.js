@@ -1625,6 +1625,15 @@
         })).json();
         if (!r.ok) { toast(r.error || 'הרישום נכשל', 'err'); return; }
         toast(`הפנים של ${r.person.name} נשמרו (${r.person.samples} דגימות, הרשאה ${r.person.level})`, 'ok');
+        // The first enrolment is the consequential one and must not pass quietly.
+        // Whoever fills an empty gallery becomes the owner at CRITICAL, and no
+        // later face can reach that level — saying so here is the difference
+        // between the user knowing they own the machine and discovering it later
+        // when a demotion silently refuses to take effect.
+        if (r.person.is_owner) {
+          toast(`★ ${r.person.name} הוא הבעלים — הרשאות מלאות (${r.person.level}). ` +
+                `אף פנים אחרות לא יגיעו לרמה הזו.`, 'ok', 11000);
+        }
         if (r.warning) toast(r.warning, 'warn', 6000);
         if (cnt) cnt.textContent = r.person.samples;
         refresh(); look(true);
