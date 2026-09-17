@@ -716,7 +716,7 @@ class IntentRouter:
         (("הקסדצימלי", "hexadecimal", "בסיס 16"), "math.base", {"to": 16}),
         (("עצרת", "factorial"), "math.factorial", {}),
         (("ממוצע", "average", "mean"), "math.stats", {"op": "mean"}),
-        (("מחלק משותף", "gcd"), "math.gcd", {}),
+        (("מחלק משותף", "מחלק המשותף", "gcd"), "math.gcd", {}),
     )
 
     def _route_math(self, text: str) -> Optional[Route]:
@@ -755,6 +755,42 @@ class IntentRouter:
                              args={"expr": expr}, value=value,
                              reply_he=_phrase_math(text, expr, value), grounded=True)
 
+        # b0) Two questions the engine previously got wrong in the worst way —
+        # it answered a *different* question at confidence 0.99.
+        #
+        # "מה השארית של 17 חלקי 5" answered 3.4. That is the quotient. The
+        # question asked for the remainder, which is 2. WORD_OPS maps שארית to
+        # the % operator, but no rule recognised the phrasing, so the generic
+        # arithmetic path parsed "17 חלקי 5" and answered division confidently.
+        m = re.search(r"ה?שארית[^\d]{0,12}(\d+(?:\.\d+)?)\s*(?:חלקי|ב|מ|mod|מודולו)?\s*(\d+(?:\.\d+)?)",
+                      text, re.I)
+        if m:
+            a_, b_ = float(m.group(1)), float(m.group(2))
+            if b_:
+                v = a_ % b_
+                return Route("MATH", 0.99, "remainder", skill="math.eval",
+                             args={"expr": f"{_num(a_)} % {_num(b_)}"}, value=v,
+                             reply_he=f"השארית של {_num(a_)} חלקי {_num(b_)} היא {_num(v)}.",
+                             grounded=True)
+
+        # "כמה אחוז זה 25 מתוך 200" — the inverse of the percent rule below. It
+        # used to fall through to UNKNOWN, and the fallback then offered an
+        # unrelated knowledge-base fact about cache memory as though it were an
+        # answer. Wrong *and* dressed as grounded is worse than either alone.
+        m = re.search(r"כמה\s*(?:אחוז|אחוזים|%)\s*(?:זה|הוא)?\s*(\d+(?:\.\d+)?)"
+                      r"\s*(?:מתוך|מ|מן| out of |of)\s*(\d+(?:\.\d+)?)", text, re.I)
+        if not m:
+            m = re.search(r"what\s+percent(?:age)?\s+(?:is|of)\s+(\d+(?:\.\d+)?)"
+                          r"\s*(?:out of|of)\s*(\d+(?:\.\d+)?)", text, re.I)
+        if m:
+            part, whole = float(m.group(1)), float(m.group(2))
+            if whole:
+                v = part / whole * 100.0
+                return Route("MATH", 0.99, "percent inverse", skill="math.eval",
+                             args={"expr": f"{_num(part)}/{_num(whole)}*100"}, value=v,
+                             reply_he=f"{_num(part)} מתוך {_num(whole)} הם {_num(v)} אחוז.",
+                             grounded=True)
+
         # b) two-argument helpers (percent, gcd from natural language)
         m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|אחוזים?|אחוז|percent|per cent)\s*"
                       r"(?:מ|מתוך|מן|of)?\s*[-–—־]?\s*(\d+(?:\.\d+)?)", text, re.I)
@@ -778,7 +814,7 @@ class IntentRouter:
                              value=p * of / 100.0,
                              reply_he=f"{_num(p)} אחוז מ־{_num(of)} הם {_num(p * of / 100.0)}.",
                              grounded=True)
-        if ("מחלק משותף" in text or "gcd" in low) and re.search(r"\d+\D+\d+", text):
+        if (re.search(r"מחלק\s+(?:ה)?משותף", text) or "gcd" in low) and re.search(r"\d+\D+\d+", text):
             nums = [int(x) for x in re.findall(r"\d+", text)][:2]
             if len(nums) == 2:
                 from brain.math_engine import gcd as _gcd
