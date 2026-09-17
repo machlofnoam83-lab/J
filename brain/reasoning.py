@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from brain.intent import IntentRouter, Route  # noqa: E402
-from brain.knowledge import content_tokens, shares_topic  # noqa: E402
+from brain.knowledge import coherence, content_tokens, shares_topic  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
 from core.config import CONFIG  # noqa: E402
 
@@ -824,6 +824,21 @@ class ReasoningEngine:
         if leaked:
             ok = False
             issues.append(f"recited an unrelated {leaked} template instead of answering")
+            cleaned = ""
+        # Is the output even language? A small autoregressive core does not only
+        # drift off-topic; it degenerates — a looping word, a looping phrase, a
+        # run of one character — and it does so at the same confidence as a good
+        # answer. Nothing downstream asked this. shares_topic asks whether a
+        # reply is *about* the question; it cannot tell "אני אני אני אני" from a
+        # sentence, because a repeated word still shares its topic.
+        #
+        # This runs for every route, not only UNKNOWN: a degenerate generation
+        # reached through a confident route is worse, because the confidence
+        # makes it look trustworthy.
+        coherent, why = coherence(cleaned)
+        if not coherent:
+            ok = False
+            issues.append(f"generation is not language ({why})")
             cleaned = ""
         trace.add("verify", "pass" if ok else f"issues: {issues}",
                   {"ok": ok, "issues": issues, "tokens": gen.tokens, "ms": round(gen.ms, 1)}, t)

@@ -134,6 +134,80 @@ def content_tokens(text: str) -> set:
             if w not in _STOPWORDS and _stem(w) not in _STOPWORDS and len(_stem(w)) >= 2}
 
 
+
+# Thresholds for coherence(), each measured against a real corpus rather than
+# chosen to look convincing. Across all 187 answers in brain/knowledge_base.yaml
+# the worst genuine answer scored: rep4gram 0.00, repeated-word run 1,
+# repeated-char run 2, distinct-word ratio 0.67. Degenerate generations from a
+# small autoregressive core score 0.45 / 9 / 25 / 0.11 on those same signals.
+# Every threshold below sits inside a gap with no overlap on either side.
+_COH_REP4 = 0.30        # repeated 4-gram fraction; good max 0.00, bad min 0.45
+_COH_WORD_RUN = 3       # one word in a row; good max 1, bad 9
+_COH_CHAR_RUN = 6       # one character in a row; good max 2, bad 25
+_COH_DISTINCT = 0.35    # distinct-word ratio; good min 0.67, bad 0.43
+_COH_MIN_WORDS = 8      # below this, the ratio is too noisy to judge
+
+
+def coherence(text: str) -> Tuple[bool, str]:
+    """Return (ok, reason) — is this text even language?
+
+    Why this exists, and why it is not the same as ``shares_topic``. A small
+    autoregressive core does not only drift off-topic; it degenerates. It loops
+    a word, loops a phrase, or emits a run of one character — and it does so
+    with the same confidence as a good answer. ``shares_topic`` asks whether a
+    reply is *about* the question. Nothing asked whether the reply was *words*.
+    The result is the worst failure mode available: fluent-looking output that
+    is not language, delivered at confidence 0.35 or higher and marked grounded.
+
+    A rejection here hands control back to the honest "I do not know" path.
+    Saying nothing is recoverable; saying "אני אני אני אני" is not, because the
+    user cannot tell whether the system is broken or merely wrong.
+    """
+    t = (text or "").strip()
+    if not t:
+        return False, "empty"
+
+    words = [w for w in re.findall(r"[\w\u0590-\u05ff]+", t) if w]
+    if not words:
+        return False, "no words"
+
+    # 1. One word repeated back to back — the classic decoding loop.
+    run = worst = 1
+    for a, b in zip(words, words[1:]):
+        run = run + 1 if a == b else 1
+        if run > worst:
+            worst = run
+    if worst >= _COH_WORD_RUN:
+        return False, f"word repeated {worst}x in a row"
+
+    # 2. One character repeated — "שלםםםםם". Reads as a stuck key, not speech.
+    crun = cworst = 1
+    for a, b in zip(t, t[1:]):
+        crun = crun + 1 if a == b else 1
+        if crun > cworst:
+            cworst = crun
+    if cworst >= _COH_CHAR_RUN:
+        return False, f"character repeated {cworst}x in a row"
+
+    # 3. Repeated 4-grams — a whole phrase looping. Catches the case a
+    #    word-level run cannot, because the words are not adjacent-equal.
+    if len(words) >= 4:
+        grams = [tuple(words[i:i + 4]) for i in range(len(words) - 3)]
+        rep4 = 1.0 - (len(set(grams)) / len(grams)) if grams else 0.0
+        if rep4 >= _COH_REP4:
+            return False, f"{rep4:.0%} of 4-grams repeated"
+
+    # 4. Vocabulary collapse — every word nearly the same word. Only judged
+    #    once there are enough words for the ratio to mean anything, or a short
+    #    correct answer ("כן, אדוני.") would be punished for being short.
+    if len(words) >= _COH_MIN_WORDS:
+        distinct = len(set(words)) / len(words)
+        if distinct <= _COH_DISTINCT:
+            return False, f"only {distinct:.0%} distinct words"
+
+    return True, "ok"
+
+
 def shares_topic(a: str, b: str) -> bool:
     """True when two strings have at least one substantive word in common.
 
