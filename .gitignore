@@ -1,0 +1,54 @@
+# --- JARVIS artifacts (regenerable, keep repo lean) ---
+voicebank_raw/
+models/checkpoints/
+models/exports/
+models/*.onnx
+corpus/generated/
+data/
+# STT template bank: regenerated in ~30s by tools/build_stt_templates.py
+voice/stt/bank/
+*.pt
+*.ckpt
+*.onnx
+*.log
+logs/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# --- Node / Electron ---
+node_modules/
+desktop/release/
+desktop/dist/
+npm-debug.log*
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Keep trained production weights so the app runs offline out-of-the-box ---
+!models/jarvis_nano.pt
+!models/tokenizer.json
+
+# The 499 cut voice units (8.1MB) are the actual recorded voice: without them the
+# TTS silently degrades to the robotic formant synth. They ship with the repo.
+# The six raw source recordings ship too, so the bank can be rebuilt or extended.
+!brain/voicebank/*.wav
+!voice/recordings/*.wav
+
+# download bundle built on demand for the sandbox preview — never committed
+ui/*.zip
+samples/
+
+# ASR acoustic models are trained from local speech — personal data, never committed
+models/asr/

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self' data: blob:; connect-src 'self' ws: wss: http://127.0.0.1:* http://localhost:*;
+               img-src 'self' data: blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>אדיאל — Neural HUD</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="theme-mark1" data-state="booting">
+
+<!-- Keyboard travellers land here first. The HUD is twelve panels deep and the
+     command line sits past all of them; without this, Tab-only navigation pays
+     that cost on every single visit. Hidden until focused — see .skip-link. -->
+<a class="skip-link" href="#input">דלג לשורת הפקודה</a>
+
+<!-- ───────────────────────── ambient layers ───────────────────────── -->
+<div id="grid-bg" aria-hidden="true"></div>
+<div id="vignette" aria-hidden="true"></div>
+<div id="scanlines" aria-hidden="true"></div>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<!-- ─────────────────────────── title bar ─────────────────────────── -->
+<header id="titlebar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+      <circle cx="20" cy="20" r="17" class="bm-ring"/>
+      <circle cx="20" cy="20" r="11" class="bm-ring2"/>
+      <path d="M20 6 L20 34 M6 20 L34 20" class="bm-cross"/>
+      <circle cx="20" cy="20" r="4.5" class="bm-core"/>
+    </svg>
+    <div class="brand-text">
+      <h1>אדיאל</h1>
+      <p>עוזר אישי מקומי · בלי ענן ובלי מפתחות <span class="sep">·</span> <span id="build-tag">MK-VII</span></p>
+    </div>
+  </div>
+
+  <div class="status-pills">
+    <div class="pill" id="pill-brain"><i class="dot"></i><span>מוח</span><b>—</b></div>
+    <div class="pill" id="pill-voice"><i class="dot"></i><span>קול</span><b>—</b></div>
+    <div class="pill" id="pill-security"><i class="dot"></i><span>אבטחה</span><b>—</b></div>
+    <div class="pill" id="pill-uptime"><i class="dot"></i><span>זמן פעילות</span><b>00:00</b></div>
+  </div>
+
+  <div class="clock">
+    <div id="clock-time">00:00:00</div>
+    <div id="clock-date">—</div>
+  </div>
+
+  <div id="view-toggle" role="tablist" aria-label="תצוגה">
+    <button id="view-hud" class="vt active" role="tab" aria-selected="true"
+            title="לוח המכשירים המלא (Ctrl+Shift+H)">מערכות</button>
+    <button id="view-chat" class="vt" role="tab" aria-selected="false"
+            title="מסך שיחה בלבד — הכול חוץ מהפאנלים מוסתר (Ctrl+Shift+C)">צ׳אט</button>
+  </div>
+
+  <a id="btn-download" href="#" download="JARVIS-full.zip"
+     title="JARVIS-full.zip — קוד, מודלים מאומנים, בנק הקול, בנק ה־STT וה־HUD. נבנה כאן, לא מורד משום מקום.">⬇ הורדה</a>
+
+  <div class="win-controls">
+    <button id="btn-always-top" class="wc" title="נעץ למעלה (Ctrl+Shift+J)">📌</button>
+    <button id="btn-fullscreen" class="wc" title="מסך מלא">⛶</button>
+    <button id="btn-minimize" class="wc" title="מזער">—</button>
+    <button id="btn-maximize" class="wc" title="הגדל">▢</button>
+    <button id="btn-close" class="wc wc-danger" title="סגור">✕</button>
+  </div>
+</header>
+
+<!-- ───────────────────────────── grid ───────────────────────────── -->
+<main id="grid">
+
+  <!-- ══════════ left rail ══════════ -->
+  <aside id="rail-left">
+
+    <section class="panel" id="panel-agents">
+      <header><h2>סוכנים פעילים</h2><span class="panel-tag">AGENTS</span></header>
+      <ul id="agent-list"></ul>
+    </section>
+
+    <section class="panel" id="panel-model">
+      <header><h2>ליבה עצבית</h2><span class="panel-tag">NANO-1</span></header>
+      <div id="model-stats" class="kv"></div>
+      <div class="bar-wrap"><div class="bar" id="bar-load"></div></div>
+      <p class="hint" id="model-hint">ממתין לטעינה…</p>
+    </section>
+
+    <section class="panel" id="panel-stt">
+      <header><h2>זיהוי דיבור</h2><span class="panel-tag">STT</span></header>
+      <div id="stt-stats" class="kv"></div>
+      <div class="bar-wrap"><div class="bar" id="bar-stt"></div></div>
+      <ul id="stt-vocab" class="ticker"></ul>
+      <p class="hint">לחץ על 🎙 ואמור אחת מהפקודות. הזיהוי מקומי לגמרי — תבניות MFCC+DTW שהמערכת בנתה לעצמה.</p>
+    </section>
+
+    <section class="panel" id="panel-vision">
+      <header><h2>ראייה · מי מולי</h2><span class="panel-tag">VISION</span></header>
+      <div id="cam-stage">
+        <video id="cam-view" autoplay playsinline muted></video>
+        <canvas id="cam-boxes"></canvas>
+        <div id="cam-off">המצלמה כבויה</div>
+      </div>
+      <div id="who-badge" class="who unknown">
+        <div class="who-line"><span id="who-name">—</span><span id="who-level" class="lvl">SAFE</span></div>
+        <div class="bar-wrap"><div class="bar" id="bar-who"></div></div>
+      </div>
+      <div id="scene-read">
+        <div class="scene-line" id="scene-summary">המצלמה כבויה.</div>
+        <div class="scene-warns" id="scene-warns"></div>
+        <div class="scene-bars">
+          <div class="sr-bar-row" title="האם הפריים הזה מספיק טוב כדי לסמוך על הזיהוי">
+            <span>איכות</span><div class="bar-wrap"><div class="bar" id="bar-quality"></div></div><b id="val-quality">—</b>
+          </div>
+          <div class="sr-bar-row" title="כמה אור יש בחדר">
+            <span>תאורה</span><div class="bar-wrap"><div class="bar" id="bar-light"></div></div><b id="val-light">—</b>
+          </div>
+        </div>
+      </div>
+      <div id="vision-stats" class="kv"></div>
+      <div class="row">
+        <button id="btn-cam" title="פתח או סגור את המצלמה">📷 מצלמה</button>
+        <button id="btn-cam-shot" title="זהה עכשיו">זהה</button>
+        <label class="toggle" title="הזיהוי קובע את רמת ההרשאה">
+          <input type="checkbox" id="chk-gate" checked><span>הרשאה לפי פנים</span>
+        </label>
+      </div>
+      <div id="enroll-row">
+        <input id="enroll-name" type="text" placeholder="שם האדם" autocomplete="off">
+        <select id="enroll-level" title="מה מותר לאדם הזה">
+          <option value="SAFE">SAFE · צפייה</option>
+          <option value="WRITE" selected>WRITE · כתיבה</option>
+          <option value="CRITICAL">CRITICAL · שליטה</option>
+        </select>
+        <button id="btn-enroll" title="שמור את הפנים הנראות עכשיו">רשום</button>
+      </div>
+      <div id="enroll-more">
+        <label>מצלמה <select id="cam-select"><option>ברירת מחדל</option></select></label>
+        <label>דגימות <span id="enroll-count">0</span></label>
+      </div>
+      <ul id="face-list" class="ticker"></ul>
+
+      <div id="screen-read">
+        <div class="sr-head">
+          <span class="sr-title">ניתוח צילום מסך</span>
+          <span class="sr-tag">PNG</span>
+        </div>
+        <div class="row">
+          <button id="btn-screen-read" title="קרא את צילום המסך השמור האחרון">🖼️ קרא אחרון</button>
+          <button id="btn-screen-capture" title="צלם עכשיו ואז קרא — דרך חומת האש">📸 צלם ונתח</button>
+        </div>
+        <div id="sr-summary" class="sr-summary">—</div>
+        <div id="sr-stats" class="kv"></div>
+        <div id="sr-bars">
+          <div class="sr-bar-row"><span>בהיר</span><div class="bar-wrap"><div class="bar" id="bar-bright"></div></div><b id="val-bright">—</b></div>
+          <div class="sr-bar-row"><span>כהה</span><div class="bar-wrap"><div class="bar" id="bar-dark"></div></div><b id="val-dark">—</b></div>
+          <div class="sr-bar-row"><span>פירוט</span><div class="bar-wrap"><div class="bar" id="bar-edge"></div></div><b id="val-edge">—</b></div>
+        </div>
+        <p class="sr-note" id="sr-note"></p>
+      </div>
+
+      <p class="hint">הזיהוי מקומי לגמרי: עור ב־YCbCr, יישור לפי העיניים ו־eigenfaces — בלי OpenCV ובלי ענן.
+        ההרשאה ניתנת רק כל עוד הפנים מול המצלמה: מי שיוצא מהחדר מאבד אותה.</p>
+    </section>
+
+    <section class="panel" id="panel-memory">
+      <header><h2>ארמון זיכרון</h2><span class="panel-tag">MEMORY</span></header>
+      <div id="memory-stats" class="kv"></div>
+      <ul id="memory-list" class="ticker"></ul>
+    </section>
+
+    <!-- Local-file retrieval. The panel states its own coverage honestly: if
+         nothing is indexed it says so and offers the folder field, rather than
+         showing an empty result list that looks like "no matches". -->
+    <section class="panel" id="panel-rag">
+      <header><h2>קבצים מקומיים · שליפה</h2><span class="panel-tag">RAG</span></header>
+      <div id="rag-stats" class="kv"></div>
+      <div class="rag-row">
+        <input id="rag-roots" type="text" placeholder="תיקייה לאינדוקס, למשל C:\Users\me\Documents"
+               spellcheck="false" autocomplete="off" />
+        <button id="rag-index-btn" class="btn-mini" title="סורק את התיקייה ובונה אינדקס">אנדקס</button>
+      </div>
+      <div class="rag-row">
+        <input id="rag-query" type="text" placeholder="שאלה מתוך הקבצים…"
+               spellcheck="false" autocomplete="off" />
+        <button id="rag-ask-btn" class="btn-mini" title="תשובה מעוגנת עם ציטוט מקור">חפש</button>
+      </div>
+      <div id="rag-answer" class="rag-answer"></div>
+      <ul id="rag-cites" class="ticker"></ul>
+    </section>
+
+    <section class="panel" id="panel-records">
+      <header><h2>ediyel records · אנשים</h2><span class="panel-tag">RECORDS</span></header>
+      <div id="records-stats" class="kv"></div>
+
+      <!-- The dossier form. Every field here is a fact you told JARVIS, never
+           something it inferred — the photo is a path, the age is what you said,
+           and a birthday overrides a stored age because that one never goes stale. -->
+      <div class="rag-row">
+        <input id="rec-name" type="text" placeholder="שם" spellcheck="false" autocomplete="off" />
+        <input id="rec-rel" type="text" placeholder="קרבה / תפקיד" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <input id="rec-age" type="number" min="0" max="130" placeholder="גיל" />
+        <input id="rec-bday" type="text" placeholder="יום הולדת 1991-03-14" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <input id="rec-photo" type="text" placeholder="נתיב תמונה (לא חובה)" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <textarea id="rec-story" rows="3" placeholder="הסיפור — מה שתרצה שאדע כשהוא נכנס" spellcheck="false"></textarea>
+      </div>
+      <div class="row">
+        <button id="rec-add" class="btn-mini" title="פותח רשומה חדשה">＋ רשומה</button>
+        <button id="rec-link" class="btn-mini" title="מחבר את הפנים שזוהו עכשיו לרשומה">🔗 חבר פנים</button>
+        <button id="rec-refresh" class="btn-mini" title="טוען מחדש">⟳</button>
+      </div>
+
+      <div class="rag-row">
+        <input id="rec-query" type="text" placeholder="חיפוש לפי שם, קרבה, תגית או מילה בסיפור…"
+               spellcheck="false" autocomplete="off" />
+        <button id="rec-find" class="btn-mini">חפש</button>
+      </div>
+
+      <!-- What the gate is doing right now. A refusal you cannot explain is a
+           refusal people work around, so the reason is printed, not hidden. -->
+      <div id="rec-access" class="rag-answer"></div>
+      <ul id="rec-list" class="ticker"></ul>
+      <div id="rec-msg" class="rag-answer"></div>
+    </section>
+
+  </aside>
+
+  <!-- ══════════ center stage ══════════ -->
+  <section id="stage">
+
+    <div id="reactor-wrap">
+      <canvas id="reactor"></canvas>
+      <div id="reactor-center">
+        <div id="reactor-state">מאתחל</div>
+        <div id="reactor-sub">ADIEL CORE</div>
+      </div>
+      <div class="ring-labels">
+        <span class="rl rl1">INFER</span><span class="rl rl2">MEMORY</span>
+        <span class="rl rl3">SKILLS</span><span class="rl rl4">SECURE</span>
+      </div>
+    </div>
+
+    <!-- ── chat mode only: a one-line readout of who is talking and how ── -->
+    <div id="chat-strip" aria-live="polite">
+      <span class="cs-dot" aria-hidden="true"></span>
+      <b id="cs-who">אדיאל</b>
+      <span id="cs-state">ממתין — כתוב למטה, או פתח את המיקרופון</span>
+      <span class="cs-spacer"></span>
+      <button id="cs-talk" class="cs-act" title="שיחה חופשית: מיקרופון פתוח, מילת השכמה, תשובות בקול (Ctrl+Shift+V)">🗣 שיחה קולית</button>
+      <button id="cs-exit" class="cs-act" title="חזרה ללוח המכשירים (Ctrl+Shift+H)">⇤ מערכות</button>
+    </div>
+
+    <div id="transcript-head">
+      <span class="th-title">שיחה</span>
+      <span class="th-sub" id="th-count">—</span>
+      <button id="btn-clear-chat" class="mini" title="מחק את היסטוריית השיחה">נקה</button>
+    </div>
+    <div id="transcript" aria-live="polite"></div>
+    <button id="jump-latest" class="hidden" title="חזור להודעה האחרונה">⬇ חדש</button>
+
+    <div id="composer">
+      <div id="composer-modes">
+        <button class="mode active" data-mode="chat">שיחה</button>
+        <button class="mode" data-mode="code">קוד</button>
+        <button class="mode" data-mode="math">מתמטיקה</button>
+        <button class="mode" data-mode="system">מערכת</button>
+      </div>
+      <div id="talk-bar">
+        <span id="talk-dot"></span>
+        <span id="talk-state">שיחה חופשית כבויה</span>
+        <div id="talk-level"><i></i></div>
+        <span id="talk-wake" class="w-low" title="כמה קרוב הקול שלך להפעלת מילת ההשכמה"></span>
+        <span id="talk-hint">לחץ <b>🗣 שיחה</b> והמיקרופון נפתח <b>כבר מקשיב</b> — פשוט דבר</span>
+        <button id="btn-train" title="למד את אדיאל להכיר את הקול שלך">🎯 אימון קול</button>
+      </div>
+      <div id="train-panel" class="hidden">
+        <div id="train-head">
+          <b>אימון קול</b>
+          <span>בנק הדגימות נבנה מהקול המסונתז של אדיאל עצמו. קול אנושי אחר נשמע לו
+            אחרת לגמרי — לכן כדאי להקליט את עצמך. שתי דגימות מספיקות.</span>
+          <button id="train-close" title="סגור">✕</button>
+        </div>
+        <div id="train-list"></div>
+        <div id="train-foot">
+          <button id="train-all">🎯 אמן הכול ברצף</button>
+          <span id="train-note">לחץ 🎙 ליד משפט, אמור אותו, וההקלטה נעצרת לבד אחרי 3 שניות.</span>
+        </div>
+      </div>
+      <div id="composer-row">
+        <button id="btn-talk" title="שיחה חופשית: מיקרופון פתוח, מילת השכמה, תשובות בקול (Ctrl+Shift+V)">🗣 שיחה</button>
+        <button id="btn-mic" title="דיבור בלחיצה (Ctrl+Shift+Space)">🎙</button>
+        <input id="input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="דבר אליי, אדוני… (Enter לשליחה · Shift+Enter לשורה חדשה)">
+        <label class="toggle" title="הפעל קול"><input type="checkbox" id="chk-speak" checked><span>קול</span></label>
+        <button id="btn-send">שגר ➤</button>
+      </div>
+      <div id="composer-foot">
+        <span class="kbd">F5</span> שיחה מיידית
+        <span class="kbd">Enter</span> שליחה
+        <span class="kbd">Ctrl+Shift+Space</span> דיבור
+        <span class="kbd">Ctrl+Shift+V</span> שיחה חופשית
+        <span class="kbd">Ctrl+Shift+C</span> מסך צ׳אט
+        <span class="kbd">Ctrl+Shift+H</span> מערכות
+        <span class="kbd">Ctrl+K</span> פלטת פקודות
+        <span class="kbd">Ctrl+Shift+J</span> נעיצה
+        <span class="kbd">Ctrl+Shift+Esc</span> <b class="danger">KILL SWITCH</b>
+        <label id="mic-pick" title="מיקרופון קלט">🎚
+          <select id="mic-select"><option>ברירת מחדל</option></select>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ right rail ══════════ -->
+  <aside id="rail-right">
+
+    <section class="panel" id="panel-telemetry">
+      <header><h2>טלמטריה</h2><span class="panel-tag">TELEMETRY</span></header>
+      <div class="gauges">
+        <div class="gauge"><canvas class="g-canvas" data-g="cpu"></canvas><span>CPU</span><b id="g-cpu">—</b></div>
+        <div class="gauge"><canvas class="g-canvas" data-g="ram"></canvas><span>RAM</span><b id="g-ram">—</b></div>
+        <div class="gauge"><canvas class="g-canvas" data-g="disk"></canvas><span>DISK</span><b id="g-disk">—</b></div>
+        <div class="gauge"><canvas class="g-canvas" data-g="net"></canvas><span>NET</span><b id="g-net">—</b></div>
+      </div>
+      <canvas id="spark-cpu" class="spark"></canvas>
+      <canvas id="spark-ram" class="spark"></canvas>
+    </section>
+
+    <section class="panel" id="panel-modes">
+      <header><h2>מצבי פעולה · שתים־עשרה עמדות</h2><span class="panel-tag">MODES</span></header>
+      <div id="mode-current" class="mode-current">
+        <b id="mode-name">—</b><span id="mode-en" class="panel-tag">—</span>
+      </div>
+      <p id="mode-desc" class="hint">—</p>
+      <div id="mode-chips" class="mode-chips"></div>
+      <div class="row">
+        <button id="btn-mode-research" title="חוקר: חופר בכל המקורות המקומיים">🔎 חקור עכשיו</button>
+        <input id="research-topic" type="text" placeholder="נושא לחקירה" autocomplete="off">
+      </div>
+      <div id="research-out" class="sr-summary">—</div>
+      <p class="hint">מצב לא מוסיף הרשאות: כל פעולה עדיין עוברת את אותה חומת אש באותה רמת סיכון.
+        המצב נשמר לדיסק, כך ש־אדיאל קם באותה עמדה שבה הושאר.</p>
+    </section>
+
+    <!-- One firewall panel. There used to be two — "חומת הרשאות · יומן ביקורת"
+         with a bar, and "חומת הרשאות" with the controls — repeating level,
+         dry-run and the allow/block counts on the same screen. Merged: queue and
+         controls on top, audit trail and the sentinel below, one set of numbers. -->
+    <section class="panel" id="panel-firewall">
+      <header><h2>חומת הרשאות · יומן ביקורת · הזקיף</h2><span class="panel-tag">FIREWALL</span>
+        <button class="mini" id="btn-refresh-audit">רענן</button></header>
+      <div id="perm-queue"></div>
+      <div class="perm-controls">
+        <select id="sel-level" title="רמת ההרשאות של המערכת">
+          <option value="readonly">readonly</option>
+          <option value="write" selected>write</option>
+          <option value="dangerous">dangerous</option>
+        </select>
+        <label class="toggle" title="מצב הדמיה — בודק מה היה קורה בלי לבצע"><input type="checkbox" id="chk-dryrun" checked><span>dry-run</span></label>
+        <button id="btn-kill" class="danger" title="מתג חירום — עוצר הכול (Ctrl+Shift+Esc)">KILL</button>
+        <button id="btn-revive" title="החזרה לפעולה">REVIVE</button>
+      </div>
+      <div id="fw-stats" class="kv"></div>
+      <ul id="audit-stream" class="ticker"></ul>
+
+      <div id="sentinel-box">
+        <div class="sr-head">
+          <span class="sr-title">הזקיף · צורות חריגות</span>
+          <span class="sr-tag" id="sentinel-state">צופה</span>
+        </div>
+        <div id="sentinel-stats" class="kv"></div>
+        <ul id="sentinel-stream" class="ticker"></ul>
+      </div>
+
+      <p class="hint">כל פעולה לא־בטוחה נכתבת ליומן ביקורת בלתי נמחק. חסימות מוצגות באדום.
+        הזקיף לא שופט פעולה בודדת אלא את צורת הרצף: פרץ פעולות, חזרה על אותה פעולה
+        קריטית, או רצף סירובים — ומתריע.</p>
+    </section>
+
+    <section class="panel" id="panel-skills">
+      <header><h2>ארגז כלים</h2><span class="panel-tag">SKILLS</span>
+        <button class="mini" id="btn-refresh-skills">רענן</button></header>
+      <div id="skills-stats" class="kv"></div>
+      <ul id="skills-list" class="ticker"></ul>
+      <p class="hint">הקטלוג המלא שנחשף לליבה כחוזה כלים. לחיצה מסננת לפי רמת סיכון.</p>
+    </section>
+
+    <section class="panel grow" id="panel-events">
+      <header><h2>זרם אירועים</h2><span class="panel-tag">BUS</span>
+        <button class="mini" id="btn-clear-events">נקה</button></header>
+      <ul id="event-stream"></ul>
+    </section>
+
+  </aside>
+</main>
+
+<!-- ─────────────────────────── overlays ─────────────────────────── -->
+<div id="palette" class="palette hidden">
+  <div class="palette-box">
+    <input id="palette-q" type="text" placeholder="פקודה, כלי או מצב…  (Ctrl+K)" autocomplete="off">
+    <ul id="palette-list"></ul>
+    <div class="palette-foot">
+      <span>↑↓ ניווט · Enter הפעלה · Esc סגירה</span>
+      <span id="palette-count"></span>
+    </div>
+  </div>
+</div>
+
+<div id="boot-overlay" class="overlay">
+  <div class="boot-inner">
+    <pre id="boot-log"></pre>
+    <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+    <div class="boot-foot">
+      <span id="boot-note">מודד כל מערכת בזמן אמת — אפשר להמשיך להשתמש בממשק</span>
+      <button id="boot-skip" title="פתח את הממשק עכשיו; המדידות ממשיכות ברקע">דלג ⏩</button>
+    </div>
+  </div>
+</div>
+
+<div id="kill-overlay" class="overlay kill">
+  <div class="kill-inner">
+    <div class="kill-icon">⛔</div>
+    <h2>KILL SWITCH פעיל</h2>
+    <p id="kill-reason">—</p>
+    <button id="btn-kill-revive">אתחל מחדש את אדיאל</button>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="assets/audio.js"></script>
+<script src="assets/hud.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

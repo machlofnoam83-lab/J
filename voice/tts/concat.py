@@ -1,0 +1,357 @@
+"""JARVIS concatenative voice engine — real recorded units, our own prosody.
+
+Selection cascade (best sounding first):
+    1. whole recorded word            (if the word exists in the bank)
+    2. recorded phone with matching left/right context
+    3. any recorded phone with that symbol
+    4. our formant synthesiser fills the gap
+
+Units are joined with equal-power crossfades, pitch-shifted along a declination
+contour, and time-stretched for stress — so the result has real human timbre
+with controlled rhythm.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from voice.dsp import (VAD, crossfade, fade_in_out, normalize, pitch_shift,  # noqa: E402
+                       resample, silence, time_stretch, to_mono)
+from voice.tts import formant  # noqa: E402
+from voice.tts.formant import Unit, units_from_g2p  # noqa: E402
+from voice.tts.g2p import Phoneme, convert  # noqa: E402
+
+
+def _read_wav(path: Path) -> Tuple[np.ndarray, int]:
+    import wave
+    with wave.open(str(path), "rb") as fh:
+        sr = fh.getframerate()
+        raw = fh.readframes(fh.getnframes())
+        width = fh.getsampwidth()
+    data = (np.frombuffer(raw, dtype="<i2").astype(np.float32) / 32768.0
+            if width == 2 else np.frombuffer(raw, dtype="<i4").astype(np.float32) / 2147483648.0)
+    return data, sr
+
+
+@dataclass
+class ConcatStats:
+    units: int = 0
+    from_word: int = 0
+    from_phone_ctx: int = 0
+    from_phone_any: int = 0
+    from_formant: int = 0
+    coverage: float = 0.0
+
+
+class ConcatEngine:
+    def __init__(self, bank_dir: Path | str, sr: int = 24000, pitch: float = 1.0,
+                 rate: float = 1.0) -> None:
+        self.dir = Path(bank_dir)
+        self.sr = sr
+        self.pitch = pitch
+        self.rate = rate
+        self.index_path = self.dir / "index.json"
+        self.words: Dict[str, Dict[str, Any]] = {}
+        self.phones: Dict[str, Dict[str, Any]] = {}
+        self.by_sym: Dict[str, List[str]] = {}
+        self._cache: Dict[str, np.ndarray] = {}
+        self.available = False
+        self.coverage: Dict[str, Any] = {}
+        self.load()
+
+    # ---------------------------------------------------------------- load --
+    def load(self) -> bool:
+        if not self.index_path.exists():
+            return False
+        try:
+            idx = json.loads(self.index_path.read_text(encoding="utf-8"))
+        except Exception:
+            return False
+        self.words = idx.get("words", {})
+        self.phones = idx.get("phones", {})
+        self.coverage = idx.get("coverage", {})
+        self.by_sym = {}
+        for tag, meta in self.phones.items():
+            self.by_sym.setdefault(meta["sym"], []).append(tag)
+        self.available = bool(self.words or self.phones)
+        return self.available
+
+    def _unit(self, filename: str) -> Optional[np.ndarray]:
+        if filename in self._cache:
+            return self._cache[filename]
+        path = self.dir / filename
+        if not path.exists():
+            return None
+        try:
+            x, sr = _read_wav(path)
+        except Exception:
+            return None
+        if sr != self.sr:
+            x = resample(x, sr, self.sr)
+        x = normalize(to_mono(x), 0.92)
+        original = x
+        # second-line trim: never let a unit carry dead air into the sentence
+        segs = VAD(self.sr, hangover=4, threshold_scale=2.6).segments(x, min_ms=40.0, pad_ms=10.0)
+        if segs:
+            gap = int(self.sr * 0.025)
+            if len(segs) > 1:
+                # The recordings are isolated phones, so a take often contains a
+                # breath or a hesitation *between* two voiced stretches. Keeping
+                # first-to-last (the old behaviour) drags that dead air into every
+                # sentence: measured, 381 units held 51.9 s of audio for 44.4 s of
+                # sound, and one phone ran 0.77 s with 0.30 s voiced. Stitch the
+                # voiced stretches together instead, keeping gaps only up to 25 ms
+                # so real co-articulation is not damaged.
+                pieces = [x[segs[0][0]:segs[0][1]]]
+                for (a0, a1), (b0, b1) in zip(segs, segs[1:]):
+                    if b0 - a1 > gap:
+                        pieces.append(x[b0:b1])
+                    else:
+                        pieces[-1] = x[a0:b1]
+                out = np.zeros(0, dtype=np.float32)
+                for piece in pieces:
+                    out = piece if not out.size else crossfade(out, piece, int(self.sr * 0.004))
+                if out.size > int(self.sr * 0.02):
+                    x = out
+            else:
+                x = x[segs[0][0]: segs[-1][1]]
+
+        # This trim exists to drop dead air, not to shorten speech. The detector
+        # runs at 2.6x the noise floor, which is right for an isolated phone and
+        # wrong for a whole word: the unstressed parts of a short word fall under
+        # it. Measured, `word_כן.wav` held 0.622 s of a real "ken" and came back
+        # as 0.108 s — 83% of the word discarded, and too short for the
+        # recogniser to extract a single MFCC frame from, which made `yes`
+        # unsayable. That is the command that answers a permission prompt.
+        # A trim that removes most of a unit, or that leaves less than a spoken
+        # syllable where there was more, is a misdetection: keep the original.
+        if original.size > 0:
+            kept = x.size / float(original.size)
+            too_short = x.size < int(self.sr * 0.12) < original.size
+            if kept < 0.35 or too_short:
+                x = original
+        self._cache[filename] = x
+        return x
+
+    # ------------------------------------------------------------ synth ----
+    def synthesize(self, text: str, rate: Optional[float] = None,
+                   pitch: Optional[float] = None) -> Tuple[np.ndarray, ConcatStats]:
+        rate = self.rate if rate is None else rate
+        pitch = self.pitch if pitch is None else pitch
+        stats = ConcatStats()
+        out = np.zeros(0, dtype=np.float32)
+
+        for word in re.findall(r"[^\s]+", text):
+            core = word.strip(".,!?;:\"'()[]{}—–-־")
+            tail = word[len(core) + (len(word) - len(word.lstrip(".,!?;:\"'()[]{}—–-־"))):]
+            if core and core in self.words:
+                meta = self.words[core]
+                chunk = self._unit(meta["file"])
+                if chunk is not None and len(chunk) > 8:
+                    chunk = self._cap_duration(chunk, max_s=0.78, rate=rate)
+                    chunk = self._prosody(chunk, 0.0, rate, pitch)
+                    out = self._join(out, chunk)
+                    stats.from_word += 1
+                    stats.units += 1
+                    out = self._join(out, silence(self._pause_for(tail), self.sr))
+                    continue
+            # fall back to phone-by-phone
+            phones = [p for p in convert(core) if p.sym and p.sym != "_"]
+            if not phones:
+                continue
+            chunk, s = self._render_phones(phones, rate, pitch)
+            out = self._join(out, chunk)
+            stats.units += s.units
+            stats.from_phone_ctx += s.from_phone_ctx
+            stats.from_phone_any += s.from_phone_any
+            stats.from_formant += s.from_formant
+            out = self._join(out, silence(self._pause_for(tail), self.sr))
+
+        if not out.size:
+            out = formant.synthesize_units(units_from_g2p(convert(text), rate=rate), sr=self.sr)
+            stats.from_formant += 1
+        total = max(1, stats.units)
+        stats.coverage = round((stats.from_word + stats.from_phone_ctx + stats.from_phone_any) / total, 3)
+
+        # Isolated-phone concatenation is inherently slower than fluent speech:
+        # every unit keeps the careful length it was recorded with. A 91-character
+        # answer came out at 21.5 s — over four characters a second, which is a
+        # slow-motion tape, and it also held the microphone muted that whole time.
+        # Unit-level caps and pause trimming got it to 16.1 s; this last guard aims
+        # at the delivery a butler actually uses (~9 characters a second) and
+        # compresses with pitch preserved, never past the point of intelligibility.
+        out = self._pace(out, text, rate)
+        return fade_in_out(normalize(out, 0.94), self.sr, ms=6), stats
+
+    #: how many characters of text one second of speech should carry
+    CHARS_PER_SECOND = 9.0
+    #: never compress below this factor — past it WSOLA starts to sound synthetic
+    MIN_PACE_FACTOR = 0.62
+
+    def _pace(self, out: np.ndarray, text: str, rate: float) -> np.ndarray:
+        """Bring the utterance to a natural speaking pace, pitch preserved."""
+        if out.size < int(self.sr * 0.4):
+            return out
+        spoken = len(re.sub(r"\s+", "", text or ""))
+        if spoken < 8:
+            return out                       # a short reply is already brisk
+        target = (spoken / self.CHARS_PER_SECOND) / max(0.5, float(rate or 1.0))
+        dur = len(out) / float(self.sr)
+        if dur <= target * 1.12:
+            return out                       # already at pace or faster
+        factor = max(self.MIN_PACE_FACTOR, target / dur)
+        try:
+            paced = time_stretch(out, self.sr, factor)
+        except Exception:
+            return out
+        return paced if paced.size > int(self.sr * 0.2) else out
+
+    def _render_phones(self, phones: Sequence[Phoneme], rate: float, pitch: float
+                       ) -> Tuple[np.ndarray, ConcatStats]:
+        stats = ConcatStats()
+        out = np.zeros(0, dtype=np.float32)
+        used = 0
+        for i, ph in enumerate(phones):
+            left = phones[i - 1].sym if i > 0 else "#"
+            right = phones[i + 1].sym if i + 1 < len(phones) else "#"
+            tag = f"{ph.sym}_{left}_{right}"
+            chunk: Optional[np.ndarray] = None
+            if tag in self.phones:
+                chunk = self._unit(self.phones[tag]["file"])
+                if chunk is not None:
+                    stats.from_phone_ctx += 1
+                    used += 1
+            if chunk is None:
+                alt = self._nearest_tag(ph.sym, left, right)
+                if alt is not None:
+                    chunk = self._unit(self.phones[alt]["file"])
+                    if chunk is not None and len(chunk) > 8:
+                        stats.from_phone_any += 1
+                        used += 1
+            if chunk is None:
+                chunk = formant.synthesize_units(units_from_g2p([ph], rate=rate), sr=self.sr)
+                stats.from_formant += 1
+            stats.units += 1
+            chunk = self._prosody(chunk, i / max(1, len(phones)), rate, pitch,
+                                  stressed=ph.stressed)
+            # An isolated phone recording is naturally longer than the same phone
+            # inside fluent speech. Left alone they stack up: 148 phones rendered
+            # as 18.0 s of sound (122 ms each) where natural speech needs ~65 ms.
+            # Compress with pitch preserved, and let a stressed phone run longer.
+            # Vowels carry the syllable and survive compression badly; consonants
+            # are short by nature. One cap for both was clipping vowels down to
+            # 170 ms, which is a consonant's budget.
+            if ph.sym in self._VOWELS:
+                cap = 0.30 if ph.stressed else 0.22
+            else:
+                cap = 0.22 if ph.stressed else 0.15
+            chunk = self._cap_duration(chunk, max_s=cap, rate=rate)
+            # G2P pauses were measured at 2.05 s across a 16-word sentence — an
+            # average of 89 ms between words, where fluent speech uses 30-50 ms.
+            # Halve them and keep a real break only where the text has one.
+            pad = ph.pause * 0.5
+            if pad > 0.01:
+                out = self._join(out, silence(min(pad, 0.32), self.sr))
+            out = self._join(out, chunk)
+        return out, stats
+
+    #: which symbols behave as vowels — a vowel spliced from a consonantal
+    #: frame is what makes a sentence sound like a foreign language
+    _VOWELS = frozenset("aeiouAEIOU@")
+
+    def _nearest_tag(self, sym: str, left: str, right: str) -> Optional[str]:
+        """Pick the recorded unit whose context is closest to the one needed.
+
+        With 386 context tags for 26 symbols most requests miss their exact
+        frame, and the old fallback took whichever tag came first — so a phone
+        recorded before a plosive got spliced into a vowel run. Measured on real
+        answers that was 30-70% of all phones, and mismatched co-articulation is
+        exactly what reads as gibberish: every syllable is a real Hebrew sound in
+        a frame it was never spoken in.
+
+        Scoring prefers, in order: same right neighbour (the transition the ear
+        hears into the next phone), same left neighbour, and — for vowels — a tag
+        recorded between vowels, since a vowel carries the syllable and degrades
+        worst when its frame is consonantal.
+        """
+        cands = self.by_sym.get(sym) or []
+        if not cands:
+            return None
+        if len(cands) == 1:
+            return cands[0]
+        want_vowel_frame = sym in self._VOWELS
+        best, best_score = None, -1.0
+        for tag in cands:
+            parts = tag.split("_")
+            if len(parts) != 3:
+                continue
+            t_sym, t_left, t_right = parts
+            score = 0.0
+            if t_right == right:
+                score += 2.0
+            elif (t_right in self._VOWELS) == (right in self._VOWELS):
+                score += 0.7
+            if t_left == left:
+                score += 1.5
+            elif (t_left in self._VOWELS) == (left in self._VOWELS):
+                score += 0.5
+            if want_vowel_frame and t_left in self._VOWELS and t_right in self._VOWELS:
+                score += 0.8
+            if score > best_score:
+                best, best_score = tag, score
+        return best or cands[0]
+
+    # ------------------------------------------------------------- prosody --
+    def _cap_duration(self, chunk: np.ndarray, max_s: float = 0.8,
+                      rate: float = 1.0) -> np.ndarray:
+        """A recording that drags gets gently time-compressed (pitch preserved)."""
+        limit = max_s / max(0.5, rate)
+        dur = len(chunk) / self.sr
+        if dur <= limit or dur <= 0.05:
+            return chunk
+        factor = max(0.55, limit / dur)
+        return time_stretch(chunk, self.sr, factor)
+
+    def _prosody(self, chunk: np.ndarray, pos: float, rate: float, pitch: float,
+                 stressed: bool = False) -> np.ndarray:
+        semis = 12.0 * math.log2(max(0.25, pitch))
+        semis -= 1.6 * pos                      # sentence declination
+        if stressed:
+            semis += 1.1
+        if abs(semis) > 0.05:
+            chunk = pitch_shift(chunk, self.sr, semis)
+        if abs(rate - 1.0) > 0.01:
+            chunk = time_stretch(chunk, self.sr, 1.0 / max(0.5, rate))
+        return normalize(chunk, 0.92)
+
+    def _join(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        if not a.size:
+            return b
+        if not b.size:
+            return a
+        # 8 ms is shorter than one pitch period at 120 Hz, so the join was a
+        # click rather than a transition; a run of them sounds like static under
+        # the words. 16 ms overlaps without blurring the phone boundary.
+        n = int(self.sr * 0.016)
+        return crossfade(a, b, min(n, len(a), len(b)))
+
+    @staticmethod
+    def _pause_for(tail: str) -> float:
+        if not tail:
+            return 0.028
+        if any(c in tail for c in ".!?…"):
+            return 0.30
+        if any(c in tail for c in ",;:־"):
+            return 0.15
+        return 0.06

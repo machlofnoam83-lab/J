@@ -1,0 +1,115 @@
+{
+  "name": "jarvis",
+  "productName": "J.A.R.V.I.S.",
+  "version": "7.0.0",
+  "description": "Just A Rather Very Intelligent System — a fully offline AI desktop assistant. Zero API keys, zero cloud, zero downloaded weights: the neural core, tokenizer, TTS, STT and skill layer are all built from scratch in this repository.",
+  "author": "JARVIS project",
+  "license": "MIT",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "brain": "python -m core.server",
+    "dev": "python -m core.server --port 8756",
+    "train": "python tools/train.py",
+    "test": "python tests/run_all.py",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win --x64",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.jarvis.hud",
+    "productName": "JARVIS",
+    "artifactName": "JARVIS-${version}-${os}-${arch}.${ext}",
+    "files": [
+      "electron/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "brain",
+        "to": "pyapp/brain"
+      },
+      {
+        "from": "core",
+        "to": "pyapp/core"
+      },
+      {
+        "from": "agents",
+        "to": "pyapp/agents"
+      },
+      {
+        "from": "skills",
+        "to": "pyapp/skills"
+      },
+      {
+        "from": "security",
+        "to": "pyapp/security"
+      },
+      {
+        "from": "voice",
+        "to": "pyapp/voice"
+      },
+      {
+        "from": "models",
+        "to": "pyapp/models"
+      },
+      {
+        "from": "corpus",
+        "to": "pyapp/corpus"
+      },
+      {
+        "from": "tools",
+        "to": "pyapp/tools"
+      },
+      {
+        "from": "requirements.txt",
+        "to": "pyapp/requirements.txt"
+      },
+      {
+        "from": "ui",
+        "to": "pyapp/ui"
+      }
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "electron/assets"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "electron/assets/icon.png",
+      "artifactName": "JARVIS-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "JARVIS"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.productivity"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}
