@@ -108,8 +108,18 @@ class JarvisAgent:
                                    decay_half_life_days=CONFIG.memory.decay_half_life_days)
         self.router = IntentRouter(knowledge=self.knowledge, skills=REGISTRY, config=CONFIG)
         self.coder = HephaestusAgent(core=self.core, memory=self.memory)
+        # ediyel records: the people dossier. Kept out of the face store on
+        # purpose — the gallery holds a vector, this holds the story, and they
+        # are joined by face_id only when a face has actually been enrolled.
+        try:
+            from agents.records import get_agent as _get_records
+            self.records = _get_records()
+        except Exception:                                  # pragma: no cover
+            self.records = None
         self.agents: Dict[str, Any] = {"hephaestus": self.coder, "mnemosyne": self.memory,
                                        "argus": self, "hermes": self}
+        if self.records is not None:
+            self.agents["ediyel_records"] = self.records
         self.engine = ReasoningEngine(core=self.core, router=self.router, skills=REGISTRY,
                                       memory=self.memory, firewall=self.firewall,
                                       knowledge=self.knowledge, agents=self.agents)
@@ -353,12 +363,22 @@ class JarvisAgent:
         """Called on a worker thread by the firewall. Blocks until the human answers.
 
         Fail-closed: no answer inside ``confirm_timeout`` ⇒ denied.
+
+        The approval is also bound to whoever was in front of the camera when it
+        was asked. Without that, the prompt is a token that outlives the person:
+        the owner asks for something CRITICAL, walks away, and whoever sits down
+        next can click approve on a request they never made. So the identity is
+        captured here and re-checked when the answer lands — if the face changed
+        or the lease expired while the prompt was open, the answer is discarded
+        and the action is denied.
         """
         req_id = next(self._confirm_seq)
+        asker = self._who_is_here()
         payload = dict(request)
         payload["id"] = req_id
         payload["timeout_s"] = self.confirm_timeout
         payload["asked_at"] = time.time()
+        payload["asker"] = asker
         event = threading.Event()
         self._confirm_events[req_id] = event
         self._confirm_verdicts[req_id] = False
@@ -375,9 +395,35 @@ class JarvisAgent:
         if not answered:
             BUS.emit("security.permission.timeout", payload, source=self.name)
             return False
+
+        # Re-check the face before honouring the click.
+        now_who = self._who_is_here()
+        if now_who != asker:
+            BUS.emit("security.permission.stale", {
+                "id": req_id, "asker": asker, "now": now_who, **payload},
+                source=self.name)
+            return False
+
         BUS.emit("security.permission.answer" if verdict else T.PERMISSION_DENY,
                  {"id": req_id, "allow": verdict, **payload}, source=self.name)
         return verdict
+
+    @staticmethod
+    def _who_is_here() -> str:
+        """Identity currently in frame, or '' when nobody is.
+
+        Returns '' rather than raising when presence is unavailable, so a
+        headless run compares '' to '' and behaves exactly as it did before
+        this check existed.
+        """
+        try:
+            from brain.presence import get_presence
+            p = get_presence().current()
+        except Exception:                                  # pragma: no cover
+            return ""
+        if p is None or not getattr(p, "known", False) or getattr(p, "stale", True):
+            return ""
+        return str(getattr(p, "identity", "") or "")
 
     def pending_permissions(self) -> List[Dict[str, Any]]:
         return list(self._confirm_requests.values())

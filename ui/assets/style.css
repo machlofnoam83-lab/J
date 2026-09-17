@@ -770,6 +770,28 @@ body.talking #composer { border-color: rgba(82,255,154,.28); }
 #who-badge.empty { opacity: .62; }
 #who-badge .bar-wrap { margin-top: 6px; }
 
+/* The owner: the first face ever enrolled. Marked distinctly from a merely
+   CRITICAL guest, because the two are not the same thing — CRITICAL is the
+   owner's alone, and a guest shown at that level is a bug, not a grant. */
+#who-badge.known.is-owner { border-color: rgba(255, 214, 102, .7);
+                            background: rgba(38, 30, 8, .78);
+                            box-shadow: 0 0 22px rgba(255, 214, 102, .16) inset; }
+#who-badge.known.is-owner #who-name { color: #ffe08a; }
+#face-list li.owner { border-left: 2px solid rgba(255, 214, 102, .75);
+                      padding-left: 6px; background: rgba(255, 214, 102, .05); }
+#face-list li.owner .fname { color: #ffe08a; }
+
+/* Scene understanding: what the camera is looking at, beyond "whose face". */
+#scene-read { border-radius: 9px; padding: 7px 9px; margin-bottom: 8px;
+              border: 1px solid rgba(120, 220, 255, .14); background: rgba(6, 15, 26, .55); }
+#scene-summary { font-size: 11.5px; line-height: 1.5; color: var(--ice); min-height: 2.2em; }
+#scene-warns { display: none; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+#scene-warns.active { display: flex; }
+.scene-warn { font-size: 10px; line-height: 1.3; padding: 2px 7px; border-radius: 999px;
+              color: #ffd9a0; background: rgba(255, 180, 93, .12);
+              border: 1px solid rgba(255, 180, 93, .35); }
+#scene-read .scene-bars { display: grid; gap: 4px; margin-top: 7px; }
+
 #panel-vision .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 #btn-cam.live { border-color: rgba(93, 255, 176, .6); color: #9dffc9;
                 box-shadow: 0 0 12px rgba(93, 255, 176, .18); }
@@ -948,3 +970,100 @@ body[data-state="offline"]  #chat-strip .cs-dot { background: var(--red); opacit
   border: 1px solid var(--edge); cursor: pointer;
 }
 #boot-skip:hover { border-color: var(--edge-hot); box-shadow: 0 0 14px rgba(94, 231, 255, .2); }
+
+/* ══════════════════ local-file retrieval (RAG) panel ══════════════════
+   The panel's contract is that evidence is visible: the answer, the confidence,
+   the server's own verification verdict, and each citation as its own row. A
+   refusal is styled distinctly from an answer, because "I did not find it" must
+   never look like a result. */
+#panel-rag .rag-row { display: flex; gap: 6px; margin-top: 6px; }
+#panel-rag .rag-row input {
+  flex: 1 1 auto; min-width: 0;
+  background: rgba(6, 16, 22, .72); color: var(--ice);
+  border: 1px solid var(--edge); padding: 5px 8px;
+  font-family: var(--font-mono); font-size: 10.5px;
+}
+#panel-rag .rag-row input:focus { outline: none; border-color: var(--edge-hot); }
+.btn-mini {
+  flex: 0 0 auto; padding: 5px 10px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em;
+  color: var(--ice); background: rgba(10, 24, 32, .85);
+  border: 1px solid var(--edge);
+}
+.btn-mini:hover { border-color: var(--edge-hot); box-shadow: 0 0 12px rgba(94, 231, 255, .18); }
+.rag-answer {
+  margin-top: 8px; font-size: 11.5px; line-height: 1.65;
+  max-height: 210px; overflow-y: auto;
+}
+.rag-answer .rag-body { margin-top: 5px; white-space: pre-wrap; word-break: break-word; }
+.rag-none { color: var(--text-faint); font-style: italic; }
+.rag-ok { color: var(--ice); }
+.rag-badge {
+  display: inline-block; padding: 1px 7px; margin-inline-end: 6px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em;
+  border: 1px solid var(--edge);
+}
+.rag-badge.ok { color: #7dffb2; border-color: rgba(125, 255, 178, .45); }
+.rag-badge.weak { color: #ffd479; border-color: rgba(255, 212, 121, .45); }
+.rag-badge.bad { color: #ff8d8d; border-color: rgba(255, 141, 141, .55); }
+.rag-conf { font-family: var(--font-mono); font-size: 9px; color: var(--text-faint); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Keyboard focus — measured defect, not a style preference.
+   The HUD has 61 interactive elements (40 buttons, 15 inputs, 4 selects,
+   1 textarea, 1 link). Five rules set `outline: none` and offered nothing
+   in its place, and the whole 1009-line stylesheet had two :focus rules
+   and zero focus-visible rules. A person navigating by Tab could not see
+   where they were. Removing the default ring is only acceptable when you
+   replace it; these did not.
+
+   focus-visible rather than focus, so a mouse click does not paint a ring
+   on every button while keyboard travel always does.
+   ══════════════════════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* Inputs sit inside framed panels where a 2px offset collides with the edge;
+   an inset ring reads clearly against the dark field without moving layout. */
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+  border-color: var(--edge-hot);
+}
+/* The five `outline: none` rules above win on specificity, so the ring has
+   to be restated where they apply rather than assumed to survive. */
+button:focus-visible, .btn:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+/* A visible skip link: the HUD is twelve panels deep and Tab-only travel
+   through all of them to reach the command line is the actual cost. */
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 999;
+  background: var(--panel-solid); color: var(--cyan);
+  border: 1px solid var(--edge-hot); padding: 8px 14px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+}
+.skip-link:focus { left: 12px; top: 12px; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Reduced motion — the HUD runs 16 infinite animations (radar sweeps,
+   reactor pulse, scanlines) and honoured no OS setting at all. A user who
+   asks their system for less motion got the full show regardless.
+
+   Decorative loops stop; anything that communicates state (a status pulse
+   on a live indicator) keeps a non-motion cue so no meaning is lost.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* State must survive the change: where a pulse meant "live", hold the
+     colour steady instead of removing the signal with the motion. */
+  .live, .status-on, .is-live { opacity: 1 !important; }
+}

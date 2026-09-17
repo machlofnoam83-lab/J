@@ -81,10 +81,21 @@ class SkillRegistry:
         agent: str = "hermes",
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         def deco(fn: Callable[..., Any]) -> Callable[..., Any]:
-            hints = {
-                k: _hint_name(v) for k, v in inspect.signature(fn).parameters.items()
-                if k not in ("self", "kwargs")
-            }
+            sig = inspect.signature(fn)
+            hints = {}
+            for k, v in sig.parameters.items():
+                if k == "self":
+                    continue
+                if v.kind is inspect.Parameter.VAR_KEYWORD:
+                    # validate_args lets unknown keys through only when it finds
+                    # a "kwargs" entry here. Dropping it — as this used to — made
+                    # that escape hatch unreachable, so no skill could ever
+                    # accept **kwargs no matter how it was declared.
+                    hints["kwargs"] = "Any"
+                    continue
+                if v.kind is inspect.Parameter.VAR_POSITIONAL:
+                    continue
+                hints[k] = _hint_name(v)
             self._skills[name] = Skill(
                 name=name, fn=fn, description_he=description_he, description_en=description_en,
                 args=hints, required=tuple(required), risk=risk,

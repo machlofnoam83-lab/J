@@ -50,6 +50,9 @@ HEBREW_NUMBERS: Dict[str, int] = {
 
 WORD_OPS: Dict[str, str] = {
     "ועוד": "+", "פלוס": "+", "חיבור": "+",
+    "ותוסיף": "+", "תוסיף": "+", "ומוסיף": "+", "תוספת": "+", "והוסף": "+", "הוסף": "+",
+    "ותחסר": "-", "תחסר": "-", "ותפחית": "-", "תפחית": "-", "הפחת": "-",
+    "ותכפול": "*", "תכפול": "*", "ותחלק": "/", "תחלק": "/",
     "פחות": "-", "מינוס": "-", "החסרה": "-",
     "כפול": "*", "פעמים": "*", "מכפלה": "*",
     "חלקי": "/", "חלוקה": "/", "מחולק": "/",
@@ -124,13 +127,21 @@ def preprocess(text: str) -> str:
     """Normalise Hebrew/English maths phrasing into a parseable expression."""
     t = text.strip()
     t = t.replace("×", "*").replace("÷", "/").replace("−", "-").replace("–", "-")
+    # Maqaf (U+05BE) and geresh glue Hebrew prepositions to the number that
+    # follows: "15% מ־240". Left in place, the percent pattern below cannot see
+    # the "of" and silently drops it — the engine returned 36 for a question
+    # whose answer is 66, and reported confidence 0.97 while doing it.
+    t = t.replace("\u05be", " ").replace("\u05f3", " ")
     t = t.replace("⁻", "-").replace("²", "**2").replace("³", "**3")
     # strip ONLY thousands separators (1,000,000) — a comma between function
     # arguments such as gcd(48, 18) must survive
     t = re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", t)
     t = re.sub(r"^.*?=\s*", "", t) if t.count("=") == 1 and t.strip().endswith("?") else t
     t = t.replace("?", "").replace("כמה זה", "").replace("כמה זה?", "")
-    t = t.replace("מהו", "").replace("מה זה", "").replace("חשב", "").replace("calculate", "")
+    t = t.replace("מהו", "").replace("מה זה", "").replace("calculate", "")
+    # Word-boundary, not substring: a bare replace also ate the חשב inside
+    # תחשב and left a stray ת, which made the expression unparseable.
+    t = re.sub(r"\b(?:ת?חשב|ת?חשבי|נחשב)\b", " ", t)
     t = t.replace("של", " ").replace("equals", "=")
     # longest-first so "שורש ריבועי" wins over "שורש"
     for word in sorted(WORD_OPS, key=len, reverse=True):

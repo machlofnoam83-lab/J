@@ -853,6 +853,267 @@
     } catch (_) {}
   }
 
+  // ══════════════════════ local-file retrieval (RAG) ══════════════════════
+  // The panel's whole job is to make the evidence visible. Every answer is
+  // rendered with its citations as separate, clickable rows, and the verdict the
+  // server computed (did each quote really appear in the file it names?) is
+  // shown rather than trusted silently.
+  async function syncRag() {
+    try {
+      const r = await api('/api/rag/status');
+      const s = r.status || {};
+      const el = $('#rag-stats');
+      if (el) el.innerHTML = kv([
+        ['קבצים', s.docs || 0], ['קטעים', s.chunks || 0],
+        ['מונחים', s.distinct_terms || 0], ['נפח', fmtBytes(s.indexed_bytes || 0)],
+      ]);
+      const roots = $('#rag-roots');
+      if (roots && !roots.value && (s.roots || []).length) roots.value = s.roots.join(', ');
+      if (!(s.docs > 0)) {
+        const a = $('#rag-answer');
+        if (a && !a.dataset.userSet) {
+          a.innerHTML = '<span class="rag-none">עדיין לא אינדקסתי אף קובץ. '
+            + 'הכנס תיקייה ולחץ «אנדקס».</span>';
+        }
+      }
+    } catch (_) {}
+  }
+
+  function fmtBytes(n) {
+    if (!n) return '0B';
+    const u = ['B', 'KB', 'MB', 'GB']; let i = 0;
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (i === 0 ? n : n.toFixed(1)) + u[i];
+  }
+
+  function renderRagAnswer(r) {
+    const a = $('#rag-answer'), ul = $('#rag-cites');
+    if (!a) return;
+    a.dataset.userSet = '1';
+    if (!r || r.answer_type === 'none' || !r.grounded) {
+      a.innerHTML = '<span class="rag-none">' + esc(r && r.text ? r.text : 'לא מצאתי תשובה בקבצים.')
+        + '</span>';
+      if (ul) ul.innerHTML = '';
+      return;
+    }
+    const badge = r.answer_type === 'grounded'
+      ? '<span class="rag-badge ok">מעוגן</span>'
+      : '<span class="rag-badge weak">חלש</span>';
+    const verdict = r.verified === false
+      ? '<span class="rag-badge bad">הציטוט לא אומת</span>' : '';
+    a.innerHTML = badge + verdict
+      + '<span class="rag-conf">ביטחון ' + Math.round((r.confidence || 0) * 100) + '%</span>'
+      + '<div class="rag-body">' + esc(r.text || '').replace(/\n/g, '<br>') + '</div>';
+    if (ul) {
+      ul.innerHTML = (r.citations || []).map(c =>
+        '<li><span class="t-ts">' + esc(c.start_line) + '–' + esc(c.end_line) + '</span>'
+        + esc(c.file) + ' · ' + esc((c.quote || '').replace(/\s+/g, ' ').slice(0, 90)) + '</li>'
+      ).join('') || '<li>בלי ציטוטים</li>';
+    }
+  }
+
+  async function ragAsk() {
+    const q = $('#rag-query');
+    const query = q && q.value.trim();
+    if (!query) { toast('מה לחפש בקבצים?', 'warn'); return; }
+    const a = $('#rag-answer');
+    if (a) { a.dataset.userSet = '1'; a.innerHTML = '<span class="rag-none">מחפש בקבצים…</span>'; }
+    try {
+      const r = await api('/api/rag/ask', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, k: 6 }),
+      });
+      renderRagAnswer(r);
+      if (r && r.verified === false) toast('הציטוט לא אומת מול הקובץ', 'err', 6000);
+    } catch (e) {
+      if (a) a.innerHTML = '<span class="rag-none">החיפוש נכשל: ' + esc(String(e.message || e)) + '</span>';
+    }
+  }
+
+  async function ragIndex() {
+    const field = $('#rag-roots');
+    const roots = (field && field.value || '').split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    if (!roots.length) { toast('אין תיקייה לאינדוקס', 'warn'); return; }
+    const a = $('#rag-answer');
+    if (a) { a.dataset.userSet = '1'; a.innerHTML = '<span class="rag-none">סורק את התיקייה…</span>'; }
+    try {
+      const r = await api('/api/rag/index', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roots }),
+      });
+      if (r && r.ok === false) {
+        if (a) a.innerHTML = '<span class="rag-none">' + esc(r.error || 'האינדוקס נחסם') + '</span>';
+        toast(r.error || 'האינדוקס נחסם', 'err', 6000);
+        return;
+      }
+      const secs = (r && r.seconds) || 0;
+      if (a) a.innerHTML = '<span class="rag-ok">אינדקסתי ' + (r.added + r.updated || 0)
+        + ' קבצים · ' + (r.chunks || 0) + ' קטעים · ' + secs + ' שניות'
+        + ((r.skipped ? ' · דילגתי על ' + r.skipped : '') + '</span>');
+      toast('האינדקס מוכן', 'ok');
+      syncRag();
+    } catch (e) {
+      if (a) a.innerHTML = '<span class="rag-none">האינדוקס נכשל: ' + esc(String(e.message || e)) + '</span>';
+    }
+  }
+
+  function wireRag() {
+    const ask = $('#rag-ask-btn'), idx = $('#rag-index-btn');
+    if (ask) ask.addEventListener('click', ragAsk);
+    if (idx) idx.addEventListener('click', ragIndex);
+    const q = $('#rag-query');
+    if (q) q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ragAsk(); } });
+    const r = $('#rag-roots');
+    if (r) r.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ragIndex(); } });
+  }
+
+  // ══════════════════════ ediyel records · the people dossier ══════════════════════
+  // The gallery knows a face; this knows the person. Photo is a path, never
+  // bytes, and every field is something the user stated — the panel does not
+  // infer age from a face or guess a relationship from a name.
+
+  async function syncRecords() {
+    try {
+      const r = await api('/api/records');
+      const el = $('#records-stats');
+      const s = (r && r.stats) || {};
+      if (el) el.innerHTML = kv([
+        ['אנשים', s.people || 0], ['עם פנים', s.with_face || 0],
+        ['עם תמונה', s.with_photo || 0], ['עם סיפור', s.with_story || 0],
+      ]);
+      renderRecordList((r && r.people) || []);
+    } catch (e) { /* the panel degrades, it does not break the HUD */ }
+    syncAccess();
+  }
+
+  async function syncAccess() {
+    const box = $('#rec-access');
+    if (!box) return;
+    try {
+      const a = await api('/api/access');
+      const open = a && a.known;
+      box.className = 'rag-answer';
+      box.innerHTML = '<span class="' + (open ? 'rag-ok' : 'rag-none') + '">'
+        + esc(a && a.explain_he || 'שער הגישה לא זמין') + '</span>';
+      // Disabling the form rather than letting it fail on submit: a button that
+      // always errors teaches people to stop trying.
+      ['#rec-add', '#rec-link'].forEach(sel => {
+        const b = $(sel); if (b) b.disabled = !open;
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  function renderRecordList(people) {
+    const ul = $('#rec-list');
+    if (!ul) return;
+    if (!people.length) { ul.innerHTML = '<li>אין רשומות עדיין</li>'; return; }
+    ul.innerHTML = people.map(p => {
+      const bits = [esc(p.name)];
+      if (p.relationship) bits.push(esc(p.relationship));
+      if (p.age != null) bits.push('בן/בת ' + esc(p.age));
+      const tags = [];
+      if (p.has_photo) tags.push('תמונה');
+      if (p.face_id) tags.push('מזוהה');
+      return '<li data-id="' + esc(p.id) + '">' + bits.join(' · ')
+        + (tags.length ? ' <span class="rag-none">[' + tags.join(', ') + ']</span>' : '')
+        + '</li>';
+    }).join('');
+  }
+
+  function recMsg(text, ok) {
+    const m = $('#rec-msg');
+    if (m) m.innerHTML = '<span class="' + (ok ? 'rag-ok' : 'rag-none') + '">'
+      + esc(text || '') + '</span>';
+  }
+
+  async function recWrite(action, extra) {
+    const body = Object.assign({ action }, extra || {});
+    try {
+      const r = await api('/api/records', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r && r.ok === false) {
+        // needs_scan means the gate closed, not that the request was wrong.
+        // Saying which one is the difference between a fixable refusal and a
+        // wall.
+        recMsg(r.needs_scan ? (r.text_he || 'חובה להיסרק לפני כתיבה')
+                            : (r.error || 'נחסם'), false);
+        toast(r.needs_scan ? 'צריך סריקת פנים' : (r.error || 'נחסם'), 'err', 6000);
+        syncAccess();
+        return null;
+      }
+      recMsg((r && r.text_he) || 'בוצע', true);
+      toast((r && r.text_he) || 'בוצע', 'ok');
+      syncRecords();
+      return r;
+    } catch (e) {
+      recMsg('הבקשה נכשלה: ' + String(e.message || e), false);
+      return null;
+    }
+  }
+
+  async function recAdd() {
+    const name = ($('#rec-name') && $('#rec-name').value || '').trim();
+    if (!name) { recMsg('אני צריך שם כדי לפתוח רשומה.', false); return; }
+    const ageRaw = ($('#rec-age') && $('#rec-age').value || '').trim();
+    const r = await recWrite('add', {
+      name,
+      relationship: ($('#rec-rel') && $('#rec-rel').value || '').trim(),
+      age: ageRaw === '' ? null : Number(ageRaw),
+      birthday: ($('#rec-bday') && $('#rec-bday').value || '').trim(),
+      photo: ($('#rec-photo') && $('#rec-photo').value || '').trim(),
+      story: ($('#rec-story') && $('#rec-story').value || '').trim(),
+    });
+    if (r) ['#rec-name', '#rec-rel', '#rec-age', '#rec-bday', '#rec-photo', '#rec-story']
+      .forEach(s => { const e = $(s); if (e) e.value = ''; });
+  }
+
+  async function recLink() {
+    // Link whoever the camera currently recognises, so the two stores meet
+    // without the user copying an id by hand.
+    let faceId = '';
+    try {
+      const f = await api('/api/faces');
+      faceId = (f && f.gate && f.gate.identity) || '';
+    } catch (e) { /* ignore */ }
+    if (!faceId) { recMsg('אין פנים מזוהות כרגע — סרוק קודם.', false); return; }
+    const id = ($('#rec-list') && $('#rec-list').firstElementChild
+                && $('#rec-list').firstElementChild.dataset.id) || '';
+    if (!id) { recMsg('אין רשומה לחבר אליה. פתח רשומה קודם.', false); return; }
+    await recWrite('link', { person_id: id, face_id: faceId });
+  }
+
+  async function recFind() {
+    const q = ($('#rec-query') && $('#rec-query').value || '').trim();
+    if (!q) { syncRecords(); return; }
+    try {
+      const r = await api('/api/records?q=' + encodeURIComponent(q));
+      const people = (r && r.people) || [];
+      renderRecordList(people);
+      recMsg(people.length ? people.length + ' התאמות' : 'אין רשומה על «' + q + '»',
+             people.length > 0);
+    } catch (e) {
+      recMsg('החיפוש נכשל: ' + String(e.message || e), false);
+    }
+  }
+
+  function wireRecords() {
+    const add = $('#rec-add'), link = $('#rec-link'), find = $('#rec-find');
+    const refresh = $('#rec-refresh');
+    if (add) add.addEventListener('click', recAdd);
+    if (link) link.addEventListener('click', recLink);
+    if (find) find.addEventListener('click', recFind);
+    if (refresh) refresh.addEventListener('click', () => syncRecords());
+    ['#rec-name', '#rec-query'].forEach(sel => {
+      const e = $(sel);
+      if (e) e.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') { ev.preventDefault(); sel === '#rec-query' ? recFind() : recAdd(); }
+      });
+    });
+    syncRecords();
+  }
+
   // ══════════════════════════ boot sequence ══════════════════════════
   // If the measurement sequence is still running after this long, open the
   // interface anyway and say so. A slow machine must never read as a dead one.
@@ -1036,7 +1297,7 @@
     ws.onopen = () => {
       wsAlive = true; retry = 600; recomputeState();
       pushEvent({ topic: 'ui.link', data: 'connected to ' + WS, ts: Date.now() / 1000 });
-      syncPermissions(); syncMemory();
+      syncPermissions(); syncMemory(); syncRag();
     };
     ws.onclose = () => { wsAlive = false; recomputeState(); scheduleReconnect(); };
     ws.onerror = () => { wsAlive = false; recomputeState(); };
@@ -1296,15 +1557,47 @@
       const b = el('who-badge'), nm = el('who-name'), lv = el('who-level'), bar = el('bar-who');
       if (!b) return;
       const known = match && match.known;
+      const owner = !!(match && match.is_owner);
       b.className = 'who ' + (known ? 'known lvl-' + (match.level || 'SAFE').toLowerCase()
+                                    + (owner ? ' is-owner' : '')
                                     : (match && match.faces ? 'stranger' : 'empty'));
-      nm.textContent = known ? match.name : (match && match.faces ? 'לא מזוהה' : 'אין איש מול המצלמה');
+      nm.textContent = known
+        ? (owner ? '★ ' + match.name : match.name)
+        : (match && match.faces ? 'לא מזוהה' : 'אין איש מול המצלמה');
       lv.textContent = (gate && gate.level) || (match && match.level) || 'SAFE';
       const conf = (match && match.confidence) || 0;
       if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, conf)) * 100) + '%';
       b.title = known
-        ? `זוהה בוודאות ${(conf * 100).toFixed(0)}% · הרשאה ${match.level}`
+        ? (owner
+            ? `${match.name} — היוצר. הרשאות מלאות (CRITICAL). רק הוא יכול להגיע לרמה הזו.`
+            : `זוהה בוודאות ${(conf * 100).toFixed(0)}% · הרשאה ${match.level}`)
         : `ביטחון ${(conf * 100).toFixed(0)}% — מתחת לסף, ולכן SAFE`;
+    }
+
+    // What the camera is actually looking at — not just whose face it is. The
+    // summary is written server-side in Hebrew so the HUD never has to guess at
+    // the thresholds, and the warnings are the actionable part: "it's too dark"
+    // is something the user can fix, "confidence 61%" is not.
+    function scene(sc, gate) {
+      const sum = el('scene-summary'), warn = el('scene-warns');
+      if (sum) sum.textContent = (sc && sc.summary_he) || '—';
+      if (warn) {
+        const w = (sc && sc.warnings) || [];
+        const withheld = gate && gate.withheld === 'liveness';
+        const all = withheld ? ['הפריים נראה כמו מסך או תמונה — ההרשאה הושהתה'].concat(w) : w;
+        warn.innerHTML = all.map(x => `<span class="scene-warn">${x}</span>`).join('');
+        warn.className = 'scene-warns' + (all.length ? ' active' : '');
+      }
+      const q = el('bar-quality'), qv = el('val-quality');
+      if (q && sc) q.style.width = Math.round((sc.quality || 0) * 100) + '%';
+      if (qv && sc) qv.textContent = Math.round((sc.quality || 0) * 100) + '%';
+      const lb = el('bar-light'), lv2 = el('val-light');
+      const L = sc && sc.lighting;
+      if (lb && L) lb.style.width = Math.round(Math.max(0, Math.min(1, L.mean / 255)) * 100) + '%';
+      if (lv2 && L) {
+        const names = { good: 'טובה', dim: 'חלשה', dark: 'חשוך', blown: 'שרוף', flat: 'שטוחה' };
+        lv2.textContent = names[L.verdict] || L.verdict;
+      }
     }
 
     function drawBoxes(res) {
@@ -1348,34 +1641,58 @@
       if (!frame) return;
       busy = true;
       try {
-        const r = await fetch('/api/faces/recognize', {
+        const r = await fetch(HTTP + '/api/faces/recognize', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(frame)
         });
-        const res = await r.json();
-        if (!res.ok) { if (!silent) toast(res.error || 'הזיהוי נכשל', 'err'); return; }
+        // A non-JSON body is a *server* failure, not a missing cable. Before
+        // this, an HTML/plain-text 500 page made r.json() throw and the catch
+        // below announced "no connection to the brain" — the one sentence that
+        // sends you looking in exactly the wrong place.
+        let res;
+        try { res = await r.json(); }
+        catch (je) {
+          throw new Error(`השרת החזיר ${r.status} במקום JSON — ` +
+                          String(await r.text()).slice(0, 120));
+        }
+        if (!res.ok) { if (!silent) toast(res.error || 'הזיהוי נכשל', 'err', 8000); return; }
         last = res;
-        badge(res.match, res.gate);
+        // Every field below is optional. A partial response used to throw a
+        // TypeError that the catch then reported as a network outage.
+        const match = res.match || {}, gate = res.gate || {};
+        badge(match, gate);
+        scene(res.scene, gate);
         drawBoxes(res);
-        stat([['זוהו', `${res.match.faces} פנים`, res.match.faces > 0],
-              ['ביטחון', `${Math.round((res.match.confidence || 0) * 100)}%`, res.match.known],
-              ['הרשאה פעילה', res.gate.level, res.gate.level !== 'SAFE'],
-              ['מנוע', res.gate.armed ? 'מחובר לחומת האש' : 'מנותק', res.gate.armed]]);
-        if (res.gate.identity && res.match.known) {
-          const who = res.match.name;
+        stat([['זוהו', `${match.faces || 0} פנים`, (match.faces || 0) > 0],
+              ['ביטחון', `${Math.round((match.confidence || 0) * 100)}%`, !!match.known],
+              ['הרשאה פעילה', gate.level || 'SAFE', (gate.level || 'SAFE') !== 'SAFE'],
+              ['מנוע', gate.armed ? 'מחובר לחומת האש' : 'מנותק', !!gate.armed]]);
+        if (gate.identity && match.known) {
+          const who = match.name;
           if (!Vision._said || Vision._said !== who) {
             Vision._said = who;
-            pushEvent({ topic: 'vision.identity', data: { name: who, level: res.gate.level,
-                        confidence: res.match.confidence }, ts: Date.now() / 1000 });
+            pushEvent({ topic: 'vision.identity', data: { name: who, level: gate.level,
+                        confidence: match.confidence }, ts: Date.now() / 1000 });
           }
         } else Vision._said = null;
       } catch (e) {
-        if (!silent) toast('אין חיבור למוח לזיהוי פנים', 'err');
+        // Report what actually failed. This used to print one fixed sentence for
+        // every possible failure — a dead server, a CORS refusal, a TypeError in
+        // the renderer — which made an unfixable mystery out of a one-line bug.
+        // A refusal you cannot read is a refusal nobody can fix.
+        if (!silent) {
+          const why = (e && e.message) ? String(e.message) : String(e);
+          const net = (e && (e.name === 'TypeError' || /fetch|network|load/i.test(why)));
+          toast(net
+            ? 'אין חיבור למוח לזיהוי פנים — ' + why
+            : 'זיהוי הפנים נכשל — ' + why, 'err', 8000);
+          console.error('[vision.look]', e);
+        }
       } finally { busy = false; }
     }
 
     async function refresh() {
       try {
-        const res = await (await fetch('/api/faces')).json();
+        const res = await (await fetch(HTTP + '/api/faces')).json();
         const gate = res.gate || {};
         const chk = el('chk-gate');
         if (chk) chk.checked = !!gate.armed;
@@ -1386,16 +1703,19 @@
         const list = el('face-list');
         if (list) {
           list.innerHTML = (res.people || []).map(p =>
-            `<li><span class="fname">${p.name}</span>` +
-            `<select class="flevel" data-id="${p.id}">` +
+            `<li${p.role === 'owner' ? ' class="owner"' : ''}>` +
+            `<span class="fname">${p.role === 'owner' ? '★ ' : ''}${p.name}</span>` +
+            `<select class="flevel" data-id="${p.id}"${p.role === 'owner' ? ' title="הבעלים — ההרשאה מוגנת"' : ''}>` +
             ['SAFE', 'WRITE', 'CRITICAL'].map(l =>
               `<option value="${l}"${l === p.level ? ' selected' : ''}>${l}</option>`).join('') +
             `</select><span class="fsamp">${p.samples} דגימות</span>` +
             `<button class="fdel" data-id="${p.id}" title="מחק">✕</button></li>`).join('')
-            || '<li class="dim">אף אחד לא רשום — JARVIS לא יכיר איש</li>';
+            || '<li class="dim">אף אחד לא רשום — ההרשמה הראשונה תהפוך לבעלים עם הרשאות מלאות</li>';
           list.querySelectorAll('.flevel').forEach(sel => sel.onchange = async () => {
             const r = await admin('set_level', { id: sel.dataset.id, level: sel.value });
-            toast(r.ok ? `ההרשאה עודכנה ל־${sel.value}` : (r.error || 'נכשל'), r.ok ? 'ok' : 'err');
+            toast(r.ok ? `ההרשאה עודכנה ל־${sel.value}`
+                       : (r.error || 'ההרשאה לא שונתה — הרשאת הבעלים מוגנת'),
+                  r.ok ? 'ok' : 'err');
             refresh();
           });
           list.querySelectorAll('.fdel').forEach(b => b.onclick = async () => {
@@ -1409,7 +1729,7 @@
 
     async function admin(action, extra) {
       try {
-        const r = await fetch('/api/faces/admin', {
+        const r = await fetch(HTTP + '/api/faces/admin', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ action }, extra || {}))
         });
@@ -1469,12 +1789,21 @@
       if (!frame) { toast('עדיין אין תמונה מהמצלמה', 'warn'); return; }
       const cnt = el('enroll-count');
       try {
-        const r = await (await fetch('/api/faces/enroll', {
+        const r = await (await fetch(HTTP + '/api/faces/enroll', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(Object.assign({ name, level: (lvlEl && lvlEl.value) || 'SAFE' }, frame))
         })).json();
         if (!r.ok) { toast(r.error || 'הרישום נכשל', 'err'); return; }
         toast(`הפנים של ${r.person.name} נשמרו (${r.person.samples} דגימות, הרשאה ${r.person.level})`, 'ok');
+        // The first enrolment is the consequential one and must not pass quietly.
+        // Whoever fills an empty gallery becomes the owner at CRITICAL, and no
+        // later face can reach that level — saying so here is the difference
+        // between the user knowing they own the machine and discovering it later
+        // when a demotion silently refuses to take effect.
+        if (r.person.is_owner) {
+          toast(`★ ${r.person.name} הוא הבעלים — הרשאות מלאות (${r.person.level}). ` +
+                `אף פנים אחרות לא יגיעו לרמה הזו.`, 'ok', 11000);
+        }
         if (r.warning) toast(r.warning, 'warn', 6000);
         if (cnt) cnt.textContent = r.person.samples;
         refresh(); look(true);
@@ -2276,6 +2605,10 @@
     setInterval(() => { send({ type: 'ping' }); }, 12000);
     setInterval(() => { api('/api/status').then(renderStatus).catch(() => {}); }, 7000);
     setInterval(syncMemory, 25000);
+    // The index only changes when the user asks for a scan, so this is a
+    // slow poll for coverage numbers, not a freshness mechanism.
+    setInterval(syncRag, 30000);
+    syncRag();
     setInterval(pollFallback, 2000);
     setInterval(() => {
       // uptime pill
@@ -2357,6 +2690,8 @@
     wireModes();
     wirePalette();
     wireTranscript();
+    wireRag();
+    wireRecords();
     wirePanels();
     wireBootSkip();
     recomputeState();

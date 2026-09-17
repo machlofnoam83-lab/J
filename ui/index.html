@@ -11,6 +11,11 @@
 </head>
 <body class="theme-mark1" data-state="booting">
 
+<!-- Keyboard travellers land here first. The HUD is twelve panels deep and the
+     command line sits past all of them; without this, Tab-only navigation pays
+     that cost on every single visit. Hidden until focused — see .skip-link. -->
+<a class="skip-link" href="#input">דלג לשורת הפקודה</a>
+
 <!-- ───────────────────────── ambient layers ───────────────────────── -->
 <div id="grid-bg" aria-hidden="true"></div>
 <div id="vignette" aria-hidden="true"></div>
@@ -100,6 +105,18 @@
         <div class="who-line"><span id="who-name">—</span><span id="who-level" class="lvl">SAFE</span></div>
         <div class="bar-wrap"><div class="bar" id="bar-who"></div></div>
       </div>
+      <div id="scene-read">
+        <div class="scene-line" id="scene-summary">המצלמה כבויה.</div>
+        <div class="scene-warns" id="scene-warns"></div>
+        <div class="scene-bars">
+          <div class="sr-bar-row" title="האם הפריים הזה מספיק טוב כדי לסמוך על הזיהוי">
+            <span>איכות</span><div class="bar-wrap"><div class="bar" id="bar-quality"></div></div><b id="val-quality">—</b>
+          </div>
+          <div class="sr-bar-row" title="כמה אור יש בחדר">
+            <span>תאורה</span><div class="bar-wrap"><div class="bar" id="bar-light"></div></div><b id="val-light">—</b>
+          </div>
+        </div>
+      </div>
       <div id="vision-stats" class="kv"></div>
       <div class="row">
         <button id="btn-cam" title="פתח או סגור את המצלמה">📷 מצלמה</button>
@@ -150,6 +167,66 @@
       <header><h2>ארמון זיכרון</h2><span class="panel-tag">MEMORY</span></header>
       <div id="memory-stats" class="kv"></div>
       <ul id="memory-list" class="ticker"></ul>
+    </section>
+
+    <!-- Local-file retrieval. The panel states its own coverage honestly: if
+         nothing is indexed it says so and offers the folder field, rather than
+         showing an empty result list that looks like "no matches". -->
+    <section class="panel" id="panel-rag">
+      <header><h2>קבצים מקומיים · שליפה</h2><span class="panel-tag">RAG</span></header>
+      <div id="rag-stats" class="kv"></div>
+      <div class="rag-row">
+        <input id="rag-roots" type="text" placeholder="תיקייה לאינדוקס, למשל C:\Users\me\Documents"
+               spellcheck="false" autocomplete="off" />
+        <button id="rag-index-btn" class="btn-mini" title="סורק את התיקייה ובונה אינדקס">אנדקס</button>
+      </div>
+      <div class="rag-row">
+        <input id="rag-query" type="text" placeholder="שאלה מתוך הקבצים…"
+               spellcheck="false" autocomplete="off" />
+        <button id="rag-ask-btn" class="btn-mini" title="תשובה מעוגנת עם ציטוט מקור">חפש</button>
+      </div>
+      <div id="rag-answer" class="rag-answer"></div>
+      <ul id="rag-cites" class="ticker"></ul>
+    </section>
+
+    <section class="panel" id="panel-records">
+      <header><h2>ediyel records · אנשים</h2><span class="panel-tag">RECORDS</span></header>
+      <div id="records-stats" class="kv"></div>
+
+      <!-- The dossier form. Every field here is a fact you told JARVIS, never
+           something it inferred — the photo is a path, the age is what you said,
+           and a birthday overrides a stored age because that one never goes stale. -->
+      <div class="rag-row">
+        <input id="rec-name" type="text" placeholder="שם" spellcheck="false" autocomplete="off" />
+        <input id="rec-rel" type="text" placeholder="קרבה / תפקיד" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <input id="rec-age" type="number" min="0" max="130" placeholder="גיל" />
+        <input id="rec-bday" type="text" placeholder="יום הולדת 1991-03-14" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <input id="rec-photo" type="text" placeholder="נתיב תמונה (לא חובה)" spellcheck="false" autocomplete="off" />
+      </div>
+      <div class="rag-row">
+        <textarea id="rec-story" rows="3" placeholder="הסיפור — מה שתרצה שאדע כשהוא נכנס" spellcheck="false"></textarea>
+      </div>
+      <div class="row">
+        <button id="rec-add" class="btn-mini" title="פותח רשומה חדשה">＋ רשומה</button>
+        <button id="rec-link" class="btn-mini" title="מחבר את הפנים שזוהו עכשיו לרשומה">🔗 חבר פנים</button>
+        <button id="rec-refresh" class="btn-mini" title="טוען מחדש">⟳</button>
+      </div>
+
+      <div class="rag-row">
+        <input id="rec-query" type="text" placeholder="חיפוש לפי שם, קרבה, תגית או מילה בסיפור…"
+               spellcheck="false" autocomplete="off" />
+        <button id="rec-find" class="btn-mini">חפש</button>
+      </div>
+
+      <!-- What the gate is doing right now. A refusal you cannot explain is a
+           refusal people work around, so the reason is printed, not hidden. -->
+      <div id="rec-access" class="rag-answer"></div>
+      <ul id="rec-list" class="ticker"></ul>
+      <div id="rec-msg" class="rag-answer"></div>
     </section>
 
   </aside>

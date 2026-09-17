@@ -28,8 +28,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from brain.math_engine import MathError, extract_expression, try_evaluate  # noqa: E402
 
 INTENTS = (
-    "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE",
-    "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY", "GREETING", "SMALLTALK",
+    "MATH", "TIME", "SYSTEM", "FILES", "APPS", "CODE", "KNOWLEDGE", "RAG",
+    "VISION", "RECORDS", "PLAN", "MEMORY_WRITE", "MEMORY_QUERY", "IDENTITY",
+    "GREETING", "SMALLTALK",
     "HELP", "SAFETY", "UNKNOWN",
 )
 
@@ -62,6 +63,30 @@ _HELP_Q = re.compile(r"(מה אתה (יודע|מסוגל|עושה|טוב)|מה (
                      r"|what can you do|what do you do|your (abilities|skills))", re.I)
 _GREET = re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|צהריים טובים|hello|hi|hey|good (morning|evening))\b", re.I)
 _THANKS = re.compile(r"(תודה|thanks|thank you|מעולה|יופי|all good)", re.I)
+# Everyday Hebrew openers. Before this pattern existed the router's only
+# SMALLTALK rule was gratitude, so "מה איתך" and "מה קורה" — the two most
+# natural things a person says to an assistant — fell through to UNKNOWN 0.25
+# and drew the canned "I have no certain answer" refusal. ReasoningEngine's
+# SMALLTALK_CATEGORIES already knew how to answer these; it was simply never
+# reached, because the category lookup only runs *after* the router has
+# already decided SMALLTALK. Routing and answering must agree.
+_SMALLTALK = re.compile(
+    r"(מה איתך|מה אצלך|מה קורה|מה חדש|מה העניינים|מה המצב"
+    r"|איך עבר עליך|איך היום שלך|איך אתה מסתדר|איך היה היום שלך"
+    r"|מה שלומך|מה נשמע|מה מצבך|איך אתה מרגיש"
+    # Lines that were measured routing to UNKNOWN 0.25 and drawing the canned
+    # refusal. ReasoningEngine has a canned answer for each of these; without a
+    # pattern here the category is never named and the answer never runs.
+    r"|עייף|עייפה|מותש|אין לי כוח"
+    r"|יש לי רעיון|רעיון חדש|חשבתי על"
+    r"|מה (ה)?תוכניות|מה יש לנו היום|מה מתוכנן|סדר (לי )?את היום"
+    r"|קשה לי|לא בסדר|מרגיש רע|יום גרוע"
+    r"|מתכון|איך מכינים"
+    r"|מה יכולות"
+    r"|what'?s up|how'?s it going|how are you"
+    r"|I have an idea|got an idea|what'?s the plan|plans for today"
+    r"|recipe|how do I (make|cook)"
+    r"|so tired|exhausted|burnt out|having a hard time|bad day)", re.I)
 _IDENTITY = re.compile(r"(מי אתה|מה השם שלך|מי זה ג'רוויס|(ספר|תספר|תגיד) לי (על )?(עצמך|עליך)"
                        r"|על עצמך|מי אתה בכלל|הצג את עצמך"
                        r"|who are you|what are you|your name|(tell me )?about yourself"
@@ -186,6 +211,95 @@ _WHAT_IS = re.compile(
 _FILES = re.compile(r"(קובץ|קבצים|קבצי(?=[\s־\-.,!?]|$)|תיקי(?:יה|ית|ות|ה|ת)|תת־תיקייה"
                      r"|file|folder|directory|json|txt|csv|"
                      r"לקרוא את|לכתוב את|לשמור את|למחוק את|לחפש|חפש)", re.I)
+# Retrieval over the user's own files. Deliberately narrow: every branch requires
+# an explicit "in my files / documents / folder", so this cannot hijack the
+# filesystem intents ("קרא את הקובץ" stays a file read) or the knowledge base.
+_RAG_ASK = re.compile(
+    r"(חפש (לי )?ב(תוך )?(ה)?(קבצים|מסמכים|תיקייה|הערות)"
+    r"|מצא (לי )?ב(תוך )?(ה)?(קבצים|מסמכים|תיקייה)"
+    r"|מה כתוב ב(תוך )?(ה)?(קבצים|מסמכים)"
+    r"|(לפי|מתוך|על פי) (ה)?(קבצים|מסמכים|הערות) (שלי|שלך)"
+    r"|(ה)?(קבצים|מסמכים) (שלי|שלך) (אומרים|מראים)"
+    r"|search (my|the|in my|in the) (files|documents|docs|notes)"
+    r"|grep my (files|documents|notes)"
+    r"|find (it |this )?in my (files|documents|notes)"
+    r"|according to my (files|documents|notes)"
+    r"|what (do|does) my (files|documents|notes) say)", re.I)
+# Questions about the room itself. These are unambiguous — nobody says "מי מולי"
+# meaning anything else — so they sit ahead of the security/permission branch,
+# which would otherwise catch "מה מותר לי" and answer it from the persona
+# instead of from the camera.
+_VISION_Q = re.compile(
+    r"(מי (מולי|מול המצלמה|זה|אתה רואה|נמצא (פה|כאן|מולי))"
+    r"|מה (אתה רואה|יש מולך|המצלמה רואה|רואה מולי)"
+    r"|(תאר|תסתכל על) (את )?(החדר|המצלמה)"
+    r"|מי (רשום|אתה מכיר|הבעלים)"
+    r"|(מה|איזו) (מותר לי|ההרשאה( שלי)?|רמת ההרשאה)"
+    r"|למה (אתה לא מרשה|אסור לי)"
+    r"|who (is (this|there|in front)|do you see|am i)"
+    r"|what (do you see|level am i)"
+    r"|list (the )?(faces|enrolled))", re.I)
+# Enrolment is an act, not a question, so it is matched ahead of _VISION_Q —
+# "רשום אותי" must not be answered with "there is someone in front of the camera".
+# The name is extracted separately; the brain never invents one.
+_ENROLL_Q = re.compile(
+    r"(רשום (אותי|את הפנים|את הפרצוף|אותו|אותה|אותנו)"
+    r"|תרשום (אותי|את הפנים|את הפרצוף)"
+    r"|תכיר (אותי|את הפנים|את הפרצוף)"
+    r"|תזכור (אותי|את הפנים|את הפרצוף)"
+    r"|תוסיף (אותי|את הפנים) (לגלריה|לרשימה|לזיהוי)"
+    r"|הרשמה (לזיהוי פנים|לפנים)"
+    r"|אני רוצה להירשם"
+    r"|(enroll|register|remember) (me|my face|this face)"
+    r"|add (me|my face) to (the )?(gallery|faces))", re.I)
+
+# Where a name can hide in the request. Deliberately explicit — a bare "אני"
+# would happily capture the next verb as somebody's name.
+_NAME_PATTERNS = (
+    re.compile(r"(?:בשם|בשמי|שמי|שמי הוא|השם שלי(?: הוא)?|קוראים לי|קוראים לו|קוראים לה)"
+               r"[\s:]+([^\s,.;:!?]+)", re.I),
+    re.compile(r"\bmy name is\s+([^\s,.;:!?]+)", re.I),
+    re.compile(r"\bcall me\s+([^\s,.;:!?]+)", re.I),
+    re.compile(r"\bname (?:him|her|them|it)\s+([^\s,.;:!?]+)", re.I),
+)
+
+# ediyel records — the people dossier. Matched ahead of KNOWLEDGE and RAG,
+# because "what do you know about Dana" is a question about a person you told
+# JARVIS about, not a question about the world or about the files on disk.
+_RECORDS_ADD = re.compile(
+    r"(תוסיף (לרשומות|רשומה|אותו|אותה) (לרשומות)?)"
+    r"|תשמור (רשומה|אותו|אותה)"
+    r"|תתעד (את )?(האיש|הבחור|האישה|אותו|אותה)"
+    r"|תפתח (רשומה|תיק) (על|עבור)"
+    r"|add (?:a )?(?:record|dossier)|remember this person", re.I)
+
+# "מי רשום" alone is ambiguous between the face gallery and the dossier, and the
+# gallery wins: it is the thing that actually decides who may act. The dossier
+# list needs the word "רשומות" to be claimed.
+_RECORDS_LIST = re.compile(
+    r"(מי רשום ברשומות|רשימת (ה)?אנשים|כל הרשומות|מי יש (לך )?ברשומות)"
+    r"|(list (the )?people in (the )?records|who is in the records)", re.I)
+
+_RECORDS_WHOAMI = re.compile(
+    r"(מי אני|אתה יודע מי אני|תגיד לי מי אני)"
+    r"|(who am i)", re.I)
+
+# The negative lookahead matters. "ספר לי על עצמך" is a question about JARVIS,
+# not a dossier lookup, and this branch runs well ahead of the IDENTITY one — so
+# without it the assistant answers "tell me about yourself" by searching its own
+# people file and reporting that it has no record of you.
+_RECORDS_FIND = re.compile(
+    r"(?:מה אתה יודע על|תגיד לי על|ספר לי על|מי זה|מי זאת|מה יש לך על|"
+    r"רשומה (?:של|על)|who is|tell me about|what do you know about)"
+    r"\s+(?!(?:עצמך|עליך|אותך|עצמי|yourself|you\b|me\b))", re.I)
+
+_RAG_INDEX = re.compile(
+    r"(תאנדקס|תסרוק את התיקייה|אנדקס את|בנה אינדקס|אינדוקס מחדש|רענן את האינדקס"
+    r"|index (my|the) (files|documents|folder)"
+    r"|rebuild the index|rescan my files|scan (my|the) folder)", re.I)
+_RAG_STATUS = re.compile(
+    r"(מה מצב האינדקס|כמה קבצים (אינדקסת|יש באינדקס)|מה יש באינדקס"
+    r"|index status|how many files (are|is) indexed|what is indexed)", re.I)
 _APPS = re.compile(r"(פתח את|סגור את|הפעל את|open |close |launch |start |kill |הרג את|מחשבון|דפדפן)", re.I)
 _FILE_VERB = re.compile(r"(קרא|הצג|שמור|כתוב|מחק|ערוך|read|show|save|write|delete|edit|list)", re.I)
 _SCREEN = re.compile(r"(צילום מסך|צלם (את )?(ה)?מסך|תצלם (את )?(ה)?מסך|המסך לצלם|"
@@ -395,6 +509,74 @@ class IntentRouter:
             if r:
                 return r
 
+        # 2a-i. enrolment. Ahead of the room questions because "רשום אותי" is an
+        # act, not a question — routing it to vision.who would answer "there is
+        # someone in front of the camera" and do nothing. CRITICAL because the
+        # first face into an empty gallery becomes the owner with every
+        # permission; the firewall asks a human before it runs.
+        if _ENROLL_Q.search(t):
+            name = ""
+            for pat in _NAME_PATTERNS:
+                m = pat.search(t)
+                if m:
+                    name = m.group(1).strip("״׳\"'")
+                    break
+            return Route("VISION", 0.93, "face enrolment request",
+                         skill="vision.enroll", args={"name": name}, risk="CRITICAL")
+
+        # 2a-ii. ediyel records. Ahead of KNOWLEDGE/RAG: "what do you know about
+        # Dana" is about a person you told JARVIS about, not about the world.
+        # Adding is WRITE and is routed with an empty name — the skill refuses
+        # rather than inventing one, for the same reason enrolment does.
+        if _RECORDS_WHOAMI.search(t):
+            return Route("RECORDS", 0.9, "who am I", skill="records.whoami")
+        if _RECORDS_LIST.search(t):
+            return Route("RECORDS", 0.9, "list dossiers", skill="records.list")
+        if _RECORDS_ADD.search(t):
+            return Route("RECORDS", 0.88, "add a dossier", skill="records.add",
+                         args={"name": ""}, risk="WRITE")
+        if _RECORDS_FIND.search(t):
+            m = re.search(
+                r"(?:מה אתה יודע על|תגיד לי על|ספר לי על|מי זה|מי זאת|"
+                r"מה יש לך על|רשומה (?:של|על)|who is|tell me about|"
+                r"what do you know about)\s+([^\s?.!,;]+)", t, re.I)
+            query = m.group(1).strip("״׳\"'") if m else ""
+            return Route("RECORDS", 0.88 if query else 0.7, "look up a person",
+                         skill="records.find", args={"query": query})
+
+        # 2a. questions about the room. Ahead of SAFETY, because "מה מותר לי"
+        # would otherwise be answered from the persona instead of from the camera
+        # — and the camera is the thing that actually determines the answer.
+        if _VISION_Q.search(t):
+            skill, conf, why = "vision.who", 0.9, "who is present"
+            if re.search(r"(מה אתה רואה|מה יש מולך|המצלמה רואה|תאר (את )?החדר|"
+                         r"what do you see|describe)", t, re.I):
+                skill, conf, why = "vision.scene", 0.9, "scene description"
+            elif re.search(r"(מי רשום|מי אתה מכיר|מי הבעלים|רשימת הפנים|"
+                           r"list (the )?(faces|enrolled)|who is (enrolled|the owner))",
+                           t, re.I):
+                skill, conf, why = "vision.gallery", 0.9, "gallery listing"
+            elif re.search(r"(מותר לי|ההרשאה|רמת ההרשאה|למה (אתה לא מרשה|אסור)|"
+                           r"what level|why not allowed|what am i allowed)", t, re.I):
+                skill, conf, why = "vision.permission", 0.9, "active permission"
+            return Route("VISION", conf, why, skill=skill,
+                         args={"risk": "WRITE"} if skill == "vision.permission" else {})
+
+        # 2b. retrieval over the user's own files (RAG). Sits above SAFETY and
+        # the specialist intents because every branch here requires the user to
+        # have explicitly scoped the question to their files ("מה כתוב בקבצים
+        # על חומת הרשאות"). Without that scoping a security word would win and
+        # the question would be answered from the persona instead of the source.
+        # Index/status first: they are the more specific ask.
+        if _RAG_INDEX.search(t):
+            return Route("RAG", 0.92, "index rebuild request", skill="rag.index",
+                         args={"roots": _extract_path(t), "force": True}, risk="WRITE")
+        if _RAG_STATUS.search(t):
+            return Route("RAG", 0.9, "index status request", skill="rag.status")
+        if _RAG_ASK.search(t):
+            return Route("RAG", 0.88, "local-file retrieval request",
+                         skill="rag.ask", args={"query": t}, agent="argus")
+
         # 3. safety / permissions
         if _SAFETY.search(t):
             return Route("SAFETY", 0.8, "security or permission question")
@@ -492,6 +674,10 @@ class IntentRouter:
             return Route("GREETING", 0.9, "greeting")
         if _THANKS.search(t) and len(t) < 30:
             return Route("SMALLTALK", 0.8, "gratitude")
+        # Short social openers, checked after the specific ones so that a
+        # greeting or an identity question still wins when both match.
+        if _SMALLTALK.search(t) and len(t) < 40:
+            return Route("SMALLTALK", 0.82, "social opener")
 
         # 9. grounded knowledge lookup
         if self.knowledge is not None:
@@ -530,7 +716,7 @@ class IntentRouter:
         (("הקסדצימלי", "hexadecimal", "בסיס 16"), "math.base", {"to": 16}),
         (("עצרת", "factorial"), "math.factorial", {}),
         (("ממוצע", "average", "mean"), "math.stats", {"op": "mean"}),
-        (("מחלק משותף", "gcd"), "math.gcd", {}),
+        (("מחלק משותף", "מחלק המשותף", "gcd"), "math.gcd", {}),
     )
 
     def _route_math(self, text: str) -> Optional[Route]:
@@ -569,16 +755,66 @@ class IntentRouter:
                              args={"expr": expr}, value=value,
                              reply_he=_phrase_math(text, expr, value), grounded=True)
 
+        # b0) Two questions the engine previously got wrong in the worst way —
+        # it answered a *different* question at confidence 0.99.
+        #
+        # "מה השארית של 17 חלקי 5" answered 3.4. That is the quotient. The
+        # question asked for the remainder, which is 2. WORD_OPS maps שארית to
+        # the % operator, but no rule recognised the phrasing, so the generic
+        # arithmetic path parsed "17 חלקי 5" and answered division confidently.
+        m = re.search(r"ה?שארית[^\d]{0,12}(\d+(?:\.\d+)?)\s*(?:חלקי|ב|מ|mod|מודולו)?\s*(\d+(?:\.\d+)?)",
+                      text, re.I)
+        if m:
+            a_, b_ = float(m.group(1)), float(m.group(2))
+            if b_:
+                v = a_ % b_
+                return Route("MATH", 0.99, "remainder", skill="math.eval",
+                             args={"expr": f"{_num(a_)} % {_num(b_)}"}, value=v,
+                             reply_he=f"השארית של {_num(a_)} חלקי {_num(b_)} היא {_num(v)}.",
+                             grounded=True)
+
+        # "כמה אחוז זה 25 מתוך 200" — the inverse of the percent rule below. It
+        # used to fall through to UNKNOWN, and the fallback then offered an
+        # unrelated knowledge-base fact about cache memory as though it were an
+        # answer. Wrong *and* dressed as grounded is worse than either alone.
+        m = re.search(r"כמה\s*(?:אחוז|אחוזים|%)\s*(?:זה|הוא)?\s*(\d+(?:\.\d+)?)"
+                      r"\s*(?:מתוך|מ|מן| out of |of)\s*(\d+(?:\.\d+)?)", text, re.I)
+        if not m:
+            m = re.search(r"what\s+percent(?:age)?\s+(?:is|of)\s+(\d+(?:\.\d+)?)"
+                          r"\s*(?:out of|of)\s*(\d+(?:\.\d+)?)", text, re.I)
+        if m:
+            part, whole = float(m.group(1)), float(m.group(2))
+            if whole:
+                v = part / whole * 100.0
+                return Route("MATH", 0.99, "percent inverse", skill="math.eval",
+                             args={"expr": f"{_num(part)}/{_num(whole)}*100"}, value=v,
+                             reply_he=f"{_num(part)} מתוך {_num(whole)} הם {_num(v)} אחוז.",
+                             grounded=True)
+
         # b) two-argument helpers (percent, gcd from natural language)
         m = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|אחוזים?|אחוז|percent|per cent)\s*"
                       r"(?:מ|מתוך|מן|of)?\s*[-–—־]?\s*(\d+(?:\.\d+)?)", text, re.I)
         if m:
-            p, of = float(m.group(1)), float(m.group(2))
-            return Route("MATH", 0.97, "percentage", skill="math.percent", args={"p": p, "of": of},
-                         value=p * of / 100.0,
-                         reply_he=f"{_num(p)} אחוז מ־{_num(of)} הם {_num(p * of / 100.0)}.",
-                         grounded=True)
-        if ("מחלק משותף" in text or "gcd" in low) and re.search(r"\d+\D+\d+", text):
+            # Guard: this rule answers *only* the percent part. If the sentence
+            # carries more arithmetic — "15% מ־240 ותוסיף 30" — returning here
+            # silently discards the rest and answers 36 to a question whose
+            # answer is 66, at confidence 0.97. A confident wrong number is
+            # worse than no number. Let the general evaluator take it instead;
+            # it parses the whole expression and gets 66.
+            tail = text[m.end():]
+            head = text[:m.start()]
+            leftover = re.sub(r"[\s.,;:!?·׃]", "", head + tail)
+            leftover = re.sub(r"(?i)^(כמה|מה|תחשב|חשב|תן|calculate|compute|what|howmuch|is)", "", leftover)
+            extra_ops = bool(re.search(
+                r"(?:ועוד|ותוסיף|תוסיף|ומוסיף|הוסף|פחות|ותחסר|תחסר|מינוס|כפול|ותכפול|תכפול"
+                r"|חלקי|ותחלק|תחלק|\+|-|\*|/)", leftover))
+            if not extra_ops:
+                p, of = float(m.group(1)), float(m.group(2))
+                return Route("MATH", 0.97, "percentage", skill="math.percent", args={"p": p, "of": of},
+                             value=p * of / 100.0,
+                             reply_he=f"{_num(p)} אחוז מ־{_num(of)} הם {_num(p * of / 100.0)}.",
+                             grounded=True)
+        if (re.search(r"מחלק\s+(?:ה)?משותף", text) or "gcd" in low) and re.search(r"\d+\D+\d+", text):
             nums = [int(x) for x in re.findall(r"\d+", text)][:2]
             if len(nums) == 2:
                 from brain.math_engine import gcd as _gcd

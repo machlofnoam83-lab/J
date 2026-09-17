@@ -395,6 +395,145 @@ async def api_stt(request: web.Request) -> web.Response:
     return _json(agent._stt_stats())
 
 
+# ── local-file retrieval (RAG) ──────────────────────────────────────────────
+# Four routes, and the split matters:
+#
+#   GET  /api/rag/status   cheap, polled by the HUD panel
+#   POST /api/rag/search   retrieval only — "show me where"
+#   POST /api/rag/ask      retrieval + cited extractive answer
+#   POST /api/rag/index    the only one that touches the disk
+#
+# ``/api/rag/index`` goes through the same Permission Firewall as every other
+# mutating call, so it is refused outright when the level is SAFE or when the
+# kill switch is engaged — the indexer never gets a private channel around the
+# safety layer just because it happens to be new.
+async def api_rag_status(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        return {"ok": True, "status": eng.status(),
+                "docs": [{"path": d["path"], "chunks": d["chunks"], "bytes": d["bytes"],
+                          "kind": d["kind"], "title": d["title"]}
+                         for d in eng.docs(int(request.query.get("n", 100)))]}
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_search(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "invalid JSON body"}, status=400)
+    query = str(data.get("query") or "").strip()
+    if not query:
+        return _json({"ok": False, "error": "query is required"}, status=400)
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        hits = eng.search(query, k=int(data.get("k") or 8),
+                          path_filter=str(data.get("path_filter") or ""))
+        return {"ok": True, "query": query, "found": len(hits),
+                "hits": [h.to_dict() for h in hits],
+                "expansions": eng.retriever.last_expansions}
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_ask(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "invalid JSON body"}, status=400)
+    query = str(data.get("query") or "").strip()
+    if not query:
+        return _json({"ok": False, "error": "query is required"}, status=400)
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        ans = eng.ask(query, k=int(data.get("k") or 8),
+                      path_filter=str(data.get("path_filter") or ""))
+        verified, problems = eng.verify(ans)
+        payload = ans.to_dict()
+        # The grounding invariant is re-checked against the files on disk for
+        # every answer we serve, and the result is published. A client that
+        # sees verified=false knows not to trust the citations.
+        payload["ok"] = True
+        payload["verified"] = verified
+        payload["verify_problems"] = problems
+        payload["expansions"] = eng.retriever.last_expansions
+        return payload
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_index(request: web.Request) -> web.Response:
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    roots = data.get("roots") or []
+    if isinstance(roots, str):
+        roots = [p.strip() for p in roots.replace("\n", ",").split(",") if p.strip()]
+
+    agent = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_agent)
+
+    def work() -> Dict[str, Any]:
+        decision = agent.firewall.check("rag.index", "WRITE", {"roots": roots})
+        if not decision.allowed:
+            return {"ok": False, "error": f"blocked by permission firewall: {decision.reason}",
+                    "decision": decision.to_dict()}
+        if agent.firewall.dry_run:
+            return {"ok": True, "dry_run": True,
+                    "would_index": [str(r) for r in roots],
+                    "decision": decision.to_dict()}
+        eng = get_engine()
+        report = eng.index(roots or None, force=bool(data.get("force")))
+        report["ok"] = not report.get("error")
+        report["decision"] = decision.to_dict()
+        return report
+
+    try:
+        out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+        return _json(out, status=200 if out.get("ok") else 403)
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
+async def api_rag_roots(request: web.Request) -> web.Response:
+    """Set which folders are indexed. Never triggers a scan by itself."""
+    from brain.rag.engine import get_engine
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "invalid JSON body"}, status=400)
+    roots = data.get("roots") or []
+    if isinstance(roots, str):
+        roots = [p.strip() for p in roots.replace("\n", ",").split(",") if p.strip()]
+
+    def work() -> Dict[str, Any]:
+        eng = get_engine()
+        clean = eng.set_roots([str(r) for r in roots])
+        return {"ok": True, "roots": clean}
+
+    try:
+        return _json(await asyncio.get_event_loop().run_in_executor(EXECUTOR, work))
+    except Exception as exc:
+        return _json({"ok": False, "error": f"{type(exc).__name__}: {exc}"}, status=500)
+
+
 ENROLL_DIR = CONFIG_DATA / "enroll"
 #: what the HUD asks the user to say when training their own voice
 ENROLL_SCRIPT = ["wake", "time", "status", "help", "stop", "joke"]
@@ -473,7 +612,7 @@ async def api_enroll(request: web.Request) -> web.Response:
                              "גם משפטים אחרים אל התווית שלה")
         return res
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     BUS.emit("stt.enrolled", {"label": label, "ok": bool(out.get("ok")),
                               "score": out.get("score"), "bank": out.get("bank")},
              source="server")
@@ -716,6 +855,29 @@ async def api_faces(request: web.Request) -> web.Response:
                                  "between": round(store._between, 3)}})
 
 
+async def _run_work(work, loop, what: str) -> Dict[str, Any]:
+    """Run a vision worker and never let an internal failure escape as a 500.
+
+    Measured failure this replaces: any exception raised inside `work`
+    propagated out of run_in_executor, aiohttp answered with a *plain-text*
+    "500 Internal Server Error" page, and the HUD's `await r.json()` then threw
+    JSONDecodeError on that text. look() caught it and printed "no connection
+    to the face-recognition brain" — so a server-side crash was reported to the
+    user as a network outage, and the real reason went only to the server
+    console where nobody was looking. The user cannot fix what they cannot see.
+    """
+    try:
+        out = await loop.run_in_executor(EXECUTOR, work)
+    except Exception as exc:  # noqa: BLE001 - the whole point is to catch anything
+        import traceback
+        traceback.print_exc()
+        out = {"ok": False, "error": f"{what} failed: {type(exc).__name__}: {exc}",
+               "error_kind": type(exc).__name__}
+    if not isinstance(out, dict):
+        out = {"ok": False, "error": f"{what} returned {type(out).__name__}"}
+    return out
+
+
 async def api_faces_recognize(request: web.Request) -> web.Response:
     """POST /api/faces/recognize — who is this, and what may they do?"""
     store, gate = await asyncio.get_event_loop().run_in_executor(EXECUTOR, get_faces)
@@ -727,18 +889,41 @@ async def api_faces_recognize(request: web.Request) -> web.Response:
 
     def work() -> Dict[str, Any]:
         from vision.faces import detect
+        from vision.scene import describe
         try:
             frame = _face_frame(payload)
         except Exception as exc:
             return {"ok": False, "error": f"bad frame: {exc}"}
         found = detect(frame, max_faces=4)
         match = store.recognize(frame)
+        # Scene understanding is measured on every frame, not only when a face is
+        # enrolled — "it's too dark to tell you who you are" is an answer, and a
+        # more useful one than silence.
+        scene = describe(frame, identity=match)
         state = gate.observe(match)
+        # Liveness can only ever subtract. A frame that looks like a display never
+        # unlocks anything, whatever the eigenface distance said.
+        if scene.liveness is not None and scene.liveness.verdict == "suspect":
+            state = dict(state)
+            state["withheld"] = "liveness"
+            state["withheld_reason"] = scene.summary_he
+            if state.get("level") not in ("SAFE",):
+                state["level"] = "SAFE"
+        # Feed the brain. This is the wire that was missing: without it the
+        # reasoning engine had no idea anybody was in the room, because the only
+        # connection was FaceGate pushing a level into the firewall behind the
+        # brain's back. Now every frame updates what the brain believes.
+        try:
+            from brain.presence import get_presence
+            get_presence().observe(match, scene, gate)
+        except Exception:
+            pass
         return {"ok": True, "match": match.to_dict(), "gate": state,
+                "scene": scene.to_dict(),
                 "boxes": [f.to_dict() for f in found],
                 "frame": {"w": int(frame.shape[1]), "h": int(frame.shape[0])}}
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     return _json(out, status=200 if out.get("ok") else 400)
 
 
@@ -776,7 +961,7 @@ async def api_faces_enroll(request: web.Request) -> web.Response:
                 "warning": None if face.eyes else
                 "העיניים לא אותרו — היישור לפי תיבת הפנים בלבד, פחות מדויק"}
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
     return _json(out, status=200 if out.get("ok") else 400)
 
 
@@ -795,12 +980,32 @@ async def api_faces_admin(request: web.Request) -> web.Response:
             ok = store.remove(str(payload.get("id") or ""))
             return {"ok": ok, "error": None if ok else "no such person", "gate": gate.poll()}
         if action == "set_level":
-            ok = store.set_level(str(payload.get("id") or ""), str(payload.get("level") or ""))
+            pid = str(payload.get("id") or "")
+            lvl = str(payload.get("level") or "").upper()
+            person = store.get(pid)
+            if person is None:
+                return {"ok": False, "error": "no such person", "gate": gate.poll()}
+            ok = store.set_level(pid, lvl)
             if ok:
-                BUS.emit("vision.level.grant", {"id": payload.get("id"),
-                                                "level": str(payload.get("level")).upper()},
-                         source="faces")
-            return {"ok": ok, "error": None if ok else "no such person or bad level",
+                BUS.emit("vision.level.grant", {"id": pid, "level": lvl}, source="faces")
+                return {"ok": True, "error": None, "gate": gate.poll()}
+            # Say which of the two it was. "no such person or bad level" on a
+            # protected owner sends the user hunting for a typo that is not there.
+            from vision.faces import LEVELS, OWNER_LEVEL
+            if lvl not in LEVELS:
+                err = f"level must be one of {list(LEVELS)}"
+            elif person.is_owner:
+                err = (f"{person.name} הוא הבעלים — הרשאת הבעלים ({OWNER_LEVEL}) מוגנת. "
+                       "העבר בעלות קודם אם זה באמת מה שרצית.")
+            else:
+                err = "not changed"
+            return {"ok": False, "error": err, "gate": gate.poll()}
+        if action == "set_owner":
+            ok = store.set_owner(str(payload.get("id") or ""))
+            if ok:
+                o = store.owner()
+                BUS.emit("vision.owner", {"id": o.id, "name": o.name}, source="faces")
+            return {"ok": ok, "error": None if ok else "no such person",
                     "gate": gate.poll()}
         if action == "arm":
             gate.armed = True
@@ -820,7 +1025,126 @@ async def api_faces_admin(request: web.Request) -> web.Response:
             return {"ok": True, "gate": gate.poll()}
         return {"ok": False, "error": "action must be remove|set_level|arm|disarm|poll|configure"}
 
-    out = await loop.run_in_executor(EXECUTOR, work)
+    out = await _run_work(work, loop, "vision")
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
+async def api_access(request: web.Request) -> web.Response:
+    """GET /api/access — is the door open, and why.
+
+    The HUD polls this so the user can see *why* JARVIS is refusing instead of
+    guessing. A gate that silently says no teaches people to stop asking.
+    """
+    def work() -> Dict[str, Any]:
+        try:
+            from brain.access import get_gate
+            g = get_gate()
+            # The tail rides along with the state so the HUD can show the last
+            # few decisions without a second endpoint. An access control whose
+            # history you cannot read is one nobody can argue with or audit.
+            try:
+                n = int(request.query.get("tail", "10"))
+            except ValueError:
+                n = 10
+            return {"ok": True, **g.state(), "explain_he": g.explain(),
+                    "audit_file": str(g.audit_path),
+                    "tail": g.tail(max(0, min(n, 100)))}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 500)
+
+
+async def api_records(request: web.Request) -> web.Response:
+    """GET /api/records — the dossier list, or one person when ?id= is given.
+
+    Never returns a face vector: this endpoint is about the story, not the
+    biometric. The gallery owns the vector and has its own endpoint.
+    """
+    def work() -> Dict[str, Any]:
+        try:
+            from agents.records import get_store
+            st = get_store()
+            pid = request.query.get("id", "").strip()
+            if pid:
+                p = st.get(pid)
+                return ({"ok": True, "person": p.to_dict()} if p
+                        else {"ok": False, "error": f"no such person: {pid}"})
+            q = request.query.get("q", "").strip()
+            if q:
+                return {"ok": True, "query": q,
+                        "people": [p.to_dict() for p in st.find(q)]}
+            return {"ok": True, "people": st.list(), "stats": st.stats()}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
+    return _json(out, status=200 if out.get("ok") else 400)
+
+
+async def api_records_write(request: web.Request) -> web.Response:
+    """POST /api/records — add, update, link or remove a dossier.
+
+    Goes through the skill registry rather than calling the store directly, so
+    the firewall sees it and the same guards apply as when the request arrives
+    by voice. A UI that bypasses the permission layer would be a second, weaker
+    front door into the same data.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        return _json({"ok": False, "error": "body must be JSON"}, status=400)
+    action = str(data.get("action") or "add").strip().lower()
+    skill = {"add": "records.add", "update": "records.update",
+             "remove": "records.remove", "link": "records.link"}.get(action)
+    if skill is None:
+        return _json({"ok": False,
+                      "error": "action must be add|update|remove|link"}, status=400)
+
+    def work() -> Dict[str, Any]:
+        from skills import REGISTRY, load_all
+        from security.permissions import FIREWALL
+        from brain.access import get_gate
+        load_all()
+        args = {k: v for k, v in data.items() if k != "action"}
+        reg_skill = REGISTRY.get(skill)
+        risk = reg_skill.risk if reg_skill else "WRITE"
+
+        # Access before permission. Measured, this mattered: with no face in
+        # frame the firewall sits at its default and a WRITE went straight
+        # through, while an identified owner at SAFE was refused. That is
+        # exactly backwards from the rule — whoever has not been scanned does
+        # nothing, and the camera is what raises the ceiling, not what lowers it.
+        verdict = get_gate().check(skill, risk=risk)
+        if not verdict.allowed:
+            return {"ok": False, "skill": skill, "error": verdict.reason,
+                    "text_he": verdict.text_he, "needs_scan": verdict.needs_scan}
+
+        # Ask the firewall next, then tell the registry the answer. The registry
+        # has its own blunt gate that refuses anything above SAFE unless it is
+        # told permission was granted; calling it without that argument does not
+        # consult the firewall at all, it just always says no. So the firewall
+        # decides here exactly as it does for a voice request, and a HUD that
+        # could write dossiers nobody may dictate would be a second, weaker
+        # front door into the same data.
+        decision = FIREWALL.check(skill, risk, args, agent="ediyel_records")
+        if not decision.allowed:
+            return {"ok": False, "skill": skill, "error": decision.reason,
+                    "needs_confirmation": bool(
+                        getattr(decision, "requires_confirmation", False))}
+
+        res = REGISTRY.invoke(skill, args, permission_granted=True)
+        payload = {"ok": res.ok, "skill": skill, "ms": round(res.ms, 1)}
+        if res.error:
+            payload["error"] = res.error
+        if res.value is not None:
+            payload["value"] = res.value
+        if res.data:
+            payload["text_he"] = res.data.get("text_he", "")
+        return payload
+
+    out = await asyncio.get_event_loop().run_in_executor(EXECUTOR, work)
     return _json(out, status=200 if out.get("ok") else 400)
 
 
@@ -839,7 +1163,7 @@ async def api_command(request: web.Request) -> web.Response:
         return dispatch_command(agent, data, capture_audio=True)
 
     try:
-        out = await loop.run_in_executor(EXECUTOR, work)
+        out = await _run_work(work, loop, "vision")
     except Exception as exc:
         out = {"type": "error", "message": f"{type(exc).__name__}: {exc}"}
     return _json(out)
@@ -1046,6 +1370,11 @@ def build_app() -> web.Application:
     app.router.add_get("/api/download", api_download)
     app.router.add_get("/api/screen/read", api_screen_read)
     app.router.add_get("/api/memory", api_memory)
+    app.router.add_get("/api/rag/status", api_rag_status)
+    app.router.add_post("/api/rag/search", api_rag_search)
+    app.router.add_post("/api/rag/ask", api_rag_ask)
+    app.router.add_post("/api/rag/index", api_rag_index)
+    app.router.add_post("/api/rag/roots", api_rag_roots)
     app.router.add_get("/api/history", api_history)
     app.router.add_get("/api/permissions", api_permissions)
     app.router.add_get("/api/stt", api_stt)
@@ -1058,6 +1387,11 @@ def build_app() -> web.Application:
     app.router.add_post("/api/faces/recognize", api_faces_recognize)
     app.router.add_post("/api/faces/enroll", api_faces_enroll)
     app.router.add_post("/api/faces/admin", api_faces_admin)
+    # ediyel records + the access gate. Reads are GET, writes go through the
+    # skill registry so the firewall sees them exactly as it sees a voice request.
+    app.router.add_get("/api/access", api_access)
+    app.router.add_get("/api/records", api_records)
+    app.router.add_post("/api/records", api_records_write)
     app.router.add_post("/api/command", api_command)
     # Unknown /api/* must answer as JSON for every method. Registered before the
     # UI catch-all below (aiohttp resolves resources in registration order), so

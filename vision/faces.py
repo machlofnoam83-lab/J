@@ -55,6 +55,17 @@ CONFIDENCE_THRESHOLD = 0.85    # below this the face is a stranger
 LEVELS = ("SAFE", "WRITE", "CRITICAL")
 _RANK = {name: i for i, name in enumerate(LEVELS)}
 
+# ────────────────────────────────────────────────────────────── the owner ──
+# The first face JARVIS is ever taught belongs to the person who switched it on.
+# That person is the owner: full CRITICAL, and the only identity whose presence
+# is allowed to unlock CRITICAL at all. The rule is positional, not nominal — it
+# does not matter what name is typed in, the *first* enrolment wins — because a
+# name can be typed by anyone standing in front of the camera, while "you were
+# here when the gallery was empty" cannot be claimed after the fact.
+OWNER_LEVEL = "CRITICAL"
+DEFAULT_OWNER_NAME = "OSCAR"
+ROLES = ("owner", "guest")
+
 
 # ══════════════════════════════ colour spaces ══════════════════════════════
 def to_ycbcr(rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -431,10 +442,16 @@ class Person:
     vectors: List[np.ndarray] = field(default_factory=list)
     created: float = field(default_factory=time.time)
     note: str = ""
+    role: str = "guest"          # "owner" for the first face ever enrolled
+
+    @property
+    def is_owner(self) -> bool:
+        return self.role == "owner"
 
     def to_dict(self, with_vectors: bool = False) -> Dict[str, Any]:
         d = {"id": self.id, "name": self.name, "level": self.level,
-             "samples": len(self.vectors), "created": round(self.created, 3), "note": self.note}
+             "samples": len(self.vectors), "created": round(self.created, 3),
+             "note": self.note, "role": self.role, "is_owner": self.is_owner}
         if with_vectors:
             d["vectors"] = [np.asarray(v, np.float32).tolist() for v in self.vectors]
         return d
@@ -449,12 +466,20 @@ class Match:
     residual: float
     faces: int
     known: bool
+    role: str = "guest"              # "owner" only for the first face enrolled
+    # The encoded face itself. Without this the vector that recognize() just
+    # computed died on the floor, so the brain could say who was in front of it
+    # but could never enrol them — there was nothing left to enrol from.
+    # Deliberately excluded from to_dict(): 4096 floats have no business riding
+    # out to the HUD on every frame.
+    vector: Optional[Any] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {"identity": self.identity, "name": self.name, "level": self.level,
                 "confidence": round(float(self.confidence), 4),
                 "residual": round(float(self.residual), 4),
-                "faces": self.faces, "known": self.known}
+                "faces": self.faces, "known": self.known, "role": self.role,
+                "is_owner": self.role == "owner"}
 
 
 class FaceStore:
@@ -489,7 +514,8 @@ class FaceStore:
                             id=str(rec["id"]), name=str(rec.get("name", rec["id"])),
                             level=str(rec.get("level", "SAFE")).upper(), vectors=vs,
                             created=float(rec.get("created", time.time())),
-                            note=str(rec.get("note", ""))))
+                            note=str(rec.get("note", "")),
+                            role=str(rec.get("role", "guest")).lower()))
                 except Exception:
                     self.people = []
             self._rebuild()
@@ -590,9 +616,24 @@ class FaceStore:
             if target is None:
                 pid = person_id or f"p{len(self.people) + 1:03d}-{int(time.time())}"
                 target = Person(id=pid, name=name or pid, level=level, note=note)
+                # ── the owner claim ──
+                # An empty gallery means nobody has ever been taught. Whoever is
+                # enrolled into it is the person who set JARVIS up, so they get
+                # the owner role and full CRITICAL — regardless of what level was
+                # asked for, because asking for SAFE on your own machine would
+                # otherwise lock you out of your own assistant.
+                if not self.people and self.owner() is None:
+                    target.role = "owner"
+                    target.level = OWNER_LEVEL
+                    if not note:
+                        target.note = "היוצר — נרשם ראשון, הרשאות מלאות"
                 self.people.append(target)
             else:
-                target.level = level
+                # Re-enrolling never silently strips the owner's level. A guest's
+                # level is whatever was asked for; the owner's stays CRITICAL
+                # unless set_level() is called explicitly.
+                if not target.is_owner:
+                    target.level = level
                 if name:
                     target.name = name
                 if note:
@@ -615,13 +656,22 @@ class FaceStore:
             self.save()
             return True
 
-    def set_level(self, person_id: str, level: str) -> bool:
+    def set_level(self, person_id: str, level: str, force: bool = False) -> bool:
+        """Change what someone may do.
+
+        The owner's level is protected: a stray re-level — a UI slip, a skill call
+        with a bad argument, a guest who got WRITE and found the admin endpoint —
+        must not be able to demote the person who owns the machine. Passing
+        ``force=True`` is the explicit, auditable way to do it anyway.
+        """
         level = str(level).upper()
         if level not in LEVELS:
             return False
         with self._lock:
             for p in self.people:
                 if p.id == person_id:
+                    if p.is_owner and level != OWNER_LEVEL and not force:
+                        return False
                     p.level = level
                     self.save()
                     return True
@@ -633,6 +683,27 @@ class FaceStore:
                 if p.id == person_id:
                     return p
         return None
+
+    def owner(self) -> Optional[Person]:
+        """The first person ever enrolled, or None if the gallery is empty."""
+        with self._lock:
+            for p in self.people:
+                if p.is_owner:
+                    return p
+        return None
+
+    def set_owner(self, person_id: str) -> bool:
+        """Move the owner role to somebody else. Exactly one owner exists."""
+        with self._lock:
+            target = self.get(person_id)
+            if target is None:
+                return False
+            for p in self.people:
+                p.role = "guest" if p.id != person_id else "owner"
+                p.level = OWNER_LEVEL if p.id == person_id else (
+                    p.level if p.level != OWNER_LEVEL else "WRITE")
+            self.save()
+            return True
 
     def list(self) -> List[Dict[str, Any]]:
         with self._lock:
@@ -678,13 +749,18 @@ class FaceStore:
         found = detect(rgb, max_faces=4)
         if not found:
             return Match(None, "—", "SAFE", 0.0, 0.0, 0, False)
-        found[0].vector = encode(rgb, found[0].box)
-        pid, conf, resid = self.match(found[0].vector)
+        # Identify the largest face — the person closest to the lens, who is the
+        # one a permission decision should be about when more than one is present.
+        primary = max(found, key=lambda f: f.w * f.h)
+        primary.vector = encode(rgb, primary.box)
+        pid, conf, resid = self.match(primary.vector)
         if pid and conf >= CONFIDENCE_THRESHOLD:
             p = self.get(pid)
             if p is not None:
-                return Match(p.id, p.name, p.level, conf, resid, len(found), True)
-        return Match(None, "לא מזוהה", "SAFE", conf, resid, len(found), False)
+                return Match(p.id, p.name, p.level, conf, resid, len(found), True,
+                             role=p.role, vector=primary.vector)
+        return Match(None, "לא מזוהה", "SAFE", conf, resid, len(found), False,
+                     vector=primary.vector)
 
 
 # ═══════════════════════════ presence-gated privilege ═══════════════════════
@@ -766,7 +842,16 @@ class FaceGate:
                     self.identity, self.name = person.id, person.name
                     self.confidence = match.confidence
                     self.last_seen = now
-                    self._set_level(person.level, person.name, "face recognised")
+                    level, why = person.level, "face recognised"
+                    # CRITICAL is the owner's alone. A guest enrolled at CRITICAL
+                    # — by accident, or by an owner who has since forgotten —
+                    # still cannot reach it, because the ceiling on everybody but
+                    # the first face is WRITE.
+                    if not person.is_owner and _RANK.get(level, 0) == _RANK["CRITICAL"]:
+                        level, why = "WRITE", "face recognised (capped: not the owner)"
+                    elif person.is_owner:
+                        why = "owner recognised"
+                    self._set_level(level, person.name, why)
                 else:
                     confirmed = None
 
@@ -801,11 +886,17 @@ class FaceGate:
             self.level = self.default_level
 
     def state(self) -> Dict[str, Any]:
+        owner = self.store.owner()
         return {"identity": self.identity, "name": self.name, "level": self.level,
                 "confidence": round(float(self.confidence), 4),
                 "last_seen": round(self.last_seen, 3), "armed": self.armed,
                 "ttl": self.ttl, "people": len(self.store.people),
-                "age": round(time.time() - self.last_seen, 2) if self.last_seen else None}
+                "age": round(time.time() - self.last_seen, 2) if self.last_seen else None,
+                "is_owner": bool(owner is not None and owner.id == self.identity),
+                "owner": ({"id": owner.id, "name": owner.name,
+                           "samples": len(owner.vectors)} if owner else None),
+                "owner_enrolled": owner is not None,
+                "owner_name_expected": DEFAULT_OWNER_NAME}
 
 
 # ══════════════════════════════════ payload I/O ══════════════════════════════

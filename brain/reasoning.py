@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from brain.intent import IntentRouter, Route  # noqa: E402
-from brain.knowledge import content_tokens, shares_topic  # noqa: E402
+from brain.knowledge import coherence, content_tokens, shares_topic  # noqa: E402
 from core.bus import BUS, T  # noqa: E402
 from core.config import CONFIG  # noqa: E402
 
@@ -48,7 +48,11 @@ class Step:
 @dataclass
 class Trace:
     steps: List[Step] = field(default_factory=list)
-    started: float = field(default_factory=time.time)
+    # perf_counter, not time.time: to_dict() subtracts this from perf_counter to
+    # get an elapsed duration, and the two clocks have unrelated reference
+    # points. Mixing them published total_ms as roughly -1.79e12 — a number no
+    # reader could mistake for a duration, but one that made every trace useless.
+    started: float = field(default_factory=time.perf_counter)
 
     def add(self, kind: str, detail: str, data: Optional[Dict[str, Any]] = None, t0: float = 0.0) -> Step:
         step = Step(kind=kind, detail=detail, data=data or {},
@@ -237,6 +241,7 @@ class ReasoningEngine:
         knowledge=None,
         agents: Optional[Dict[str, Any]] = None,
         config=None,
+        presence=None,
     ) -> None:
         self.core = core
         self.router = router or IntentRouter(knowledge=knowledge)
@@ -245,8 +250,37 @@ class ReasoningEngine:
         self.firewall = firewall
         self.knowledge = knowledge
         self.agents = agents or {}
+        # Who is in front of the camera. Lazy by design: importing brain.presence
+        # unconditionally would pull vision into every headless test run, and the
+        # tracker is a no-op when nothing has ever observed a frame.
+        if presence is None:
+            try:
+                from brain.presence import get_presence
+                presence = get_presence()
+            except Exception:                                  # pragma: no cover
+                presence = None
+        self.presence = presence
+        # The access gate: presence as a precondition, not as advice. Everything
+        # else treats an unidentified person politely; this decides whether the
+        # conversation happens at all. Built here rather than imported at module
+        # scope so a headless run with no camera still constructs an engine.
+        try:
+            from brain.access import get_gate
+            self.access = get_gate(presence)
+        except Exception:                                  # pragma: no cover
+            self.access = None
         self.cfg = config or CONFIG.reasoning
         self.verifier = Verifier(knowledge)
+        # Multi-step planning. Constructed last because it calls back into this
+        # engine to execute each subgoal through the ordinary pipeline.
+        try:
+            from brain.deliberate import Deliberator
+            self.deliberator: Optional[Any] = Deliberator(self)
+        except Exception:                                      # pragma: no cover
+            self.deliberator = None
+        # Re-entrancy guard: a subgoal must never be split again, or a plan could
+        # recurse into itself.
+        self._deliberating = False
         self.history: List[Tuple[str, str]] = []
         self.persona = CONFIG.persona
         self._smalltalk_turn = 0
@@ -262,6 +296,58 @@ class ReasoningEngine:
                           ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
 
         BUS.emit(T.BRAIN_THINK_START, {"text": text[:120]}, source="reasoning")
+
+        # 0 ------------------------------------------------------ presence --
+        # Who is in front of the camera, before deciding anything. This is the
+        # step that was missing entirely: the firewall already knew, the brain
+        # did not, so it could not greet by name or explain a refusal in terms
+        # the user could act on. Read-only and cheap — it never runs detection.
+        who: Optional[Any] = None
+        if self.presence is not None:
+            t = time.perf_counter()
+            try:
+                who = self.presence.current()
+                trace.add("presence",
+                          f"{who.name} · {who.level} · {who.role}" if who.known
+                          else (f"{who.people} in frame, unidentified" if who.people
+                                else "nobody in frame"),
+                          who.to_dict(), t)
+            except Exception:                                  # pragma: no cover
+                who = None
+
+        # 0a -------------------------------------------------------- access --
+        # Presence as a precondition, not as advice. The user's rule: whoever has
+        # no access does nothing, and every time somebody walks in they must be
+        # scanned. This runs before intent, before memory, before any skill —
+        # there is no point classifying a request we are not allowed to act on.
+        #
+        # The gate cannot know the skill yet, so it is asked the general question
+        # first. If it says no, we still let the request be *classified*, because
+        # "register me" and "who is in the room" are precisely the things an
+        # unscanned person must be able to say. The skill-level re-check happens
+        # in _run_skill, where the name is known.
+        access_verdict = None
+        if self.access is not None:
+            try:
+                access_verdict = self.access.check()
+                trace.add("access",
+                          f"{'open' if access_verdict.allowed else 'closed'}"
+                          f" · {access_verdict.reason}",
+                          access_verdict.to_dict())
+            except Exception:                                  # pragma: no cover
+                access_verdict = None
+
+        # 0b ---------------------------------------------------- deliberate --
+        # A request that genuinely asks for several things gets planned, executed
+        # step by step, and repaired where a step fails — instead of the first
+        # pattern that matches winning and the rest being dropped on the floor.
+        # Gated so an ordinary single question never pays for it.
+        if (self.deliberator is not None and not self._deliberating
+                and self.deliberator.wants(text)):
+            planned = self.deliberator.run(text, trace, t0)
+            if planned is not None:
+                self._remember(text, planned.text)
+                return planned
 
         # 1 ------------------------------------------------------- intent --
         t = time.perf_counter()
@@ -280,7 +366,21 @@ class ReasoningEngine:
         # 3 --------------------------------------- deterministic resolution --
         if route.reply_he and route.grounded:
             t = time.perf_counter()
-            answer = self._verify_and_pack(route.reply_he, route, trace, t0, numbers=[route.value])
+            # Everything this branch itself produced or cited is traceable, and
+            # only that. Two real cases, both of which used to be masked because
+            # the verdict was discarded:
+            #   * arithmetic — "17 * 23 שווה 391" contains the operands as well as
+            #     the result, and they live in route.args['expr'], not route.value;
+            #   * a knowledge answer — route.value is a dict whose 'answer' field
+            #     is the cited source, so "Oct 31 שווה Dec 25" carries figures that
+            #     came from the fact itself.
+            # Walking route.value picks up both a bare result and the numbers
+            # inside a source payload; the question and the user's own text are
+            # included so a restated figure is not treated as invented.
+            answer = self._verify_and_pack(
+                route.reply_he, route, trace, t0,
+                numbers=[*_numbers_in(route.value), *_numbers_in(route.args),
+                         *_numbers_in(text)])
             trace.add("answer", "grounded deterministic answer", {"grounded": True}, t)
             self._remember(text, answer.text)
             return answer
@@ -338,14 +438,38 @@ class ReasoningEngine:
                 BUS.emit(T.ERROR, {"where": "memory", "error": str(exc)}, source="reasoning")
 
     def _verify_and_pack(self, text: str, route: Route, trace: Trace, t0: float,
-                         numbers: Sequence[Any] = ()) -> Answer:
+                         numbers: Sequence[Any] = (),
+                         extra: Optional[Dict[str, Any]] = None,
+                         speak_override: str = "") -> Answer:
         t = time.perf_counter()
         ok, issues, cleaned = self.verifier.check(text, numbers=numbers, route=route)
         trace.add("verify", "pass" if ok else f"issues: {issues}", {"ok": ok, "issues": issues}, t)
-        speak = self.verifier.speakable(cleaned or text)
-        return Answer(text=cleaned or text, speak=speak, grounded=route.grounded,
-                      confidence=route.confidence, intent=route.intent, skill=route.skill,
+
+        # The verdict used to be logged here and then ignored: the answer went out
+        # at full confidence whether or not it had passed. That is the difference
+        # between having a verifier and actually thinking — so a failure now
+        # changes the answer.
+        grounded = route.grounded
+        confidence = route.confidence
+        if not ok:
+            bad = set(issues)
+            if any("unverified number" in i for i in bad):
+                # A number we cannot trace is exactly the thing JARVIS must not
+                # assert. Drop the claim of grounding and say so; never present an
+                # untraced figure as if it had come from a tool.
+                grounded = False
+                confidence = min(confidence, 0.35)
+            else:
+                confidence = min(confidence, 0.5)
+        speak = speak_override or self.verifier.speakable(cleaned or text)
+        data = dict(extra or {})
+        data["verified"] = bool(ok)
+        if issues:
+            data["verify_issues"] = list(issues)
+        return Answer(text=cleaned or text, speak=speak, grounded=grounded,
+                      confidence=confidence, intent=route.intent, skill=route.skill,
                       agent=route.agent, risk=route.risk, value=route.value,
+                      data=data,
                       ms=(time.perf_counter() - t0) * 1000, trace=trace.to_dict())
 
     def _run_skill(self, text: str, route: Route, trace: Trace, t0: float) -> Optional[Answer]:
@@ -356,6 +480,21 @@ class ReasoningEngine:
 
         t = time.perf_counter()
         trace.add("plan", f"invoke {route.skill} with {route.args}", {"risk": skill.risk}, t)
+
+        # Access before permission. The firewall asks "is this person allowed to
+        # do this?"; the gate asks the prior question, "is there an identified,
+        # live, current person at all?" Enrolment and the room questions are
+        # exempt, because those are how an unscanned person becomes scannable —
+        # without that exception the gate is a locked door with no handle.
+        if self.access is not None:
+            t = time.perf_counter()
+            av = self.access.check(route.skill, risk=skill.risk)
+            trace.add("access",
+                      f"{route.skill}: {'open' if av.allowed else 'closed'}"
+                      f" · {av.reason}", av.to_dict(), t)
+            if not av.allowed:
+                return self._verify_and_pack(av.text_he, route, trace, t0,
+                                             extra={"access": av.to_dict()})
 
         decision = None
         if self.firewall is not None:
@@ -383,10 +522,30 @@ class ReasoningEngine:
             route.grounded = True
         reply = self._phrase_tool_result(route, result)
         numbers = _numbers_in(result.value)
-        return self._verify_and_pack(reply, route, trace, t0, numbers=numbers)
+        extra = result.data if isinstance(result.data, dict) else None
+        speak = ""
+        if route.intent == "RAG" and extra and extra.get("answer_type"):
+            # Three corrections, all of them things the HUD would otherwise lie
+            # about, scoped to RAG so no other skill's behaviour changes:
+            #
+            # 1. ``route.confidence`` is the router's 0.88 "this looks like a
+            #    file query" — it says nothing about the evidence. Publishing it
+            #    as the answer's confidence showed 88% for an answer the
+            #    retrieval layer had already scored at 0.3.
+            # 2. A refusal still returns ``ok=True`` from the skill (refusing is
+            #    success), which used to light the "grounded" badge on an answer
+            #    that explicitly says it found nothing.
+            # 3. The answer body quotes source code and line ranges, which a TTS
+            #    engine would read character by character; the skill supplies a
+            #    short spoken version instead.
+            route.confidence = float(extra.get("confidence") or route.confidence)
+            if extra.get("answer_type") == "none":
+                route.grounded = False
+            speak = str(extra.get("summary_he") or "")
+        return self._verify_and_pack(reply, route, trace, t0, numbers=numbers,
+                                     extra=extra, speak_override=speak)
 
-    @staticmethod
-    def _phrase_block(route: Route, reason: str, risk: str) -> str:
+    def _phrase_block(self, route: Route, reason: str, risk: str) -> str:
         if "kill switch" in reason:
             return "מתג החירום מופעל, אדוני. שום פעולה לא תתבצע עד שתשחרר אותו."
         if "confirmation" in reason:
@@ -394,6 +553,17 @@ class ReasoningEngine:
                     f"אני מבקש אישור במסך לפני שאגע במערכת.")
         if "protected" in reason:
             return f"חסמתי את הפעולה: הנתיב המבוקש נמצא באזור מוגן. {reason}."
+        # A level block is the one case where the camera explains it better than
+        # the firewall does. "action is CRITICAL but the firewall is set to SAFE"
+        # is true and useless; naming who is (or is not) in front of the lens
+        # tells the user what to actually do about it.
+        if "but the firewall is set to" in reason and self.presence is not None:
+            try:
+                why = self.presence.explain(risk)
+                if why:
+                    return f"לא ביצעתי את הפעולה. {why}"
+            except Exception:                                  # pragma: no cover
+                pass
         return f"לא ביצעתי את הפעולה. הסיבה: {reason}."
 
     @staticmethod
@@ -530,11 +700,28 @@ class ReasoningEngine:
     SMALLTALK_CATEGORIES: Tuple[Tuple[str, re.Pattern], ...] = (
         ("bye", re.compile(r"להתראות|ביי|נתראה|לילה טוב|bye|good ?night", re.I)),
         ("joke", re.compile(r"בדיחה|תצחיק|מצחיק|joke|funny", re.I)),
-        ("howareyou", re.compile(r"מה שלומך|מה נשמע|איך אתה מרגיש|מה מצבך|how are you", re.I)),
+        # "מה איתך" / "מה קורה" are the most natural Hebrew openers there are and
+        # both used to fall through to UNKNOWN 0.25 — the assistant answered its
+        # own canned refusal to the two friendliest things a person can say.
+        ("howareyou", re.compile(
+            r"מה שלומך|מה נשמע|איך אתה מרגיש|מה מצבך|"
+            r"מה איתך|מה אצלך|מה קורה|מה חדש|מה העניינים|"
+            r"איך עבר עליך|איך היום שלך|איך אתה מסתדר|"
+            r"how are you|what'?s up|how'?s it going", re.I)),
         ("thanks", re.compile(r"תודה|thanks|thank you|מעולה|יופי|כל הכבוד", re.I)),
         ("opinion", re.compile(r"מה דעתך|מה אתה חושב|האם אתה מאמין|what do you think", re.I)),
         ("learning", re.compile(r"ללמוד|לימוד|יכולת למידה|learn", re.I)),
-        ("capability", re.compile(r"מה אתה (יודע|מסוגל)|היכולות שלך|what can you do", re.I)),
+        ("capability", re.compile(r"מה אתה (יודע|מסוגל)|היכולות שלך|מה יכולות|what can you do", re.I)),
+        # Categories below were added because they were measured failing: each of
+        # these lines used to route to UNKNOWN 0.25 and draw the canned refusal.
+        # A canned answer the router cannot name is dead text.
+        ("tired", re.compile(r"עייף|עייפה|מותש|אין לי כוח| exhausted|so tired|burn(ed|t) out", re.I)),
+        ("idea", re.compile(r"יש לי רעיון|רעיון חדש|חשבתי על|I have an idea|got an idea", re.I)),
+        ("plans", re.compile(r"מה (ה)?תוכניות|מה יש לנו היום|מה מתוכנן|סדר (לי )?את היום|"
+                             r"what'?s (the )?plan|plans for today", re.I)),
+        ("sympathy", re.compile(r"קשה לי|לא בסדר|מרגיש רע|יום גרוע|"
+                                r"having a hard time|not feeling (good|great)|bad day", re.I)),
+        ("recipe", re.compile(r"מתכון|איך מכינים|תן לי מתכון|recipe|how (do I|to) (make|cook)", re.I)),
         ("greeting", re.compile(r"^(שלום|היי|הי|אהלן|בוקר טוב|ערב טוב|צהריים טובים|hello|hi|hey)", re.I)),
     )
 
@@ -637,6 +824,21 @@ class ReasoningEngine:
         if leaked:
             ok = False
             issues.append(f"recited an unrelated {leaked} template instead of answering")
+            cleaned = ""
+        # Is the output even language? A small autoregressive core does not only
+        # drift off-topic; it degenerates — a looping word, a looping phrase, a
+        # run of one character — and it does so at the same confidence as a good
+        # answer. Nothing downstream asked this. shares_topic asks whether a
+        # reply is *about* the question; it cannot tell "אני אני אני אני" from a
+        # sentence, because a repeated word still shares its topic.
+        #
+        # This runs for every route, not only UNKNOWN: a degenerate generation
+        # reached through a confident route is worse, because the confidence
+        # makes it look trustworthy.
+        coherent, why = coherence(cleaned)
+        if not coherent:
+            ok = False
+            issues.append(f"generation is not language ({why})")
             cleaned = ""
         trace.add("verify", "pass" if ok else f"issues: {issues}",
                   {"ok": ok, "issues": issues, "tokens": gen.tokens, "ms": round(gen.ms, 1)}, t)
